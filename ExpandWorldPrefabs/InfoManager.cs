@@ -162,7 +162,7 @@ public class PrefabInfo
   }
   public void Add(Info info)
   {
-    var prefabs = PrefabHelper.GetPrefabs(info.Prefabs).ToList();
+    var prefabs = PrefabHelper.GetPrefabs(info.Prefabs, info.ExcludedPrefabs).ToList();
     foreach (var hash in prefabs)
     {
       if (info.Fallback)

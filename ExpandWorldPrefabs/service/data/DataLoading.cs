@@ -126,16 +126,24 @@ public class DataLoading
         prefab.GetComponentsInChildren(ZNetView.m_tempComponents);
         foreach (var component in ZNetView.m_tempComponents)
         {
-          var hash = component.GetType().Name.ToLowerInvariant().GetStableHashCode();
-          if (!DefaultValueGroups.ContainsKey(hash))
-            DefaultValueGroups[hash] = [];
-          DefaultValueGroups[hash].Add(prefab.name);
+          AddDefaultValue(component.GetType().Name, prefab.name);
+          if (component is WearNTear wnt)
+            AddDefaultValue($"material_{wnt.m_materialType}", prefab.name);
+          if (component is ItemDrop item)
+            AddDefaultValue($"itemtype_{item.m_itemData.m_shared.m_itemType}", prefab.name);
         }
       }
-      // Some key codes are hardcoded for legacy reasons.
-      DefaultValueGroups[CreatureHash] = DefaultValueGroups[HumanoidHash];
-      DefaultValueGroups[StructureHash] = DefaultValueGroups[WearNTearHash];
     }
+    // Some key codes are hardcoded for legacy reasons.
+    DefaultValueGroups[CreatureHash] = DefaultValueGroups[HumanoidHash];
+    DefaultValueGroups[StructureHash] = DefaultValueGroups[WearNTearHash];
+  }
+  private static void AddDefaultValue(string name, string prefab)
+  {
+    var hash = name.ToLowerInvariant().Replace(" ", "_").GetStableHashCode();
+    if (!DefaultValueGroups.ContainsKey(hash))
+      DefaultValueGroups[hash] = [];
+    DefaultValueGroups[hash].Add(prefab);
   }
   private static void ResolveValues(List<string> values)
   {

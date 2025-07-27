@@ -15,13 +15,6 @@ namespace Data;
 
 public class PrefabHelper
 {
-  public static int? GetPrefab(string value)
-  {
-    var prefabs = GetPrefabs(value);
-    if (prefabs.Count == 0) return null;
-    if (prefabs.Count == 1) return prefabs[0];
-    return prefabs[UnityEngine.Random.Range(0, prefabs.Count)];
-  }
   private static readonly Dictionary<string, List<int>> ResultCache = [];
 
   public static void ClearCache()
@@ -29,31 +22,52 @@ public class PrefabHelper
     ResultCache.Clear();
     PrefabCache.Clear();
   }
-  public static List<int> GetPrefabs(string value)
+  public static List<int> GetPrefabs(string include, string exclude)
   {
-    if (ResultCache.ContainsKey(value)) return ResultCache[value];
-    var values = Parse.ToList(value);
-    var prefabs = GetPrefabs(values);
+    var key = $"{include}|{exclude}";
+    if (ResultCache.ContainsKey(key)) return ResultCache[key];
+    var includes = Parse.ToList(include);
+    var excludes = exclude == "" ? null : Parse.ToList(exclude);
+    var prefabs = GetPrefabs(includes, excludes);
     // No point to cache error results from users.
     if (prefabs == null) return [];
-    ResultCache[value] = prefabs;
+    ResultCache[key] = prefabs;
     return prefabs;
   }
   // Called by PrefabValue that handles the caching.
   // Ideally this would be cached here but difficult with parameters.
 
-  public static List<int>? GetPrefabs(List<string> values)
+  public static List<int>? GetPrefabs(List<string> includes, List<string>? excludes)
   {
-    if (values.Count == 0) return null;
-    if (values.Count == 1) return ParsePrefabs(values[0]);
-    var prefabs = values.Select(ParsePrefabs).Where(s => s != null).ToList();
-    HashSet<int> value = [];
-    foreach (var p in prefabs)
+    if (includes.Count == 0) return null;
+    HashSet<int>? excludedPrefabs = null;
+    if (excludes != null && excludes.Count > 0)
+      excludedPrefabs = excludes.Select(ParsePrefabs).Where(s => s != null).SelectMany(s => s).ToHashSet();
+
+    if (includes.Count == 1)
     {
-      if (p == null) continue;
-      foreach (var i in p) value.Add(i);
+      var prefabs = ParsePrefabs(includes[0]);
+      if (prefabs == null) return null;
+      if (excludedPrefabs != null)
+        prefabs = [.. prefabs.Where(i => !excludedPrefabs.Contains(i))];
+      return prefabs;
     }
-    return value.Count == 0 ? null : [.. value];
+    else
+    {
+      var prefabs = includes.Select(ParsePrefabs).Where(s => s != null).ToList();
+      HashSet<int> value = [];
+      foreach (var p in prefabs)
+      {
+        if (p == null) continue;
+        foreach (var i in p)
+        {
+          if (excludedPrefabs != null && excludedPrefabs.Contains(i))
+            continue;
+          value.Add(i);
+        }
+      }
+      return value.Count == 0 ? null : [.. value];
+    }
   }
 
   private static Dictionary<string, int> PrefabCache = [];

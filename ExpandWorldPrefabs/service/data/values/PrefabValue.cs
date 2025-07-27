@@ -15,7 +15,7 @@ public class PrefabValue(string[] values) : AnyValue(values), IPrefabValue
     if (pars != LastParameters)
     {
       var values = GetAllValues(pars);
-      Cache = PrefabHelper.GetPrefabs(values);
+      Cache = PrefabHelper.GetPrefabs(values, null);
       LastParameters = pars;
     }
     if (Cache == null || Cache.Count == 0) return null;
@@ -28,7 +28,7 @@ public class PrefabValue(string[] values) : AnyValue(values), IPrefabValue
     if (pars != LastParameters)
     {
       var values = GetAllValues(pars);
-      Cache = PrefabHelper.GetPrefabs(values);
+      Cache = PrefabHelper.GetPrefabs(values, null);
       LastParameters = pars;
     }
     if (Cache == null || Cache.Count == 0) return null;

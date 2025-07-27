@@ -107,6 +107,7 @@ public class Loading
       return new Info()
       {
         Prefabs = data.prefab,
+        ExcludedPrefabs = data.excludePrefab,
         Type = t.Type,
         Fallback = data.fallback,
         Args = t.Parameters,

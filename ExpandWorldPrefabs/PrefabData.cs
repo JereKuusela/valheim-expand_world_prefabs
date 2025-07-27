@@ -12,6 +12,8 @@ public class Data
 {
   [DefaultValue("")]
   public string prefab = "";
+  [DefaultValue("")]
+  public string excludePrefab = "";
   public string type = "";
   [DefaultValue(null)]
   public string[]? types;
@@ -167,6 +169,7 @@ public class Data
 public class Info
 {
   public string Prefabs = "";
+  public string ExcludedPrefabs = "";
   public ActionType Type = ActionType.Create;
   public bool Fallback = false;
   public string[] Args = [];

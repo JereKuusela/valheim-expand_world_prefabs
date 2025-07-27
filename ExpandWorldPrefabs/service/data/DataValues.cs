@@ -80,7 +80,7 @@ public class DataValue
   {
     if (HasParameters(values))
       return new PrefabValue(SplitWithValues(values));
-    var prefabs = PrefabHelper.GetPrefabs(values);
+    var prefabs = PrefabHelper.GetPrefabs(values, "");
     if (prefabs.Count == 0) return new SimplePrefabValue(null);
     if (prefabs.Count == 1) return new SimplePrefabValue(prefabs[0]);
     return new SimplePrefabsValue(prefabs);
