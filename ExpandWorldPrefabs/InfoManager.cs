@@ -114,7 +114,7 @@ public class InfoManager
 
   private static void OnKeySet(string key, string value)
   {
-    Manager.HandleGlobal(ActionType.Key, key + " " + value, Vector3.zero, value == "");
+    Manager.HandleGlobal(ActionType.Key, [key, value], Vector3.zero, value == "");
   }
   public static PrefabInfo Select(ActionType type) => type switch
   {

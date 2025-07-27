@@ -14,6 +14,6 @@ public class HandleDestroyed
   {
     var zdo = ZDOMan.instance.GetZDO(uid);
     if (zdo == null) return;
-    Manager.Handle(ActionType.Destroy, "", zdo);
+    Manager.Handle(ActionType.Destroy, [], zdo);
   }
 }

@@ -15,8 +15,8 @@ public class HandleEvent
   private static void SetRandomEvent(RandEventSystem __instance, RandomEvent ev, Vector3 pos)
   {
     if (__instance.m_randomEvent != null)
-      Manager.HandleGlobal(ActionType.Event, __instance.m_randomEvent.m_name, __instance.m_randomEvent.m_pos, true);
+      Manager.HandleGlobal(ActionType.Event, [__instance.m_randomEvent.m_name], __instance.m_randomEvent.m_pos, true);
     if (ev != null)
-      Manager.HandleGlobal(ActionType.Event, ev.m_name, pos, false);
+      Manager.HandleGlobal(ActionType.Event, [ev.m_name], pos, false);
   }
 }

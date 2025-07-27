@@ -97,9 +97,9 @@ public class HandleRPC
     var health = (float)pars[1];
     if (health > 1E20) return false;
     if (health == wearNTear.m_health)
-      return Manager.Handle(ActionType.Repair, "", zdo, GetSource(data.m_senderPeerID));
+      return Manager.Handle(ActionType.Repair, [], zdo, GetSource(data.m_senderPeerID));
     else
-      return Manager.Handle(ActionType.Damage, "", zdo);
+      return Manager.Handle(ActionType.Damage, [], zdo);
   }
 
   static readonly int SetTriggerHash = "SetTrigger".GetStableHashCode();
@@ -110,7 +110,7 @@ public class HandleRPC
     data.m_parameters.SetPos(0);
     if (pars.Length < 2) return false;
     var trigger = (string)pars[1];
-    return Manager.Handle(ActionType.State, trigger, zdo);
+    return Manager.Handle(ActionType.State, [trigger], zdo);
   }
   static readonly int SetTargetHash = "RPC_SetTarget".GetStableHashCode();
   static readonly ParameterInfo[] SetTargetPars = AccessTools.Method(typeof(Turret), nameof(Turret.RPC_SetTarget)).GetParameters();
@@ -125,15 +125,15 @@ public class HandleRPC
     if (targetZDO == null) return false;
     var targetPrefab = ZNetScene.instance.GetPrefab(targetZDO.GetPrefab());
     if (!targetPrefab) return false;
-    var cancel1 = Manager.Handle(ActionType.State, targetPrefab.name, zdo);
-    var cancel2 = Manager.Handle(ActionType.State, "target", targetZDO);
+    var cancel1 = Manager.Handle(ActionType.State, [targetPrefab.name], zdo);
+    var cancel2 = Manager.Handle(ActionType.State, ["target"], targetZDO);
     return cancel1 || cancel2;
   }
   static readonly int ShakeHash = "RPC_Shake".GetStableHashCode();
   static readonly ParameterInfo[] ShakePars = AccessTools.Method(typeof(TreeBase), nameof(TreeBase.RPC_Shake)).GetParameters();
   private static bool Shake(ZDO zdo)
   {
-    return Manager.Handle(ActionType.Damage, "", zdo);
+    return Manager.Handle(ActionType.Damage, [], zdo);
   }
   static readonly int OnStateChangedHash = "RPC_OnStateChanged".GetStableHashCode();
   static readonly ParameterInfo[] OnStateChangedPars = AccessTools.Method(typeof(Trap), nameof(Trap.RPC_OnStateChanged)).GetParameters();
@@ -144,7 +144,7 @@ public class HandleRPC
     if (pars.Length < 2) return false;
     var state = (int)pars[1];
     if (state == 0) return false;
-    return Manager.Handle(ActionType.State, state.ToString(), zdo);
+    return Manager.Handle(ActionType.State, [state.ToString()], zdo);
   }
   static readonly int SetSaddleHash = "SetSaddle".GetStableHashCode();
   static readonly ParameterInfo[] SetSaddlePars = AccessTools.Method(typeof(Tameable), nameof(Tameable.RPC_SetSaddle)).GetParameters();
@@ -154,7 +154,7 @@ public class HandleRPC
     data.m_parameters.SetPos(0);
     if (pars.Length < 2) return false;
     var saddle = (bool)pars[1];
-    return Manager.Handle(ActionType.State, saddle ? "saddle" : "unsaddle", zdo);
+    return Manager.Handle(ActionType.State, [saddle ? "saddle" : "unsaddle"], zdo);
   }
   static readonly int SayHash = "Say".GetStableHashCode();
   static readonly ParameterInfo[] SayPars = AccessTools.Method(typeof(Talker), nameof(Talker.RPC_Say)).GetParameters();
@@ -164,7 +164,7 @@ public class HandleRPC
     data.m_parameters.SetPos(0);
     if (pars.Length < 4) return false;
     var text = (string)pars[3];
-    return Manager.Handle(ActionType.Say, text, zdo);
+    return Manager.Handle(ActionType.Say, text.Split(' '), zdo);
   }
   private static bool CancelSay(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
@@ -172,7 +172,7 @@ public class HandleRPC
     data.m_parameters.SetPos(0);
     if (pars.Length < 4) return false;
     var text = (string)pars[3];
-    return Manager.CheckCancel(ActionType.Say, text, zdo);
+    return Manager.CheckCancel(ActionType.Say, text.Split(' '), zdo);
   }
   static readonly int ChatMessageHash = "ChatMessage".GetStableHashCode();
   static readonly ParameterInfo[] ChatMessgePars = AccessTools.Method(typeof(Chat), nameof(Chat.RPC_ChatMessage)).GetParameters();
@@ -182,7 +182,7 @@ public class HandleRPC
     data.m_parameters.SetPos(0);
     if (pars.Length < 5) return false;
     var text = (string)pars[4];
-    return Manager.Handle(ActionType.Say, text, zdo);
+    return Manager.Handle(ActionType.Say, text.Split(' '), zdo);
   }
   private static bool CancelChat(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
@@ -190,13 +190,13 @@ public class HandleRPC
     data.m_parameters.SetPos(0);
     if (pars.Length < 5) return false;
     var text = (string)pars[4];
-    return Manager.CheckCancel(ActionType.Say, text, zdo);
+    return Manager.CheckCancel(ActionType.Say, text.Split(' '), zdo);
   }
   static readonly int FlashShieldHash = "FlashShield".GetStableHashCode();
   static readonly ParameterInfo[] FlashShieldPars = AccessTools.Method(typeof(PrivateArea), nameof(PrivateArea.RPC_FlashShield)).GetParameters();
   private static bool FlashShield(ZDO zdo)
   {
-    return Manager.Handle(ActionType.State, "flash", zdo);
+    return Manager.Handle(ActionType.State, ["flash"], zdo);
   }
   static readonly int SetPickedHash = "RPC_SetPicked".GetStableHashCode();
   static readonly ParameterInfo[] SetPickedPars = AccessTools.Method(typeof(Pickable), nameof(Pickable.RPC_SetPicked)).GetParameters();
@@ -206,25 +206,25 @@ public class HandleRPC
     data.m_parameters.SetPos(0);
     if (pars.Length < 2) return false;
     var picked = (bool)pars[1];
-    return Manager.Handle(ActionType.State, picked ? "picked" : "unpicked", zdo);
+    return Manager.Handle(ActionType.State, [picked ? "picked" : "unpicked"], zdo);
   }
   static readonly int PlayMusicHash = "RPC_PlayMusic".GetStableHashCode();
   static readonly ParameterInfo[] PlayMusicPars = AccessTools.Method(typeof(MusicVolume), nameof(MusicVolume.RPC_PlayMusic)).GetParameters();
   private static bool PlayMusic(ZDO zdo)
   {
-    return Manager.Handle(ActionType.State, "", zdo);
+    return Manager.Handle(ActionType.State, [], zdo);
   }
   static readonly int WakeupHash = "RPC_Wakeup".GetStableHashCode();
   static readonly ParameterInfo[] WakeupPars = AccessTools.Method(typeof(MonsterAI), nameof(MonsterAI.RPC_Wakeup)).GetParameters();
   private static bool Wakeup(ZDO zdo)
   {
-    return Manager.Handle(ActionType.State, "wakeup", zdo);
+    return Manager.Handle(ActionType.State, ["wakeup"], zdo);
   }
   static readonly int SetAreaHealthHash = "RPC_SetAreaHealth".GetStableHashCode();
   static readonly ParameterInfo[] SetAreaHealthPars = AccessTools.Method(typeof(MineRock5), nameof(MineRock5.RPC_SetAreaHealth)).GetParameters();
   private static bool SetAreaHealth(ZDO zdo)
   {
-    return Manager.Handle(ActionType.Damage, "", zdo);
+    return Manager.Handle(ActionType.Damage, [], zdo);
   }
   static readonly int HideHash = "Hide".GetStableHashCode();
   static readonly ParameterInfo[] HidePars = AccessTools.Method(typeof(MineRock), nameof(MineRock.RPC_Hide)).GetParameters();
@@ -234,7 +234,7 @@ public class HandleRPC
     data.m_parameters.SetPos(0);
     if (pars.Length < 2) return false;
     var index = (int)pars[1];
-    return Manager.Handle(ActionType.Damage, index.ToString(), zdo);
+    return Manager.Handle(ActionType.Damage, [index.ToString()], zdo);
   }
   static readonly int SetVisualItemHash = "SetVisualItem".GetStableHashCode();
   static readonly ParameterInfo[] ItemStandPars = AccessTools.Method(typeof(ItemStand), nameof(ItemStand.RPC_SetVisualItem)).GetParameters();
@@ -249,8 +249,8 @@ public class HandleRPC
     var item = (string)pars[1];
     var variant = (int)pars[2];
     var quality = (int)pars[3];
-    var state = $"{(item == "" ? "<none>" : item)} {variant} {quality}";
-    return Manager.Handle(ActionType.State, state, zdo, GetSource(data.m_senderPeerID));
+    var state = item == "" ? "<none>" : item;
+    return Manager.Handle(ActionType.State, [state, variant.ToString(), quality.ToString()], zdo, GetSource(data.m_senderPeerID));
   }
   static readonly int SetArmorVisualItemHash = "RPC_SetVisualItem".GetStableHashCode();
   static readonly ParameterInfo[] ArmorStandPars = AccessTools.Method(typeof(ArmorStand), nameof(ArmorStand.RPC_SetVisualItem)).GetParameters();
@@ -264,20 +264,20 @@ public class HandleRPC
     var slot = (int)pars[1];
     var item = (string)pars[2];
     var variant = (int)pars[3];
-    var state = $"{(item == "" ? "<none>" : item)} {variant} {slot} ";
-    return Manager.Handle(ActionType.State, state, zdo, GetSource(data.m_senderPeerID));
+    var state = item == "" ? "<none>" : item;
+    return Manager.Handle(ActionType.State, [state, variant.ToString(), slot.ToString()], zdo, GetSource(data.m_senderPeerID));
   }
   static readonly int AnimateLeverHash = "RPC_AnimateLever".GetStableHashCode();
   static readonly ParameterInfo[] AnimateLeverPars = AccessTools.Method(typeof(Incinerator), nameof(Incinerator.RPC_AnimateLever)).GetParameters();
   private static bool AnimateLever(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    return Manager.Handle(ActionType.State, "start", zdo, GetSource(data.m_senderPeerID));
+    return Manager.Handle(ActionType.State, ["start"], zdo, GetSource(data.m_senderPeerID));
   }
   static readonly int AnimateLeverReturnHash = "RPC_AnimateLeverReturn".GetStableHashCode();
   static readonly ParameterInfo[] AnimateLeverReturnPars = AccessTools.Method(typeof(Incinerator), nameof(Incinerator.RPC_AnimateLeverReturn)).GetParameters();
   private static bool AnimateLeverReturn(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    return Manager.Handle(ActionType.State, "end", zdo, GetSource(data.m_senderPeerID));
+    return Manager.Handle(ActionType.State, ["end"], zdo, GetSource(data.m_senderPeerID));
   }
   static readonly int SetSlotVisualHash = "RPC_SetSlotVisual".GetStableHashCode();
   static readonly ParameterInfo[] SetSlotVisualPars = AccessTools.Method(typeof(CookingStation), nameof(CookingStation.RPC_SetSlotVisual)).GetParameters();
@@ -288,8 +288,8 @@ public class HandleRPC
     if (pars.Length < 3) return false;
     var slot = (int)pars[1];
     var item = (string)pars[2];
-    var state = $"{slot} {(item == "" ? "<none>" : item)}";
-    return Manager.Handle(ActionType.State, state, zdo, GetSource(data.m_senderPeerID));
+    var state = item == "" ? "<none>" : item;
+    return Manager.Handle(ActionType.State, [slot.ToString(), state], zdo, GetSource(data.m_senderPeerID));
   }
 
 
@@ -297,14 +297,14 @@ public class HandleRPC
   static readonly ParameterInfo[] MakePieceHashPars = AccessTools.Method(typeof(ItemDrop), nameof(ItemDrop.RPC_MakePiece)).GetParameters();
   private static bool MakePiece(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    return Manager.Handle(ActionType.State, "piece", zdo, GetSource(data.m_senderPeerID));
+    return Manager.Handle(ActionType.State, ["piece"], zdo, GetSource(data.m_senderPeerID));
   }
 
   static readonly int OnEatHash = "RPC_OnEat".GetStableHashCode();
   static readonly ParameterInfo[] OnEatPars = AccessTools.Method(typeof(Feast), nameof(Feast.RPC_OnEat)).GetParameters();
   private static bool OnEat(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    return Manager.Handle(ActionType.State, "eat", zdo, GetSource(data.m_senderPeerID));
+    return Manager.Handle(ActionType.State, ["eat"], zdo, GetSource(data.m_senderPeerID));
   }
 
 

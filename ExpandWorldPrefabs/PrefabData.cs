@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using Data;
 using Service;
@@ -326,13 +327,48 @@ public class Spawn
 public class Poke(PokeData data)
 {
   public Object Filter = new(data);
-  public string? Parameter = data.parameter;
+  private readonly string? Parameter = data.parameter;
+  private readonly string[]? Parameters = data.pars == null ? null : Parse.ToArr(data.pars);
   public IIntValue? Limit = data.limit == null ? null : DataValue.Int(data.limit);
   public IFloatValue? Delay = data.delay == null ? null : DataValue.Float(data.delay);
   public IBoolValue? Self = data.self == null ? null : DataValue.Bool(data.self);
   public IZdoIdValue? Target = data.target == null ? null : DataValue.ZdoId(data.target);
-  public IBoolValue? Evaluate = data.evaluate == null ? null : DataValue.Bool(data.evaluate);
+  private readonly IBoolValue? Evaluate = data.evaluate == null ? null : DataValue.Bool(data.evaluate);
   public bool HasPrefab = data.prefab != null && data.prefab != "";
+
+  public string[] GetArgs(Parameters pars)
+  {
+
+    if (Parameters != null)
+      return [.. Parameters.Select(pars.Replace)];
+    else
+    {
+      var pokeParameter = pars.Replace(Parameter ?? "");
+      if (Evaluate?.GetBool(pars) != false)
+        pokeParameter = PokeEvaluate(pokeParameter);
+      return pokeParameter.Split(' ');
+    }
+  }
+
+
+  public static string PokeEvaluate(string str)
+  {
+    var expressions = str.Split(' ').ToArray();
+    bool changed = false;
+    for (var i = 0; i < expressions.Length; ++i)
+    {
+      var expression = expressions[i];
+      if (expression.Length == 0) continue;
+      // Single negative number would get handled as expression.
+      var sub = expression.Substring(1);
+      if (!sub.Contains('*') && !sub.Contains('/') && !sub.Contains('+') && !sub.Contains('-')) continue;
+      changed = true;
+      var value = Calculator.EvaluateFloat(expression);
+      if (value.HasValue)
+        expressions[i] = value.Value.ToString("0.#####", NumberFormatInfo.InvariantInfo);
+    }
+    return changed ? string.Join(" ", expressions) : str;
+  }
 }
 public class Object
 {
@@ -442,6 +478,8 @@ public class PokeData : ObjectData
   public string? target;
   [DefaultValue(null)]
   public string? parameter;
+  [DefaultValue(null)]
+  public string? pars;
   [DefaultValue(null)]
   public string? limit;
   [DefaultValue(null)]

@@ -27,6 +27,7 @@ public class Range<T>
 public static class Parse
 {
   public static List<string> ToList(string str, bool removeEmpty = true) => [.. Split(str, removeEmpty)];
+  public static string[] ToArr(string str, bool removeEmpty = true) => [.. Split(str, removeEmpty)];
   public static Vector2i Vector2Int(string arg)
   {
     string[] array = SplitWithEmpty(arg);

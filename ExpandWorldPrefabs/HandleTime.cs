@@ -37,13 +37,13 @@ public class HandleTime
     if (PreviousTime != 0)
     {
       if (TrackTicks)
-        Manager.HandleGlobal(ActionType.Time, $"tick {ticks}", Vector3.zero, false);
+        Manager.HandleGlobal(ActionType.Time, ["tick", ticks.ToString()], Vector3.zero, false);
       if (TrackDays && PreviousDay != day)
-        Manager.HandleGlobal(ActionType.Time, $"day {day}", Vector3.zero, false);
+        Manager.HandleGlobal(ActionType.Time, ["day", day.ToString()], Vector3.zero, false);
       if (TrackHours && PreviousHour != hour)
-        Manager.HandleGlobal(ActionType.Time, $"hour {hour} {day}", Vector3.zero, false);
+        Manager.HandleGlobal(ActionType.Time, ["hour", hour.ToString(), day.ToString()], Vector3.zero, false);
       if (TrackMinutes && PreviousMinute != minute)
-        Manager.HandleGlobal(ActionType.Time, $"minute {minute} {hour} {day}", Vector3.zero, false);
+        Manager.HandleGlobal(ActionType.Time, ["minute", minute.ToString(), hour.ToString(), day.ToString()], Vector3.zero, false);
     }
     PreviousTime = __instance.m_netTime;
     PreviousDay = day;

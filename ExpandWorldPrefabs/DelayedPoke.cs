@@ -7,36 +7,36 @@ public interface IPokeable
   public float Delay { get; set; }
   void Execute();
 }
-public class DelayedSinglePoke(float delay, ZDO zdo, string parameter) : IPokeable
+public class DelayedSinglePoke(float delay, ZDO zdo, string[] args) : IPokeable
 {
   private readonly ZDO Zdo = zdo;
-  private readonly string Parameter = parameter;
+  private readonly string[] Args = args;
 
   float IPokeable.Delay { get => delay; set => delay = value; }
-  public void Execute() => Manager.Poke(Zdo, Parameter);
+  public void Execute() => Manager.Poke(Zdo, Args);
 
 }
 
-public class DelayedPoke(float delay, ZDO[] zdos, string parameter) : IPokeable
+public class DelayedPoke(float delay, ZDO[] zdos, string[] args) : IPokeable
 {
   private static readonly List<IPokeable> Pokes = [];
-  public static void Add(float delay, ZDO[] zdos, string parameter)
+  public static void Add(float delay, ZDO[] zdos, string[] args)
   {
     if (delay <= 0f)
     {
-      Manager.Poke(zdos, parameter);
+      Manager.Poke(zdos, args);
       return;
     }
-    Pokes.Add(new DelayedPoke(delay, zdos, parameter));
+    Pokes.Add(new DelayedPoke(delay, zdos, args));
   }
-  public static void Add(float delay, ZDO zdo, string parameter)
+  public static void Add(float delay, ZDO zdo, string[] args)
   {
     if (delay <= 0f)
     {
-      Manager.Poke(zdo, parameter);
+      Manager.Poke(zdo, args);
       return;
     }
-    Pokes.Add(new DelayedSinglePoke(delay, zdo, parameter));
+    Pokes.Add(new DelayedSinglePoke(delay, zdo, args));
   }
   public static void Execute(float dt)
   {
@@ -55,9 +55,9 @@ public class DelayedPoke(float delay, ZDO[] zdos, string parameter) : IPokeable
     }
   }
   private readonly ZDO[] Zdos = zdos;
-  private readonly string Parameter = parameter;
+  private readonly string[] Args = args;
 
   float IPokeable.Delay { get => delay; set => delay = value; }
 
-  public void Execute() => Manager.Poke(Zdos, Parameter);
+  public void Execute() => Manager.Poke(Zdos, Args);
 }

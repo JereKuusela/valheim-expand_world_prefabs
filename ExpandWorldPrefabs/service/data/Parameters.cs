@@ -11,13 +11,12 @@ namespace Data;
 // Parameters are technically just a key-value mapping.
 // Proper class allows properly adding caching and other features.
 // While also ensuring that all code is in one place.
-public class Parameters(string prefab, string arg, Vector3 pos)
+public class Parameters(string prefab, string[] args, Vector3 pos)
 {
   protected const char Separator = '_';
-  public static Func<string, string?> ExecuteCode = (string key) => null!;
-  public static Func<string, string, string?> ExecuteCodeWithValue = (string key, string value) => null!;
+  public static Func<string, string?> ExecuteCode = key => null!;
+  public static Func<string, string, string?> ExecuteCodeWithValue = (key, value) => null!;
 
-  protected string[]? args;
   private readonly double time = ZNet.instance.GetTimeSeconds();
 
   public string Replace(string str)
@@ -110,7 +109,7 @@ public class Parameters(string prefab, string arg, Vector3 pos)
     {
       "<prefab>" => prefab,
       "<safeprefab>" => prefab.Replace(Separator, '-'),
-      "<par>" => arg,
+      "<par>" => string.Join(" ", args),
       "<par0>" => GetArg(0),
       "<par1>" => GetArg(1),
       "<par2>" => GetArg(2),
@@ -217,7 +216,6 @@ public class Parameters(string prefab, string arg, Vector3 pos)
   }
   private string GetRest(int index, string defaultValue = "")
   {
-    args ??= arg.Split(' ');
     if (index < 0 || index >= args.Length) return defaultValue;
     return string.Join(" ", args, index, args.Length - index);
   }
@@ -242,7 +240,6 @@ public class Parameters(string prefab, string arg, Vector3 pos)
 
   private string GetArg(int index, string defaultValue = "")
   {
-    args ??= arg.Split(' ');
     return args.Length <= index ? defaultValue : args[index];
   }
 
@@ -271,7 +268,7 @@ public class Parameters(string prefab, string arg, Vector3 pos)
     return true;
   }
 }
-public class ObjectParameters(string prefab, string arg, ZDO zdo) : Parameters(prefab, arg, zdo.m_position)
+public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameters(prefab, args, zdo.m_position)
 {
   private Inventory? inventory;
 

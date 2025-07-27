@@ -29,7 +29,7 @@ public class HandleCreated
       var uid = CreatedZDOs[i];
       var zdo = ZDOMan.instance.GetZDO(uid);
       if (zdo == null) continue;
-      Manager.Handle(ActionType.Create, "", zdo);
+      Manager.Handle(ActionType.Create, [], zdo);
     }
     ZNetView.m_ghostInit = true;
     for (var i = 0; i < GhostZDOs.Count; i++)
@@ -37,7 +37,7 @@ public class HandleCreated
       var uid = GhostZDOs[i];
       var zdo = ZDOMan.instance.GetZDO(uid);
       if (zdo == null) continue;
-      Manager.Handle(ActionType.Create, "", zdo);
+      Manager.Handle(ActionType.Create, [], zdo);
     }
     ZNetView.m_ghostInit = false;
     CreatedZDOs.Clear();

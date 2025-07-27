@@ -69,7 +69,7 @@ public class HandleChanged
     {
       var changed = ChangedZDOs[Index];
       if (!changed.Zdo.Valid) continue;
-      Manager.Handle(ActionType.Change, changed.Key + " " + changed.Value + " " + changed.PreviousValue, changed.Zdo);
+      Manager.Handle(ActionType.Change, [changed.Key, changed.Value, changed.PreviousValue], changed.Zdo);
     }
     if (Index < ChangedZDOs.Count) return;
     Index = 0;

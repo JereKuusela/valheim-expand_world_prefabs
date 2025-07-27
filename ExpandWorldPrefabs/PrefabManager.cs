@@ -9,7 +9,7 @@ namespace ExpandWorld.Prefab;
 
 public class Manager
 {
-  public static void HandleGlobal(ActionType type, string args, Vector3 pos, bool remove)
+  public static void HandleGlobal(ActionType type, string[] args, Vector3 pos, bool remove)
   {
     if (!ZNet.instance.IsServer()) return;
     Parameters parameters = new("", args, pos);
@@ -22,7 +22,7 @@ public class Manager
       GlobalClientRpc(info.ClientRpcs, parameters);
     PokeGlobal(info, parameters, pos);
   }
-  public static bool Handle(ActionType type, string args, ZDO zdo, ZDO? source = null)
+  public static bool Handle(ActionType type, string[] args, ZDO zdo, ZDO? source = null)
   {
     // Already destroyed before.
     if (ZDOMan.instance.m_deadZDOs.ContainsKey(zdo.m_uid)) return false;
@@ -81,7 +81,7 @@ public class Manager
 
     return cancel;
   }
-  public static bool CheckCancel(ActionType type, string args, ZDO zdo, ZDO? source = null)
+  public static bool CheckCancel(ActionType type, string[] args, ZDO zdo, ZDO? source = null)
   {
     if (!ZNet.instance.IsServer()) return false;
     var name = ZNetScene.instance.GetPrefab(zdo.m_prefab)?.name ?? "";
@@ -224,32 +224,30 @@ public class Manager
     if (info.LegacyPokes != null)
     {
       var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, rot, pars, null);
-      var pokeParameter = Evaluate(pars.Replace(info.PokeParameter));
+      var pokeParameter = Prefab.Poke.PokeEvaluate(pars.Replace(info.PokeParameter)).Split(' ');
       DelayedPoke.Add(info.PokeDelay, zdos, pokeParameter);
     }
     if (info.Pokes == null) return;
     foreach (var poke in info.Pokes)
     {
-      var pokeParameter = pars.Replace(poke.Parameter ?? "");
-      if (poke.Evaluate?.GetBool(pars) != false)
-        pokeParameter = Evaluate(pokeParameter);
+      var args = poke.GetArgs(pars);
       var delay = poke.Delay?.Get(pars) ?? 0f;
       var self = poke.Self?.GetBool(pars);
       var target = poke.Target?.Get(pars);
       if (poke.HasPrefab)
       {
         var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, rot, pars, self == true ? null : zdo);
-        DelayedPoke.Add(delay, zdos, pokeParameter);
+        DelayedPoke.Add(delay, zdos, args);
       }
       else if (self == true || target != null)
       {
         if (self == true)
-          DelayedPoke.Add(delay, zdo, pokeParameter);
+          DelayedPoke.Add(delay, zdo, args);
         if (target != null)
         {
           var targetZdo = ZDOMan.instance.GetZDO(target.Value);
           if (targetZdo != null && targetZdo != zdo)
-            DelayedPoke.Add(delay, targetZdo, pokeParameter);
+            DelayedPoke.Add(delay, targetZdo, args);
         }
       }
     }
@@ -259,47 +257,26 @@ public class Manager
     if (info.LegacyPokes != null)
     {
       var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, Quaternion.identity, pars, null);
-      var pokeParameter = Evaluate(pars.Replace(info.PokeParameter));
-      DelayedPoke.Add(info.PokeDelay, zdos, pokeParameter);
+      var pokeParameter = Prefab.Poke.PokeEvaluate(pars.Replace(info.PokeParameter));
+      DelayedPoke.Add(info.PokeDelay, zdos, pokeParameter.Split(' '));
     }
     if (info.Pokes == null) return;
     foreach (var poke in info.Pokes)
     {
-      var pokeParameter = pars.Replace(poke.Parameter ?? "");
-      if (poke.Evaluate?.GetBool(pars) != false)
-        pokeParameter = Evaluate(pokeParameter);
+      var args = poke.GetArgs(pars);
       var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, Quaternion.identity, pars, null);
-      DelayedPoke.Add(poke.Delay?.Get(pars) ?? 0f, zdos, pokeParameter);
-
+      DelayedPoke.Add(poke.Delay?.Get(pars) ?? 0f, zdos, args);
     }
   }
 
-  private static string Evaluate(string str)
-  {
-    var expressions = str.Split(' ').ToArray();
-    bool changed = false;
-    for (var i = 0; i < expressions.Length; ++i)
-    {
-      var expression = expressions[i];
-      if (expression.Length == 0) continue;
-      // Single negative number would get handled as expression.
-      var sub = expression.Substring(1);
-      if (!sub.Contains('*') && !sub.Contains('/') && !sub.Contains('+') && !sub.Contains('-')) continue;
-      changed = true;
-      var value = Calculator.EvaluateFloat(expression);
-      if (value.HasValue)
-        expressions[i] = value.Value.ToString("0.#####", NumberFormatInfo.InvariantInfo);
-    }
-    return changed ? string.Join(" ", expressions) : str;
-  }
-  public static void Poke(ZDO[] zdos, string parameter)
+  public static void Poke(ZDO[] zdos, string[] args)
   {
     foreach (var z in zdos)
-      Handle(ActionType.Poke, parameter, z);
+      Handle(ActionType.Poke, args, z);
   }
-  public static void Poke(ZDO zdo, string parameter)
+  public static void Poke(ZDO zdo, string[] args)
   {
-    Handle(ActionType.Poke, parameter, zdo);
+    Handle(ActionType.Poke, args, zdo);
   }
   public static void Terrain(Info info, ZDO zdo, Parameters pars)
   {

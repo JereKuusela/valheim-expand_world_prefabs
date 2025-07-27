@@ -22,12 +22,12 @@ public class HandleGlobalKey
   private static void RPC_SetGlobalKey(string name)
   {
     var keyValue = ZoneSystem.GetKeyValue(name.ToLower(), out _, out _);
-    Manager.HandleGlobal(ActionType.GlobalKey, keyValue, Vector3.zero, false);
+    Manager.HandleGlobal(ActionType.GlobalKey, [keyValue], Vector3.zero, false);
   }
   private static void RPC_RemoveGlobalKey(string name)
   {
     var keyValue = ZoneSystem.GetKeyValue(name.ToLower(), out _, out _);
-    Manager.HandleGlobal(ActionType.GlobalKey, keyValue, Vector3.zero, true);
+    Manager.HandleGlobal(ActionType.GlobalKey, [keyValue], Vector3.zero, true);
   }
   private static void ClearGlobalKeys(ZoneSystem __instance)
   {

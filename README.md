@@ -298,7 +298,12 @@ Poking allows to trigger actions on other objects (or even on the original objec
     - If prefab is set, then other filters must apply as usual.
     - If prefab is not set, then the object itself is always poked.
   - target: Specific ZDO object. This can't be used with prefab.
-  - parameter: Custom value used as the parameter for the `poke` type.
+  - pars: Parameters for the `poke` type.
+    - Format is `par0, par1, par2, ...`.
+    - Structure is strictly defined. Parameter values with commas won't cause additional parameters.
+  - parameter: Old way to specify the poke parameter.
+    - Format is `par0 par1 par2 ...`.
+    - Structure is dynamic, Parameter values with spaces will cause additional parameters.
   - evaluate: If false, math expressions are not calculated in the parameter. Default is true.
     - For example if some text has math symbols, it might cause weird results.
     - Math expression are considered legacy, use [functions](Functions) instead.

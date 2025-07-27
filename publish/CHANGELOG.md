@@ -1,6 +1,7 @@
 - v1.45
   - Adds new field `excludePrefab` to exclude prefabs from the field `prefab`.
   - Adds default value groups for structure material types and item drop types.
+  - Adds new field `pars` to pokes for structured parameter handling.
 
 - v1.44
   - Adds offset support to pokes.
