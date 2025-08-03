@@ -81,17 +81,24 @@ public class PrefabHelper
     if (p[0] == '*' && p[p.Length - 1] == '*')
     {
       p = p.Substring(1, p.Length - 2);
-      return [.. PrefabCache.Where(pair => pair.Key.ToLowerInvariant().Contains(p)).Select(pair => pair.Value)];
+      return [.. PrefabCache.Where(pair => Contains(pair, p)).Select(pair => pair.Value)];
     }
     if (p[0] == '*')
     {
       p = p.Substring(1);
-      return [.. PrefabCache.Where(pair => pair.Key.EndsWith(p, StringComparison.OrdinalIgnoreCase)).Select(pair => pair.Value)];
+      return [.. PrefabCache.Where(pair => EndsWith(pair, p)).Select(pair => pair.Value)];
     }
     if (p[p.Length - 1] == '*')
     {
       p = p.Substring(0, p.Length - 1);
-      return [.. PrefabCache.Where(pair => pair.Key.StartsWith(p, StringComparison.OrdinalIgnoreCase)).Select(pair => pair.Value)];
+      return [.. PrefabCache.Where(pair => StartsWith(pair, p)).Select(pair => pair.Value)];
+    }
+    var wildIndex = p.IndexOf('*');
+    if (wildIndex > 0 && wildIndex < p.Length - 1)
+    {
+      var prefix = p.Substring(0, wildIndex);
+      var suffix = p.Substring(wildIndex + 1);
+      return [.. PrefabCache.Where(pair => Contained(pair, prefix, suffix)).Select(pair => pair.Value)];
     }
     if (PrefabCache.ContainsKey(prefab))
       return [PrefabCache[prefab]];
@@ -101,4 +108,9 @@ public class PrefabHelper
     Log.Warning($"Failed to resolve prefab: {prefab}");
     return null;
   }
+
+  private static bool Contains(KeyValuePair<string, int> pair, string prefab) => pair.Key.ToLowerInvariant().Contains(prefab.ToString());
+  private static bool StartsWith(KeyValuePair<string, int> pair, string prefab) => pair.Key.StartsWith(prefab, StringComparison.OrdinalIgnoreCase);
+  private static bool EndsWith(KeyValuePair<string, int> pair, string prefab) => pair.Key.EndsWith(prefab, StringComparison.OrdinalIgnoreCase);
+  private static bool Contained(KeyValuePair<string, int> pair, string start, string end) => pair.Key.StartsWith(start, StringComparison.OrdinalIgnoreCase) && pair.Key.EndsWith(end, StringComparison.OrdinalIgnoreCase);
 }

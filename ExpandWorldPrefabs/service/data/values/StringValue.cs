@@ -38,6 +38,14 @@ public class SimpleStringValue(string value) : IStringValue
     {
       return value.StartsWith(pattern.Substring(0, pattern.Length - 1), System.StringComparison.Ordinal);
     }
+    var wildIndex = pattern.IndexOf('*');
+    if (wildIndex > 0 && wildIndex < pattern.Length - 1)
+    {
+      var prefix = pattern.Substring(0, wildIndex);
+      var suffix = pattern.Substring(wildIndex + 1);
+      return value.StartsWith(prefix, System.StringComparison.Ordinal) &&
+             value.EndsWith(suffix, System.StringComparison.Ordinal);
+    }
     return false;
   }
 }

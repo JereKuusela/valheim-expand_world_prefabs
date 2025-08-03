@@ -88,9 +88,17 @@ public class DataStorage
       return [.. Database.Keys.Where(k => k.Contains(key.Substring(1, key.Length - 2)))];
     if (key[0] == '*')
       return [.. Database.Keys.Where(k => k.EndsWith(key.Substring(1), StringComparison.OrdinalIgnoreCase))];
-    else if (key[key.Length - 1] == '*')
+    if (key[key.Length - 1] == '*')
       return [.. Database.Keys.Where(k => k.StartsWith(key.Substring(0, key.Length - 1), StringComparison.OrdinalIgnoreCase))];
-    else return [];
+    var wildIndex = key.IndexOf('*');
+    if (wildIndex > 0 && wildIndex < key.Length - 1)
+    {
+      var prefix = key.Substring(0, wildIndex);
+      var suffix = key.Substring(wildIndex + 1);
+      return [.. Database.Keys.Where(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+                                          k.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))];
+    }
+    return [];
   }
   public static void SetValues(List<string> keys, string value)
   {

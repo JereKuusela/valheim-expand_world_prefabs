@@ -175,7 +175,9 @@ public class Manager
   {
     HandleCreated.Skip = true;
     if (obj.TryGetComponent<DropOnDestroyed>(out var drop))
+    {
       drop.OnDestroyed();
+    }
     if (obj.TryGetComponent<CharacterDrop>(out var characterDrop))
     {
       characterDrop.m_character = obj.GetComponent<Character>();
@@ -185,7 +187,14 @@ public class Manager
     if (obj.TryGetComponent<Ragdoll>(out var ragdoll))
       ragdoll.SpawnLoot(ragdoll.GetAverageBodyPosition());
     if (obj.TryGetComponent<Piece>(out var piece))
+    {
+      if (obj.TryGetComponent<Plant>(out var _))
+      {
+        foreach (Piece.Requirement requirement in piece.m_resources)
+          requirement.m_recover = true;
+      }
       piece.DropResources();
+    }
     if (obj.TryGetComponent<TreeBase>(out var tree))
     {
       var items = tree.m_dropWhenDestroyed.GetDropList();

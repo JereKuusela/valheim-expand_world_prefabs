@@ -421,7 +421,7 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       prefab = prefab.Substring(1, prefab.Length - 2).ToLowerInvariant();
       foreach (var item in inventory.m_inventory)
       {
-        if ((item.m_dropPrefab?.name ?? item.m_shared.m_name).ToLowerInvariant().Contains(prefab)) count += item.m_stack;
+        if (GetName(item).ToLowerInvariant().Contains(prefab)) count += item.m_stack;
       }
     }
     else if (prefab[0] == '*')
@@ -429,7 +429,7 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       prefab = prefab.Substring(1);
       foreach (var item in inventory.m_inventory)
       {
-        if ((item.m_dropPrefab?.name ?? item.m_shared.m_name).EndsWith(prefab, StringComparison.OrdinalIgnoreCase)) count += item.m_stack;
+        if (GetName(item).EndsWith(prefab, StringComparison.OrdinalIgnoreCase)) count += item.m_stack;
       }
     }
     else if (prefab[prefab.Length - 1] == '*')
@@ -437,22 +437,40 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       prefab = prefab.Substring(0, prefab.Length - 1);
       foreach (var item in inventory.m_inventory)
       {
-        if ((item.m_dropPrefab?.name ?? item.m_shared.m_name).StartsWith(prefab, StringComparison.OrdinalIgnoreCase)) count += item.m_stack;
+        if (GetName(item).StartsWith(prefab, StringComparison.OrdinalIgnoreCase)) count += item.m_stack;
       }
     }
     else
     {
-      foreach (var item in inventory.m_inventory)
+      var wildIndex = prefab.IndexOf('*');
+      if (wildIndex > 0 && wildIndex < prefab.Length - 1)
       {
-        if ((item.m_dropPrefab?.name ?? item.m_shared.m_name) == prefab) count += item.m_stack;
+        var prefix = prefab.Substring(0, wildIndex);
+        var suffix = prefab.Substring(wildIndex + 1);
+        foreach (var item in inventory.m_inventory)
+        {
+          var name = GetName(item);
+          if (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+              name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            count += item.m_stack;
+        }
       }
+      else
+      {
+        foreach (var item in inventory.m_inventory)
+        {
+          if (GetName(item) == prefab) count += item.m_stack;
+        }
+      }
+
     }
     return count;
   }
+  private string GetName(ItemDrop.ItemData? item) => item?.m_dropPrefab?.name ?? item?.m_shared.m_name ?? "";
   private string? GetNameAt(int x, int y)
   {
     var item = GetItemAt(x, y);
-    return item?.m_dropPrefab?.name ?? item?.m_shared.m_name;
+    return GetName(item);
   }
   private string? GetAmountAt(int x, int y) => GetItemAt(x, y)?.m_stack.ToString();
   private string? GetDurabilityAt(int x, int y) => GetItemAt(x, y)?.m_durability.ToString();

@@ -2,6 +2,8 @@
   - Adds new field `excludePrefab` to exclude prefabs from the field `prefab`.
   - Adds default value groups for structure material types and item drop types.
   - Adds new field `pars` to pokes for structured parameter handling.
+  - Adds support for a wildcard `*` in the middle of the text (for example sfx_*_destroyed).
+  - Adds `drops` support to plants.
 
 - v1.44
   - Adds offset support to pokes.

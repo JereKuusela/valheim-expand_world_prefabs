@@ -29,20 +29,27 @@ public class Helper
       return str.ToLowerInvariant().Contains(wild.Substring(1, wild.Length - 2).ToLowerInvariant());
     if (wild[0] == '*')
       return str.EndsWith(wild.Substring(1), StringComparison.OrdinalIgnoreCase);
-    else if (wild[wild.Length - 1] == '*')
+    if (wild[wild.Length - 1] == '*')
       return str.StartsWith(wild.Substring(0, wild.Length - 1), StringComparison.OrdinalIgnoreCase);
+    var wildIndex = wild.IndexOf('*');
+    if (wildIndex > 0 && wildIndex < wild.Length - 1)
+    {
+      var prefix = wild.Substring(0, wildIndex);
+      var suffix = wild.Substring(wildIndex + 1);
+      return str.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+             str.EndsWith(suffix, StringComparison.OrdinalIgnoreCase);
+    }
     /*else if (Parse.TryLong(str, out var l))
     {
       var range = Parse.LongRange(wild);
       return range.Min <= l && l <= range.Max;
     }*/
-    else if (Parse.TryFloat(str, out var f) && (Parse.TryFloat(wild, out var _) || wild.Contains(";")))
+    if (Parse.TryFloat(str, out var f) && (Parse.TryFloat(wild, out var _) || wild.Contains(";")))
     {
       var range = Parse.FloatRange(wild);
       return ApproxBetween(f, range.Min, range.Max);
     }
-    else
-      return str.Equals(wild, StringComparison.OrdinalIgnoreCase);
+    return str.Equals(wild, StringComparison.OrdinalIgnoreCase);
   }
 
   public static bool IsServer() => ZNet.instance && ZNet.instance.IsServer();
