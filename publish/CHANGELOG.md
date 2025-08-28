@@ -6,6 +6,7 @@
   - Adds `drops` support to plants.
   - Adds new field `chance` to allow randomly executing the selected action.
   - Adds new field `separate` to allow actions to ignore the weight system.
+  - Adds new field `repeat` to RPC calls to allow repeating after a delay.
 
 - v1.44
   - Adds offset support to pokes.

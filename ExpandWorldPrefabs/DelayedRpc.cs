@@ -4,14 +4,22 @@ namespace ExpandWorld.Prefab;
 public class DelayedRpc(float delay, long source, long target, ZDOID id, int hash, object[] parameters)
 {
   private static readonly List<DelayedRpc> Rpcs = [];
-  public static void Add(float delay, long source, long target, ZDOID id, int hash, object[] parameters)
+  public static void Add(float delay, int repeat, long source, long target, ZDOID id, int hash, object[] parameters)
   {
     if (delay <= 0f)
     {
       Manager.Rpc(source, target, id, hash, parameters);
       return;
     }
-    Rpcs.Add(new(delay, source, target, id, hash, parameters));
+    if (repeat == 0)
+    {
+      Rpcs.Add(new(delay, source, target, id, hash, parameters));
+      return;
+    }
+    // First is instant.
+    Manager.Rpc(source, target, id, hash, parameters);
+    for (var i = 1; i < repeat; i++)
+      Rpcs.Add(new(delay * i, source, target, id, hash, parameters));
   }
   public static void Execute(float dt)
   {

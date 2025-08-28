@@ -25,6 +25,7 @@ public abstract class RpcInfo
   private readonly IStringValue? SourceParameter;
   private readonly KeyValuePair<string, string>[] Parameters;
   private readonly IFloatValue? Delay;
+  private readonly IIntValue? Repeat;
   public bool IsTarget => Target == RpcTarget.Search;
   private readonly bool Packaged;
 
@@ -56,6 +57,8 @@ public abstract class RpcInfo
     }
     if (lines.TryGetValue("delay", out var d))
       Delay = DataValue.Float(d);
+    if (lines.TryGetValue("repeat", out var r))
+      Repeat = DataValue.Int(r);
     Parameters = [.. lines.OrderBy(p => int.TryParse(p.Key, out var k) ? k : 1000).Where(p => Parse.TryInt(p.Key, out var _)).Select(p => Parse.Kvp(p.Value))];
   }
   public void Invoke(ZDO zdo, Parameters pars)
@@ -68,11 +71,12 @@ public abstract class RpcInfo
       source = ZDOMan.instance.GetZDO(id)?.GetOwner() ?? 0;
     }
     var delay = Delay?.Get(pars) ?? 0f;
+    var repeat = Repeat?.Get(pars) ?? 0;
     var parameters = Packaged ? GetPackagedParameters(zdo, pars) : GetParameters(zdo, pars);
     if (Target == RpcTarget.Owner)
-      DelayedRpc.Add(delay, source, zdo.GetOwner(), GetId(zdo), Hash, parameters);
+      DelayedRpc.Add(delay, repeat, source, zdo.GetOwner(), GetId(zdo), Hash, parameters);
     else if (Target == RpcTarget.All)
-      DelayedRpc.Add(delay, source, ZRoutedRpc.Everybody, GetId(zdo), Hash, parameters);
+      DelayedRpc.Add(delay, repeat, source, ZRoutedRpc.Everybody, GetId(zdo), Hash, parameters);
     else if (Target == RpcTarget.ZDO)
     {
       var targetParameter = TargetParameter?.Get(pars);
@@ -81,7 +85,7 @@ public abstract class RpcInfo
         var id = Parse.ZdoId(targetParameter);
         var peerId = ZDOMan.instance.GetZDO(id)?.GetOwner();
         if (peerId.HasValue)
-          DelayedRpc.Add(delay, source, peerId.Value, GetId(zdo), Hash, parameters);
+          DelayedRpc.Add(delay, repeat, source, peerId.Value, GetId(zdo), Hash, parameters);
       }
     }
   }
@@ -90,7 +94,8 @@ public abstract class RpcInfo
     var source = ZRoutedRpc.instance.m_id;
     var parameters = Packaged ? PackagedGetParameters(pars) : GetParameters(pars);
     var delay = Delay?.Get(pars) ?? 0f;
-    DelayedRpc.Add(delay, source, ZRoutedRpc.Everybody, ZDOID.None, Hash, parameters);
+    var repeat = Repeat?.Get(pars) ?? 0;
+    DelayedRpc.Add(delay, repeat, source, ZRoutedRpc.Everybody, ZDOID.None, Hash, parameters);
   }
   private object[] GetParameters(ZDO? zdo, Parameters pars)
   {
