@@ -152,13 +152,15 @@ public class PrefabInfo
 {
   public readonly Dictionary<int, List<Info>> Info = [];
   public readonly Dictionary<int, List<Info>> Fallback = [];
-  public bool Exists => Info.Count > 0 || Fallback.Count > 0;
+  public readonly Dictionary<int, List<Info>> Separate = [];
+  public bool Exists => Info.Count > 0 || Fallback.Count > 0 || Separate.Count > 0;
 
 
   public void Clear()
   {
     Info.Clear();
     Fallback.Clear();
+    Separate.Clear();
   }
   public void Add(Info info)
   {
@@ -171,7 +173,13 @@ public class PrefabInfo
           Fallback[hash] = list = [];
         list.Add(info);
       }
-      else
+      if (info.Separate)
+      {
+        if (!Separate.TryGetValue(hash, out var list))
+          Separate[hash] = list = [];
+        list.Add(info);
+      }
+      if (!info.Fallback && !info.Separate)
       {
         if (!Info.TryGetValue(hash, out var list))
           Info[hash] = list = [];
@@ -181,6 +189,7 @@ public class PrefabInfo
   }
   public bool TryGetValue(int prefab, out List<Info> list) => Info.TryGetValue(prefab, out list);
   public bool TryGetFallbackValue(int prefab, out List<Info> list) => Fallback.TryGetValue(prefab, out list);
+  public bool TryGetSeparateValue(int prefab, out List<Info> list) => Separate.TryGetValue(prefab, out list);
 
 }
 
@@ -189,19 +198,23 @@ public class GlobalInfo
 {
   public readonly List<Info> Info = [];
   public readonly List<Info> Fallback = [];
-  public bool Exists => Info.Count > 0 || Fallback.Count > 0;
+  public readonly List<Info> Separate = [];
+  public bool Exists => Info.Count > 0 || Fallback.Count > 0 || Separate.Count > 0;
 
 
   public void Clear()
   {
     Info.Clear();
     Fallback.Clear();
+    Separate.Clear();
   }
   public void Add(Info info)
   {
     if (info.Fallback)
       Fallback.Add(info);
-    else
+    if (info.Separate)
+      Separate.Add(info);
+    if (!info.Fallback && !info.Separate)
       Info.Add(info);
   }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -149,16 +150,16 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
      "exp" => Parse.TryFloat(value, out var f) ? Mathf.Exp(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "min" => HandleMin(value, defaultValue),
      "max" => HandleMax(value, defaultValue),
-     "add" => Parse.TryKvp(value, out var kvp, Separator) ? (Parse.Float(kvp.Key, 0f) + Parse.Float(kvp.Value, 0f)).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "sub" => Parse.TryKvp(value, out var kvp, Separator) ? (Parse.Float(kvp.Key, 0f) - Parse.Float(kvp.Value, 0f)).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "mul" => Parse.TryKvp(value, out var kvp, Separator) ? (Parse.Float(kvp.Key, 0f) * Parse.Float(kvp.Value, 0f)).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "div" => Parse.TryKvp(value, out var kvp, Separator) ? (Parse.Float(kvp.Key, 0f) / Parse.Float(kvp.Value, 1f)).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "mod" => Parse.TryKvp(value, out var kvp, Separator) ? (Parse.Float(kvp.Key, 0f) % Parse.Float(kvp.Value, 1f)).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "addlong" => Parse.TryKvp(value, out var kvp, Separator) ? (Parse.Long(kvp.Key, 0L) + Parse.Long(kvp.Value, 0L)).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "sublong" => Parse.TryKvp(value, out var kvp, Separator) ? (Parse.Long(kvp.Key, 0L) - Parse.Long(kvp.Value, 0L)).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "mullong" => Parse.TryKvp(value, out var kvp, Separator) ? (Parse.Long(kvp.Key, 0L) * Parse.Long(kvp.Value, 0L)).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "divlong" => Parse.TryKvp(value, out var kvp, Separator) ? (Parse.Long(kvp.Key, 0L) / Parse.Long(kvp.Value, 1L)).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "modlong" => Parse.TryKvp(value, out var kvp, Separator) ? (Parse.Long(kvp.Key, 0L) % Parse.Long(kvp.Value, 1L)).ToString(CultureInfo.InvariantCulture) : defaultValue,
+     "add" => HandleAdd(value, defaultValue),
+     "sub" => HandleSub(value, defaultValue),
+     "mul" => HandleMul(value, defaultValue),
+     "div" => HandleDiv(value, defaultValue),
+     "mod" => HandleMod(value, defaultValue),
+     "addlong" => HandleAddLong(value, defaultValue),
+     "sublong" => HandleSubLong(value, defaultValue),
+     "mullong" => HandleMulLong(value, defaultValue),
+     "divlong" => HandleDivLong(value, defaultValue),
+     "modlong" => HandleModLong(value, defaultValue),
      "randf" => Parse.TryKvp(value, out var kvp, Separator) && Parse.TryFloat(kvp.Key, out var f1) && Parse.TryFloat(kvp.Value, out var f2) ? UnityEngine.Random.Range(f1, f2).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "randi" => Parse.TryKvp(value, out var kvp, Separator) && Parse.TryInt(kvp.Key, out var i1) && Parse.TryInt(kvp.Value, out var i2) ? UnityEngine.Random.Range(i1, i2).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "randomfloat" => Parse.TryKvp(value, out var kvp, Separator) && Parse.TryFloat(kvp.Key, out var f1) && Parse.TryFloat(kvp.Value, out var f2) ? UnityEngine.Random.Range(f1, f2).ToString(CultureInfo.InvariantCulture) : defaultValue,
@@ -169,6 +170,11 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
      "lower" => value.ToLowerInvariant(),
      "upper" => value.ToUpperInvariant(),
      "trim" => value.Trim(),
+     "left" => HandleLeft(value, defaultValue),
+     "right" => HandleRight(value, defaultValue),
+     "mid" => HandleMid(value, defaultValue),
+     "proper" => HandleProper(value, defaultValue),
+     "search" => HandleSearch(value, defaultValue),
      "calcf" => Calculator.EvaluateFloat(value)?.ToString(CultureInfo.InvariantCulture) ?? defaultValue,
      "calci" => Calculator.EvaluateInt(value)?.ToString(CultureInfo.InvariantCulture) ?? defaultValue,
      "calcfloat" => Calculator.EvaluateFloat(value)?.ToString(CultureInfo.InvariantCulture) ?? defaultValue,
@@ -181,26 +187,24 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
      "save++" => DataStorage.IncrementValue(value, 1),
      "save--" => DataStorage.IncrementValue(value, -1),
      "clear" => RemoveValue(value),
+     "rank" => HandleRank(value, defaultValue),
+     "small" => HandleSmall(value, defaultValue),
+     "large" => HandleLarge(value, defaultValue),
      _ => null,
    };
 
   private string HandleMin(string value, string defaultValue)
   {
-    var kvp = Parse.Kvp(value, Separator);
-    var v1 = Parse.TryFloat(kvp.Key, out var f1);
-    var v2 = Parse.TryFloat(kvp.Value, out var f2);
-    if (v1 && v2) return Mathf.Min(f1, f2).ToString(CultureInfo.InvariantCulture);
-    return defaultValue == "" ? "0" : defaultValue;
+    var values = value.Split(Separator);
+    if (values.Length == 0) return defaultValue;
+    return values.Select(v => Parse.Float(v, float.MaxValue)).Min().ToString(CultureInfo.InvariantCulture);
   }
   private string HandleMax(string value, string defaultValue)
   {
-    var kvp = Parse.Kvp(value, Separator);
-    var v1 = Parse.TryFloat(kvp.Key, out var f1);
-    var v2 = Parse.TryFloat(kvp.Value, out var f2);
-    if (v1 && v2) return Mathf.Max(f1, f2).ToString(CultureInfo.InvariantCulture);
-    return defaultValue == "" ? "0" : defaultValue;
+    var values = value.Split(Separator);
+    if (values.Length == 0) return defaultValue;
+    return values.Select(v => Parse.Float(v, float.MinValue)).Max().ToString(CultureInfo.InvariantCulture);
   }
-
 
   private string SetValue(string value)
   {
@@ -238,9 +242,264 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     return Mathf.Log(f1, f2).ToString(CultureInfo.InvariantCulture);
   }
 
+  private string HandleAdd(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length == 0) return defaultValue;
+
+    float result = 0f;
+    foreach (var val in values)
+    {
+      result += Parse.Float(val, 0f);
+    }
+    return result.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleSub(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length == 0) return defaultValue;
+
+    float result = Parse.Float(values[0], 0f);
+    for (int i = 1; i < values.Length; i++)
+    {
+      result -= Parse.Float(values[i], 0f);
+    }
+    return result.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleMul(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length == 0) return defaultValue;
+
+    float result = 1f;
+    foreach (var val in values)
+    {
+      result *= Parse.Float(val, 1f);
+    }
+    return result.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleDiv(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length == 0) return defaultValue;
+
+    float result = Parse.Float(values[0], 0f);
+    for (int i = 1; i < values.Length; i++)
+    {
+      var divisor = Parse.Float(values[i], 1f);
+      if (divisor == 0f) return defaultValue;
+      result /= divisor;
+    }
+    return result.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleMod(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length == 0) return defaultValue;
+
+    float result = Parse.Float(values[0], 0f);
+    for (int i = 1; i < values.Length; i++)
+    {
+      var divisor = Parse.Float(values[i], 1f);
+      if (divisor == 0f) return defaultValue;
+      result %= divisor;
+    }
+    return result.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleAddLong(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length == 0) return defaultValue;
+
+    long result = 0L;
+    foreach (var val in values)
+    {
+      result += Parse.Long(val, 0L);
+    }
+    return result.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleSubLong(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length == 0) return defaultValue;
+
+    long result = Parse.Long(values[0], 0L);
+    for (int i = 1; i < values.Length; i++)
+    {
+      result -= Parse.Long(values[i], 0L);
+    }
+    return result.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleMulLong(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length == 0) return defaultValue;
+
+    long result = 1L;
+    foreach (var val in values)
+    {
+      result *= Parse.Long(val, 1L);
+    }
+    return result.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleDivLong(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length == 0) return defaultValue;
+
+    long result = Parse.Long(values[0], 0L);
+    for (int i = 1; i < values.Length; i++)
+    {
+      var divisor = Parse.Long(values[i], 1L);
+      if (divisor == 0L) return defaultValue;
+      result /= divisor;
+    }
+    return result.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleModLong(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length == 0) return defaultValue;
+
+    long result = Parse.Long(values[0], 0L);
+    for (int i = 1; i < values.Length; i++)
+    {
+      var divisor = Parse.Long(values[i], 1L);
+      if (divisor == 0L) return defaultValue;
+      result %= divisor;
+    }
+    return result.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleLeft(string value, string defaultValue)
+  {
+    var kvp = Parse.Kvp(value, Separator);
+    var text = kvp.Key;
+    var numChars = Parse.Int(kvp.Value, 1);
+
+    if (text.Length == 0) return defaultValue;
+    if (numChars <= 0) return "";
+    if (numChars >= text.Length) return text;
+
+    return text.Substring(0, numChars);
+  }
+
+  private string HandleRight(string value, string defaultValue)
+  {
+    var kvp = Parse.Kvp(value, Separator);
+    var text = kvp.Key;
+    var numChars = Parse.Int(kvp.Value, 1);
+
+    if (text.Length == 0) return defaultValue;
+    if (numChars <= 0) return "";
+    if (numChars >= text.Length) return text;
+
+    return text.Substring(text.Length - numChars);
+  }
+
+  private string HandleMid(string value, string defaultValue)
+  {
+    var parts = value.Split(Separator);
+    if (parts.Length < 3) return defaultValue;
+
+    var text = parts[0];
+    if (!Parse.TryInt(parts[1], out var startNum) || !Parse.TryInt(parts[2], out var numChars))
+      return defaultValue;
+
+    if (text.Length == 0 || startNum >= text.Length || numChars <= 0)
+      return "";
+
+    var endPos = Math.Min(startNum + numChars, text.Length);
+    return text.Substring(startNum, endPos - startNum);
+  }
+
+  private string HandleProper(string value, string defaultValue)
+  {
+    if (string.IsNullOrEmpty(value)) return defaultValue;
+
+    var words = value.Split(' ');
+    for (int i = 0; i < words.Length; i++)
+    {
+      if (words[i].Length > 0)
+      {
+        words[i] = char.ToUpper(words[i][0]) + (words[i].Length > 1 ? words[i].Substring(1).ToLower() : "");
+      }
+    }
+    return string.Join(" ", words);
+  }
+
+  private string HandleSearch(string value, string defaultValue)
+  {
+    var parts = value.Split(Separator);
+    if (parts.Length < 2) return defaultValue;
+
+    var findText = parts[0];
+    var withinText = parts[1];
+    var startNum = parts.Length >= 3 ? Parse.Int(parts[2], 0) : 0;
+
+    if (startNum >= withinText.Length) return defaultValue;
+
+    var index = withinText.IndexOf(findText, startNum, StringComparison.OrdinalIgnoreCase);
+    return index >= 0 ? index.ToString() : defaultValue;
+  }
+
   private string GetArg(int index, string defaultValue = "")
   {
     return args.Length <= index ? defaultValue : args[index];
+  }
+
+  private string HandleRank(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length < 2) return defaultValue;
+
+    if (!Parse.TryFloat(values[0], out var numberToRank)) return defaultValue;
+
+    var numbers = values.Skip(1).Select(v => Parse.Float(v, float.MaxValue)).ToList();
+
+    // Count how many numbers are greater than the number to rank
+    int rank = 0;
+    foreach (var num in numbers)
+    {
+      if (num > numberToRank)
+        rank++;
+    }
+
+    return rank.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleSmall(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length < 2) return defaultValue;
+
+    if (!Parse.TryInt(values[0], out var index) || index < 1) return defaultValue;
+    index -= 1; // Convert to 0-indexed
+
+    var numbers = values.Skip(1).Select(v => Parse.Float(v, float.MaxValue)).ToList();
+    numbers.Sort();
+    return numbers[index].ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleLarge(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length < 2) return defaultValue;
+
+    if (!Parse.TryInt(values[0], out var index) || index < 1) return defaultValue;
+    index = values.Length - index; // Convert to 0-indexed for largest
+    var numbers = values.Skip(1).Select(v => Parse.Float(v, float.MinValue)).ToList();
+    numbers.Sort();
+    return numbers[index].ToString(CultureInfo.InvariantCulture);
   }
 
   // Parameter value could be a value group, so that has to be resolved.

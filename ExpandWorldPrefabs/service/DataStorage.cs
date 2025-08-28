@@ -49,20 +49,31 @@ public class DataStorage
   {
     if (key == "") return;
     key = key.ToLowerInvariant();
-    if (key[0] == '*' || key[key.Length - 1] == '*')
+    var wildIndex = key.IndexOf('*');
+    if (wildIndex < 0)
     {
-      var keys = MatchKeys(key);
+      SetValueSub(key, value);
+    }
+    else
+    {
+      var keys = MatchKeys(key, wildIndex);
       SetValues(keys, value);
     }
-    else SetValueSub(key, value);
   }
   public static string IncrementValue(string key, long amount)
   {
     if (key == "") return "0";
     key = key.ToLowerInvariant();
-    if (key[0] == '*' || key[key.Length - 1] == '*')
+    var wildIndex = key.IndexOf('*');
+    if (wildIndex < 0)
     {
-      var keys = MatchKeys(key);
+      var newValue = Parse.Long(GetValue(key, "0"), 0) + amount;
+      SetValueSub(key, newValue.ToString());
+      return newValue.ToString();
+    }
+    else
+    {
+      var keys = MatchKeys(key, wildIndex);
       foreach (var k in keys)
       {
         if (Database.TryGetValue(k, out var value))
@@ -72,15 +83,9 @@ public class DataStorage
       }
       return "0";
     }
-    else
-    {
-      var newValue = Parse.Long(GetValue(key, "0"), 0) + amount;
-      SetValueSub(key, newValue.ToString());
-      return newValue.ToString();
-    }
   }
 
-  private static List<string> MatchKeys(string key)
+  private static List<string> MatchKeys(string key, int wildIndex)
   {
     if (key == "*")
       return [.. Database.Keys];
@@ -90,7 +95,6 @@ public class DataStorage
       return [.. Database.Keys.Where(k => k.EndsWith(key.Substring(1), StringComparison.OrdinalIgnoreCase))];
     if (key[key.Length - 1] == '*')
       return [.. Database.Keys.Where(k => k.StartsWith(key.Substring(0, key.Length - 1), StringComparison.OrdinalIgnoreCase))];
-    var wildIndex = key.IndexOf('*');
     if (wildIndex > 0 && wildIndex < key.Length - 1)
     {
       var prefix = key.Substring(0, wildIndex);
@@ -118,17 +122,26 @@ public class DataStorage
 
   public static bool HasAnyKey(List<string> keys, Parameters pars)
   {
-    foreach (var key in keys)
+    foreach (var dataKey in keys)
     {
-      if (key.Contains("<"))
+      var kvp = Parse.Kvp(dataKey.Contains("<") ? pars.Replace(dataKey) : dataKey, ' ');
+      var key = kvp.Key.ToLowerInvariant();
+      if (key == "") continue;
+      // Tricky, how to deal with strings/numbers since value can be both?
+      var value = kvp.Value == "" ? null : DataValue.Int(kvp.Value);
+      var wildIndex = key.IndexOf('*');
+      if (wildIndex >= 0)
       {
-        var kvp = Parse.Kvp(pars.Replace(key), ' ');
-        if (Database.TryGetValue(kvp.Key.ToLowerInvariant(), out var value) && (kvp.Value == "" || value == kvp.Value)) return true;
+        var keysMatched = MatchKeys(key, wildIndex);
+        if (keysMatched.Count == 0) return false;
+        foreach (var k in keysMatched)
+        {
+          if (Database.TryGetValue(k, out var v) && (value == null || v == kvp.Value)) return true;
+        }
       }
       else
       {
-        var kvp = Parse.Kvp(key, ' ');
-        if (Database.TryGetValue(kvp.Key.ToLowerInvariant(), out var value) && (kvp.Value == "" || value == kvp.Value)) return true;
+        if (Database.TryGetValue(key, out var v) && (value == null || v == kvp.Value)) return true;
       }
     }
     return false;
@@ -137,15 +150,20 @@ public class DataStorage
   {
     foreach (var key in keys)
     {
-      if (key.Contains("<"))
+      var kvp = Parse.Kvp(key.Contains("<") ? pars.Replace(key) : key, ' ');
+      var wildIndex = kvp.Key.IndexOf('*');
+      if (wildIndex >= 0)
       {
-        var kvp = Parse.Kvp(pars.Replace(key), ' ');
-        if (!Database.TryGetValue(kvp.Key.ToLowerInvariant(), out var value) || (kvp.Value != "" && value != kvp.Value)) return false;
+        var keysMatched = MatchKeys(kvp.Key, wildIndex);
+        if (keysMatched.Count == 0) return false;
+        foreach (var k in keysMatched)
+        {
+          if (!Database.TryGetValue(k, out var value) || (kvp.Value != "" && value != kvp.Value)) return false;
+        }
       }
       else
       {
-        var kvp = Parse.Kvp(key, ' ');
-        if (!Database.TryGetValue(kvp.Key, out var value) || (kvp.Value != "" && value != kvp.Value)) return false;
+        if (!Database.TryGetValue(kvp.Key.ToLowerInvariant(), out var value) || (kvp.Value != "" && value != kvp.Value)) return false;
       }
     }
     return true;

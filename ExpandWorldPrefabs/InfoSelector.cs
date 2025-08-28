@@ -8,24 +8,42 @@ namespace ExpandWorld.Prefab;
 
 public class InfoSelector
 {
-  public static Info? Select(ActionType type, ZDO zdo, string[] args, Parameters parameters, ZDO? source)
+  public static Info? Select(ActionType type, ZDO zdo, string[] args, Parameters parameters)
   {
     var infos = InfoManager.Select(type);
-    return SelectDefault(infos, zdo, args, parameters, source) ?? SelectFallback(infos, zdo, args, parameters, source);
+    return SelectDefault(infos, zdo, args, parameters) ?? SelectFallback(infos, zdo, args, parameters);
   }
-  private static Info? SelectDefault(PrefabInfo infos, ZDO zdo, string[] args, Parameters parameters, ZDO? source)
+  public static Info[]? SelectSeparate(ActionType type, ZDO zdo, string[] args, Parameters parameters)
+  {
+    var infos = InfoManager.Select(type);
+    return SelectSeparate(infos, zdo, args, parameters);
+  }
+  private static Info? SelectDefault(PrefabInfo infos, ZDO zdo, string[] args, Parameters parameters)
   {
     var prefab = zdo.m_prefab;
     if (!infos.TryGetValue(prefab, out var data)) return null;
-    return SelectInfo(data, zdo, args, parameters, source);
+    return SelectInfo(data, zdo, args, parameters);
   }
-  private static Info? SelectFallback(PrefabInfo infos, ZDO zdo, string[] args, Parameters parameters, ZDO? source)
+  private static Info? SelectFallback(PrefabInfo infos, ZDO zdo, string[] args, Parameters parameters)
   {
     var prefab = zdo.m_prefab;
     if (!infos.TryGetFallbackValue(prefab, out var data)) return null;
-    return SelectInfo(data, zdo, args, parameters, source);
+    return SelectInfo(data, zdo, args, parameters);
   }
-  private static Info? SelectInfo(List<Info> data, ZDO zdo, string[] args, Parameters parameters, ZDO? source)
+  private static Info[]? SelectSeparate(PrefabInfo infos, ZDO zdo, string[] args, Parameters parameters)
+  {
+    var prefab = zdo.m_prefab;
+    if (!infos.TryGetSeparateValue(prefab, out var data)) return null;
+    return SelectInfos(data, zdo, args, parameters);
+  }
+  private static Info? SelectInfo(List<Info> data, ZDO zdo, string[] args, Parameters parameters)
+  {
+    var infos = SelectInfos(data, zdo, args, parameters);
+    if (infos == null || infos.Length == 0) return null;
+    return Randomize(infos, parameters);
+  }
+
+  private static Info[]? SelectInfos(List<Info> data, ZDO zdo, string[] args, Parameters parameters)
   {
     if (data.Count == 0) return null;
     var pos = zdo.m_position;
@@ -131,7 +149,7 @@ public class InfoSelector
         (d.MinPaint == null || (d.MinPaint.Value.b <= paint.b && d.MinPaint.Value.g <= paint.g && d.MinPaint.Value.r <= paint.r && d.MinPaint.Value.a <= paint.a)) &&
         (d.MaxPaint == null || (d.MaxPaint.Value.b >= paint.b && d.MaxPaint.Value.g >= paint.g && d.MaxPaint.Value.r >= paint.r && d.MaxPaint.Value.a >= paint.a)))];
     }
-    return Randomize([.. linq], parameters);
+    return [.. linq];
   }
   private static bool CheckLocations(Info d, Vector3 pos, Vector2i zone) => CheckBannedLocations(d, pos, zone) && CheckRequiredLocations(d, pos, zone);
   private static bool CheckBannedLocations(Info d, Vector3 pos, Vector2i zone)
@@ -220,8 +238,20 @@ public class InfoSelector
     var infos = InfoManager.SelectGlobal(type);
     return SelectGlobalInfo(infos.Info, args, parameters, pos, remove) ?? SelectGlobalInfo(infos.Fallback, args, parameters, pos, remove);
   }
+  public static Info[]? SelectGlobalSeparate(ActionType type, string[] args, Parameters parameters, Vector3 pos, bool remove)
+  {
+    var infos = InfoManager.SelectGlobal(type);
+    return SelectGlobalInfos(infos.Separate, args, parameters, pos, remove);
+  }
 
   private static Info? SelectGlobalInfo(List<Info> data, string[] args, Parameters parameters, Vector3 pos, bool remove)
+  {
+    var infos = SelectGlobalInfos(data, args, parameters, pos, remove);
+    if (infos == null || infos.Length == 0) return null;
+    return Randomize(infos, parameters);
+  }
+
+  private static Info[]? SelectGlobalInfos(List<Info> data, string[] args, Parameters parameters, Vector3 pos, bool remove)
   {
     if (data.Count == 0) return null;
     var day = EnvMan.IsDay();
@@ -239,8 +269,10 @@ public class InfoSelector
       .Where(d => d.MinAltitude == null || !d.MinAltitude.TryGet(parameters, out var v) || v < waterY)
       .Where(d => d.MaxAltitude == null || !d.MaxAltitude.TryGet(parameters, out var v) || v >= waterY)
       .Where(d => Helper.HasEveryGlobalKey(d.GlobalKeys, parameters))
-      .Where(d => !Helper.HasAnyGlobalKey(d.BannedGlobalKeys, parameters));
+      .Where(d => !Helper.HasAnyGlobalKey(d.BannedGlobalKeys, parameters))
+      .Where(d => DataStorage.HasEveryKey(d.Keys, parameters))
+      .Where(d => !DataStorage.HasAnyKey(d.BannedKeys, parameters));
 
-    return Randomize([.. linq], parameters);
+    return [.. linq];
   }
 }

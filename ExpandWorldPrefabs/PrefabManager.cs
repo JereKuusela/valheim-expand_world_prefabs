@@ -14,7 +14,26 @@ public class Manager
     if (!ZNet.instance.IsServer()) return;
     Parameters parameters = new("", args, pos);
     var info = InfoSelector.SelectGlobal(type, args, parameters, pos, remove);
-    if (info == null) return;
+    var infos = InfoSelector.SelectGlobalSeparate(type, args, parameters, pos, remove);
+    if (info == null && infos == null) return;
+    if (info != null)
+      HandleGlobal(info, parameters, pos, remove);
+    if (infos != null)
+      foreach (var i in infos)
+        HandleGlobal(i, parameters, pos, remove);
+  }
+  private static void HandleGlobal(Info info, Parameters parameters, Vector3 pos, bool remove)
+  {
+    if (info.Chance != null)
+    {
+      var chance = info.Chance.Get(parameters);
+      if (chance != null && chance < 1f)
+      {
+        if (UnityEngine.Random.value > chance)
+          return;
+      }
+    }
+
     info.Execute?.Get(parameters);
     if (info.Commands.Length > 0)
       Commands.Run(info, parameters);
@@ -29,8 +48,29 @@ public class Manager
     if (!ZNet.instance.IsServer()) return false;
     var name = ZNetScene.instance.GetPrefab(zdo.m_prefab)?.name ?? "";
     ObjectParameters parameters = new(name, args, zdo);
-    var info = InfoSelector.Select(type, zdo, args, parameters, source);
-    if (info == null) return false;
+    var info = InfoSelector.Select(type, zdo, args, parameters);
+    var infos = InfoSelector.SelectSeparate(type, zdo, args, parameters);
+    if (info == null && infos == null) return false;
+    bool ret = false;
+    if (info != null)
+      ret |= Handle(info, parameters, zdo);
+    if (infos != null)
+      foreach (var i in infos)
+        ret |= Handle(i, parameters, zdo);
+    return ret;
+  }
+
+  private static bool Handle(Info info, Parameters parameters, ZDO zdo)
+  {
+    if (info.Chance != null)
+    {
+      var chance = info.Chance.Get(parameters);
+      if (chance != null && chance < 1f)
+      {
+        if (UnityEngine.Random.value > chance)
+          return false;
+      }
+    }
 
     info.Execute?.Get(parameters);
     if (info.Commands.Length > 0)
@@ -81,12 +121,12 @@ public class Manager
 
     return cancel;
   }
-  public static bool CheckCancel(ActionType type, string[] args, ZDO zdo, ZDO? source = null)
+  public static bool CheckCancel(ActionType type, string[] args, ZDO zdo)
   {
     if (!ZNet.instance.IsServer()) return false;
     var name = ZNetScene.instance.GetPrefab(zdo.m_prefab)?.name ?? "";
     ObjectParameters parameters = new(name, args, zdo);
-    var info = InfoSelector.Select(type, zdo, args, parameters, source);
+    var info = InfoSelector.Select(type, zdo, args, parameters);
     if (info == null) return false;
     var cancel = info.Cancel?.GetBool(parameters) == true;
     return cancel;

@@ -4,6 +4,8 @@
   - Adds new field `pars` to pokes for structured parameter handling.
   - Adds support for a wildcard `*` in the middle of the text (for example sfx_*_destroyed).
   - Adds `drops` support to plants.
+  - Adds new field `chance` to allow randomly executing the selected action.
+  - Adds new field `separate` to allow actions to ignore the weight system.
 
 - v1.44
   - Adds offset support to pokes.

@@ -20,6 +20,8 @@ public class Data
   public string[]? types;
   [DefaultValue(false)]
   public bool fallback = false;
+  [DefaultValue(false)]
+  public bool separate = false;
   [DefaultValue(null)]
   public string? weight;
   [DefaultValue(null)]
@@ -164,6 +166,8 @@ public class Data
   public string? exec;
   [DefaultValue(null)]
   public string? admin;
+  [DefaultValue(null)]
+  public string? chance;
 }
 
 
@@ -173,6 +177,8 @@ public class Info
   public string ExcludedPrefabs = "";
   public ActionType Type = ActionType.Create;
   public bool Fallback = false;
+  public bool Separate = false;
+
   public string[] Args = [];
   public IFloatValue? Weight;
   public Spawn[]? Swaps;
@@ -236,6 +242,7 @@ public class Info
   public IBoolValue? Cancel;
   public IStringValue? Execute;
   public IBoolValue? Admin;
+  public IFloatValue? Chance;
 }
 
 public class SpawnData

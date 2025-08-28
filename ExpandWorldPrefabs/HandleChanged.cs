@@ -33,6 +33,7 @@ public class HandleChanged
     TrackedHashes.Clear();
     AddTracks(changeDatas.Info);
     AddTracks(changeDatas.Fallback);
+    AddTracks(changeDatas.Separate);
   }
 
   private static void AddTracks(Dictionary<int, List<Info>> datas)
