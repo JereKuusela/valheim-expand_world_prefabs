@@ -54,8 +54,10 @@ public class Loading
     var waterLevel = ZoneSystem.instance.m_waterLevel;
     float? spawnDelay = data.delay == null && data.spawnDelay == null ? null : Math.Max(data.delay ?? 0f, data.spawnDelay ?? 0f);
     bool? triggerRules = data.triggerRules;
-    var swaps = data.swap == null ? data.swaps == null ? null : ParseSpawns(data.swaps, spawnDelay, triggerRules) : ParseSpawns(data.swap, spawnDelay, triggerRules);
-    var spawns = data.spawn == null ? data.spawns == null ? null : ParseSpawns(data.spawns, spawnDelay, triggerRules) : ParseSpawns(data.spawn, spawnDelay, triggerRules);
+
+    var allSwaps = data.swap == null ? data.swaps == null ? null : ParseSpawns(data.swaps, spawnDelay, triggerRules) : ParseSpawns(data.swap, spawnDelay, triggerRules);
+    var allSpawns = data.spawn == null ? data.spawns == null ? null : ParseSpawns(data.spawns, spawnDelay, triggerRules) : ParseSpawns(data.spawn, spawnDelay, triggerRules);
+
     var types = (data.types ?? [data.type]).Select(s => new InfoType(data.prefab, s)).ToArray();
     if (data.prefab == "" && types.Any(t => t.Type != ActionType.GlobalKey && t.Type != ActionType.Key && t.Type != ActionType.Event && t.Type != ActionType.Time))
       Log.Warning($"Prefab missing for type {data.type}");
@@ -75,10 +77,12 @@ public class Loading
     var filters = data.filters == null && data.bannedFilters == null ? null : new Filters(data.filters, data.bannedFilters, data.filterLimit);
 
     var legacyPokes = data.pokes == null ? null : ParseObjects(data.pokes);
-    var pokes = data.poke == null ? null : ParsePokes(data.poke);
+
+    var allPokes = data.poke == null ? null : ParsePokes(data.poke);
+
     var terrains = data.terrain == null ? null : data.terrain.Select(s => new Terrain(s)).ToArray();
-    var objectRpcs = ParseObjectRpcs(data);
-    var clientRpcs = ParseClientRpcs(data);
+    var allObjectRpcs = ParseObjectRpcs(data);
+    var allClientRpcs = ParseClientRpcs(data);
     var minPaint = data.minPaint != "" ? Parse.Color(data.minPaint, 0f) : data.paint != "" ? Parse.Color(data.paint, 0f) : null;
     var maxPaint = data.maxPaint != "" ? Parse.Color(data.maxPaint, 1f) : data.paint != "" ? Parse.Color(data.paint, 0f) : null;
     var addItems = HandleItems(data.addItems);
@@ -103,21 +107,22 @@ public class Loading
     return [.. types.Select(t =>
     {
       var d = t.Type != ActionType.Destroy ? data.data : "";
-      bool? remove = t.Type == ActionType.Destroy ? false : swaps != null ? true : data.remove == "" ? false : null;
+      bool? remove = t.Type == ActionType.Destroy ? false : allSwaps != null ? true : data.remove == "" ? false : null;
       return new Info()
       {
         Prefabs = data.prefab,
         ExcludedPrefabs = data.excludePrefab,
         Type = t.Type,
         Fallback = data.fallback,
-        Separate = data.separate,
         Args = t.Parameters,
         Remove = remove == null ? data.remove == null ? null : DataValue.Bool(data.remove) : new SimpleBoolValue(remove.Value),
         Regenerate = d != "" || data.addItems != "" || data.removeItems != "",
         RemoveDelay = data.removeDelay == null ? null : DataValue.Float(data.removeDelay),
         Drops =  data.drops == null ? null : DataValue.String(data.drops),
-        Spawns = spawns,
-        Swaps = swaps,
+        Spawns = allSpawns?.Item1,
+        WeightedSpawns = allSpawns?.Item2,
+        Swaps = allSwaps?.Item1,
+        WeightedSwaps = allSwaps?.Item2,
         Data = DataValue.String(d),
         InjectData = data.injectData,
         Commands = commands,
@@ -156,7 +161,8 @@ public class Loading
         BannedPlayerEvents = bannedPlayerEvents,
         PokeLimit = data.pokeLimit,
         PokeParameter = data.pokeParameter,
-        Pokes = pokes,
+        Pokes = allPokes?.Item1,
+        WeightedPokes = allPokes?.Item2,
         Terrains = terrains,
         LegacyPokes = legacyPokes,
         PokeDelay = data.pokeDelay,
@@ -166,8 +172,10 @@ public class Loading
         BannedObjectsLimit = bannedObjectsLimit,
         Filters = filters,
         TriggerRules = triggerRules ?? false,
-        ObjectRpcs = objectRpcs,
-        ClientRpcs = clientRpcs,
+        ObjectRpcs = allObjectRpcs?.Item1,
+        WeightedObjectRpcs = allObjectRpcs?.Item2,
+        ClientRpcs = allClientRpcs?.Item1,
+        WeightedClientRpcs = allClientRpcs?.Item2,
         MinPaint = minPaint,
         MaxPaint = maxPaint,
         AddItems = addItems,
@@ -190,21 +198,65 @@ public class Loading
     if (kvp.Value == "") return kvp.Key.ToLowerInvariant();
     return kvp.Key.ToLowerInvariant() + " " + kvp.Value;
   }
-  private static Spawn[] ParseSpawns(string[] spawns, float? delay, bool? triggerRules) => [.. spawns.Select(s => new Spawn(s, delay, triggerRules))];
-  private static Spawn[] ParseSpawns(SpawnData[] spawns, float? delay, bool? triggerRules) => [.. spawns.Select(s => new Spawn(s, delay, triggerRules))];
+  private static Tuple<Spawn[]?, Spawn[]?> ParseSpawns(string[] spawns, float? delay, bool? triggerRules)
+  {
+    var allSpawns = spawns.Select(s => new Spawn(s, delay, triggerRules)).ToArray();
+    var weightedSpawns = allSpawns?.Where(s => s.Weight != null).ToArray();
+    var spawn = weightedSpawns?.Where(s => s.Weight == null).ToArray();
+    if (weightedSpawns != null && weightedSpawns.Length == 0)
+      weightedSpawns = null;
+    if (spawn != null && spawn.Length == 0)
+      spawn = null;
+    return Tuple.Create(spawn, weightedSpawns);
+  }
+  private static Tuple<Spawn[]?, Spawn[]?> ParseSpawns(SpawnData[] spawns, float? delay, bool? triggerRules)
+  {
+    var allSpawns = spawns.Select(s => new Spawn(s, delay, triggerRules)).ToArray();
+    var weightedSpawns = allSpawns?.Where(s => s.Weight != null).ToArray();
+    var spawn = weightedSpawns?.Where(s => s.Weight == null).ToArray();
+    if (weightedSpawns != null && weightedSpawns.Length == 0)
+      weightedSpawns = null;
+    if (spawn != null && spawn.Length == 0)
+      spawn = null;
+    return Tuple.Create(spawn, weightedSpawns);
+  }
 
   private static Object[] ParseObjects(string[] objects) => [.. objects.Select(s => new Object(s))];
   private static Object[] ParseObjects(ObjectData[] objects) => [.. objects.Select(s => new Object(s))];
-  private static Poke[] ParsePokes(PokeData[] objects) => [.. objects.Select(s => new Poke(s))];
-  private static ObjectRpcInfo[]? ParseObjectRpcs(Data data)
+  private static Tuple<Poke[]?, Poke[]?> ParsePokes(PokeData[] objects)
   {
-    if (data.objectRpc != null && data.objectRpc.Length > 0) return [.. data.objectRpc.Select(s => new ObjectRpcInfo(s))];
-    return null;
+    var allPokes = objects.Select(s => new Poke(s)).ToArray();
+    var weightedPokes = allPokes?.Where(s => s.Weight != null).ToArray();
+    var pokes = weightedPokes?.Where(s => s.Weight == null).ToArray();
+    if (weightedPokes != null && weightedPokes.Length == 0)
+      weightedPokes = null;
+    if (pokes != null && pokes.Length == 0)
+      pokes = null;
+    return Tuple.Create(pokes, weightedPokes);
   }
-  private static ClientRpcInfo[]? ParseClientRpcs(Data data)
+  private static Tuple<ObjectRpcInfo[]?, ObjectRpcInfo[]?>? ParseObjectRpcs(Data data)
   {
-    if (data.clientRpc != null && data.clientRpc.Length > 0) return [.. data.clientRpc.Select(s => new ClientRpcInfo(s))];
-    return null;
+    if (data.objectRpc == null || data.objectRpc.Length == 0) return null;
+    var allRpcs = data.objectRpc.Select(s => new ObjectRpcInfo(s)).ToArray();
+    var weightedRpcs = allRpcs.Where(s => s.Weight != null).ToArray();
+    var rpcs = weightedRpcs?.Where(s => s.Weight == null).ToArray();
+    if (weightedRpcs != null && weightedRpcs.Length == 0)
+      weightedRpcs = null;
+    if (rpcs != null && rpcs.Length == 0)
+      rpcs = null;
+    return Tuple.Create(rpcs, weightedRpcs);
+  }
+  private static Tuple<ClientRpcInfo[]?, ClientRpcInfo[]?>? ParseClientRpcs(Data data)
+  {
+    if (data.clientRpc == null || data.clientRpc.Length == 0) return null;
+    var allRpcs = data.clientRpc.Select(s => new ClientRpcInfo(s)).ToArray();
+    var weightedRpcs = allRpcs.Where(s => s.Weight != null).ToArray();
+    var rpcs = weightedRpcs?.Where(s => s.Weight == null).ToArray();
+    if (weightedRpcs != null && weightedRpcs.Length == 0)
+      weightedRpcs = null;
+    if (rpcs != null && rpcs.Length == 0)
+      rpcs = null;
+    return Tuple.Create(rpcs, weightedRpcs);
   }
 
   private static Range<int>? ParseObjectsLimit(string? str) => str == null ?

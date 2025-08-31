@@ -99,4 +99,17 @@ public class Helper
   public static string FormatPos2(Vector3 value) => $"{Format2(value.x)},{Format2(value.z)},{Format2(value.y)}";
   public static string FormatRot2(Vector3 value) => $"{Format2(value.y)},{Format2(value.x)},{Format2(value.z)}";
   public static string Format2(float value) => value.ToString("0.##", NumberFormatInfo.InvariantInfo);
+
+  public static List<float>? GenerateDelays(float delay, int amount, float interval, float chance)
+  {
+    if (amount == 0) return null;
+    List<float> delays = [];
+    for (var i = 0; i < amount; i++)
+    {
+      if (chance < 1f && UnityEngine.Random.value > chance)
+        continue;
+      delays.Add(delay + interval * i);
+    }
+    return delays;
+  }
 }

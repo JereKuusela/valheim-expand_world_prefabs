@@ -1,12 +1,16 @@
 - v1.45
+  - Breaking change: Scripts are now checked separately by default!
+  - This means multiple scripts can run from a single trigger.
+  - Weight system is only used when the field `weight` is explicitly set.
   - Adds new field `excludePrefab` to exclude prefabs from the field `prefab`.
   - Adds default value groups for structure material types and item drop types.
   - Adds new field `pars` to pokes for structured parameter handling.
   - Adds support for a wildcard `*` in the middle of the text (for example sfx_*_destroyed).
   - Adds `drops` support to plants.
-  - Adds new field `chance` to allow randomly executing the selected action.
-  - Adds new field `separate` to allow actions to ignore the weight system.
-  - Adds new field `repeat` to RPC calls to allow repeating after a delay.
+  - Adds new field `chance` to allow randomly skipping the selected action.
+  - Adds new field `chance` to spawns, pokes and RPC calls to allow randomly skipping them.
+  - Adds new field `repeat` to spawns, pokes and RPC calls to allow repeating after a delay.
+  - Adds new field `weight` to spawns, pokes and RPC calls to allow triggering only one of the entries.
 
 - v1.44
   - Adds offset support to pokes.

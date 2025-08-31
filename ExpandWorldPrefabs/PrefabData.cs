@@ -177,12 +177,29 @@ public class Info
   public string ExcludedPrefabs = "";
   public ActionType Type = ActionType.Create;
   public bool Fallback = false;
-  public bool Separate = false;
 
   public string[] Args = [];
   public IFloatValue? Weight;
   public Spawn[]? Swaps;
+  public Spawn[]? WeightedSwaps;
   public Spawn[]? Spawns;
+  public Spawn[]? WeightedSpawns;
+
+  public Spawn? GetWeightedSpawn(Parameters pars) => GetWeighted(pars, WeightedSpawns);
+  public Spawn? GetWeightedSwap(Parameters pars) => GetWeighted(pars, WeightedSwaps);
+  private Spawn? GetWeighted(Parameters pars, Spawn[]? candidates)
+  {
+    if (candidates == null || candidates.Length == 0) return null;
+    var weights = candidates.Select(s => s.Weight?.Get(pars) ?? 0f).ToArray();
+    var total = weights.Sum(s => s);
+    var random = UnityEngine.Random.Range(0f, total);
+    for (var i = 0; i < weights.Length; i++)
+    {
+      random -= weights[i];
+      if (random <= 0f) return candidates[i];
+    }
+    return null;
+  }
   public IBoolValue? Remove;
   public bool Regenerate = false;
   public IFloatValue? RemoveDelay;
@@ -214,6 +231,20 @@ public class Info
   public List<string> BannedKeys = [];
   public Object[]? LegacyPokes;
   public Poke[]? Pokes;
+  public Poke[]? WeightedPokes;
+  public Poke? GetWeightedPoke(Parameters pars)
+  {
+    if (WeightedPokes == null || WeightedPokes.Length == 0) return null;
+    var weights = WeightedPokes.Select(p => p.Weight?.Get(pars) ?? 0f).ToArray();
+    var total = weights.Sum();
+    var random = UnityEngine.Random.Range(0f, total);
+    for (var i = 0; i < weights.Length; i++)
+    {
+      random -= weights[i];
+      if (random <= 0f) return WeightedPokes[i];
+    }
+    return null;
+  }
   public Terrain[]? Terrains;
   public int PokeLimit = 0;
   public string PokeParameter = "";
@@ -231,7 +262,36 @@ public class Info
   public Filters? Filters;
   public bool TriggerRules;
   public ObjectRpcInfo[]? ObjectRpcs;
+  public ObjectRpcInfo[]? WeightedObjectRpcs;
+  public ObjectRpcInfo? GetWeightedObjectRpc(Parameters pars)
+  {
+    if (WeightedObjectRpcs == null || WeightedObjectRpcs.Length == 0) return null;
+    var weights = WeightedObjectRpcs.Select(r => r.Weight?.Get(pars) ?? 0f).ToArray();
+    var total = weights.Sum();
+    var random = UnityEngine.Random.Range(0f, total);
+    for (var i = 0; i < weights.Length; i++)
+    {
+      random -= weights[i];
+      if (random <= 0f) return WeightedObjectRpcs[i];
+    }
+    return null;
+  }
   public ClientRpcInfo[]? ClientRpcs;
+  public ClientRpcInfo[]? WeightedClientRpcs;
+
+  public ClientRpcInfo? GetWeightedClientRpc(Parameters pars)
+  {
+    if (WeightedClientRpcs == null || WeightedClientRpcs.Length == 0) return null;
+    var weights = WeightedClientRpcs.Select(r => r.Weight?.Get(pars) ?? 0f).ToArray();
+    var total = weights.Sum();
+    var random = UnityEngine.Random.Range(0f, total);
+    for (var i = 0; i < weights.Length; i++)
+    {
+      random -= weights[i];
+      if (random <= 0f) return WeightedClientRpcs[i];
+    }
+    return null;
+  }
   public Color? MinPaint;
   public Color? MaxPaint;
   public IFloatValue? MinTerrainHeight;
@@ -264,6 +324,16 @@ public class SpawnData
   [DefaultValue(null)]
   public string? delay;
   [DefaultValue(null)]
+  public string? repeat;
+  [DefaultValue(null)]
+  public string? repeatInterval;
+  [DefaultValue(null)]
+  public string? repeatChance;
+  [DefaultValue(null)]
+  public string? chance;
+  [DefaultValue(null)]
+  public string? weight;
+  [DefaultValue(null)]
   public string? triggerRules;
 }
 
@@ -275,6 +345,11 @@ public class Spawn
   public readonly IQuaternionValue? Rot;
   public readonly IStringValue? Data;
   public readonly IFloatValue? Delay;
+  public readonly IIntValue? Repeat;
+  public readonly IFloatValue? RepeatInterval;
+  public readonly IFloatValue? RepeatChance;
+  public readonly IFloatValue? Chance;
+  public readonly IFloatValue? Weight;
   public readonly IBoolValue? TriggerRules;
 
   public Spawn(SpawnData data, float? delay, bool? triggerRules)
@@ -285,12 +360,22 @@ public class Spawn
     Rot = data.rot != null ? DataValue.Quaternion(data.rot) : data.rotation != null ? DataValue.Quaternion(data.rotation) : null;
     Data = data.data == null ? null : DataValue.String(data.data);
     Delay = data.delay == null ? delay == null ? null : new SimpleFloatValue(delay.Value) : DataValue.Float(data.delay);
+    Repeat = data.repeat == null ? null : DataValue.Int(data.repeat);
+    RepeatInterval = data.repeatInterval == null ? null : DataValue.Float(data.repeatInterval);
+    RepeatChance = data.repeatChance == null ? null : DataValue.Float(data.repeatChance);
+    Chance = data.chance == null ? null : DataValue.Float(data.chance);
+    Weight = data.weight == null ? null : DataValue.Float(data.weight);
     TriggerRules = data.triggerRules == null ? triggerRules == null ? null : new SimpleBoolValue(triggerRules.Value) : DataValue.Bool(data.triggerRules);
   }
 
   public Spawn(string line, float? delay, bool? triggerRules)
   {
     Delay = delay == null ? null : new SimpleFloatValue(delay.Value);
+    Repeat = null;
+    RepeatInterval = null;
+    RepeatChance = null;
+    Chance = null;
+    Weight = null;
     TriggerRules = triggerRules == null ? null : new SimpleBoolValue(triggerRules.Value);
     var split = Parse.ToList(line);
     Prefab = DataValue.Prefab(split[0]);
@@ -338,6 +423,11 @@ public class Poke(PokeData data)
   private readonly string[]? Parameters = data.pars == null ? null : Parse.ToArr(data.pars);
   public IIntValue? Limit = data.limit == null ? null : DataValue.Int(data.limit);
   public IFloatValue? Delay = data.delay == null ? null : DataValue.Float(data.delay);
+  public IIntValue? Weight = data.weight == null ? null : DataValue.Int(data.weight);
+  public IIntValue? Repeat = data.repeat == null ? null : DataValue.Int(data.repeat);
+  public IFloatValue? RepeatInterval = data.repeatInterval == null ? null : DataValue.Float(data.repeatInterval);
+  public IFloatValue? RepeatChance = data.repeatChance == null ? null : DataValue.Float(data.repeatChance);
+  public IFloatValue? Chance = data.chance == null ? null : DataValue.Float(data.chance);
   public IBoolValue? Self = data.self == null ? null : DataValue.Bool(data.self);
   public IZdoIdValue? Target = data.target == null ? null : DataValue.ZdoId(data.target);
   private readonly IBoolValue? Evaluate = data.evaluate == null ? null : DataValue.Bool(data.evaluate);
@@ -479,6 +569,14 @@ public class PokeData : ObjectData
 {
   [DefaultValue(null)]
   public string? delay;
+  [DefaultValue(null)]
+  public string? repeat;
+  [DefaultValue(null)]
+  public string? repeatInterval;
+  [DefaultValue(null)]
+  public string? repeatChance;
+  [DefaultValue(null)]
+  public string? chance;
   [DefaultValue(null)]
   public string? self;
   [DefaultValue(null)]

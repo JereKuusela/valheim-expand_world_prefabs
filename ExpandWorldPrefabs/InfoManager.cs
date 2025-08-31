@@ -173,13 +173,13 @@ public class PrefabInfo
           Fallback[hash] = list = [];
         list.Add(info);
       }
-      if (info.Separate)
+      if (info.Weight == null)
       {
         if (!Separate.TryGetValue(hash, out var list))
           Separate[hash] = list = [];
         list.Add(info);
       }
-      if (!info.Fallback && !info.Separate)
+      if (!info.Fallback && info.Weight != null)
       {
         if (!Info.TryGetValue(hash, out var list))
           Info[hash] = list = [];
@@ -212,9 +212,9 @@ public class GlobalInfo
   {
     if (info.Fallback)
       Fallback.Add(info);
-    if (info.Separate)
+    if (info.Weight == null)
       Separate.Add(info);
-    if (!info.Fallback && !info.Separate)
+    if (!info.Fallback && info.Weight != null)
       Info.Add(info);
   }
 }

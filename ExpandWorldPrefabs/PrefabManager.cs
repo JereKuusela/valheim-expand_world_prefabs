@@ -37,6 +37,9 @@ public class Manager
     info.Execute?.Get(parameters);
     if (info.Commands.Length > 0)
       Commands.Run(info, parameters);
+    var weightedClientRpc = info.GetWeightedClientRpc(parameters);
+    if (weightedClientRpc != null)
+      weightedClientRpc.InvokeGlobal(parameters);
     if (info.ClientRpcs != null)
       GlobalClientRpc(info.ClientRpcs, parameters);
     PokeGlobal(info, parameters, pos);
@@ -75,6 +78,13 @@ public class Manager
     info.Execute?.Get(parameters);
     if (info.Commands.Length > 0)
       Commands.Run(info, parameters);
+
+    var weightedObjectRpc = info.GetWeightedObjectRpc(parameters);
+    if (weightedObjectRpc != null)
+      weightedObjectRpc.Invoke(zdo, parameters);
+    var weightedClientRpc = info.GetWeightedClientRpc(parameters);
+    if (weightedClientRpc != null)
+      weightedClientRpc.Invoke(zdo, parameters);
 
     if (info.ObjectRpcs != null)
       ObjectRpc(info.ObjectRpcs, zdo, parameters);
@@ -140,12 +150,18 @@ public class Manager
     if (info.Spawns != null)
       foreach (var p in info.Spawns)
         CreateObject(p, zdo, customData, pars);
+    var weightedSpawns = info.GetWeightedSpawn(pars);
+    if (weightedSpawns != null)
+      CreateObject(weightedSpawns, zdo, customData, pars);
 
     if (info.Swaps == null && !regenerateOriginal) return;
     var data = DataHelper.Merge(new DataEntry(zdo), customData);
     if (info.Swaps != null)
       foreach (var p in info.Swaps)
         CreateObject(p, zdo, data, pars);
+    var weightedSwaps = info.GetWeightedSwap(pars);
+    if (weightedSwaps != null)
+      CreateObject(weightedSwaps, zdo, data, pars);
     if (regenerateOriginal)
     {
       var removeItems = info.RemoveItems;
@@ -171,6 +187,10 @@ public class Manager
   }
   public static void CreateObject(Spawn spawn, ZDO originalZdo, DataEntry? data, Parameters parameters)
   {
+    var chance = spawn.Chance?.Get(parameters) ?? 1f;
+    if (chance < 1f && UnityEngine.Random.value > chance)
+      return;
+
     var pos = originalZdo.m_position;
     var rotQuat = originalZdo.GetRotation();
     pos += rotQuat * (spawn.Pos?.Get(parameters) ?? Vector3.zero);
@@ -184,7 +204,12 @@ public class Manager
     ZdoEntry zdoEntry = new(prefab, pos, rot, originalZdo);
     if (data != null)
       zdoEntry.Load(data, parameters);
-    DelayedSpawn.Add(spawn.Delay?.Get(parameters) ?? 0f, zdoEntry, spawn.TriggerRules?.GetBool(parameters) ?? false);
+    var delay = spawn.Delay?.Get(parameters) ?? 0f;
+    var repeat = spawn.Repeat?.Get(parameters) ?? 0;
+    var repeatInterval = spawn.RepeatInterval?.Get(parameters) ?? delay;
+    var repeatChance = spawn.RepeatChance?.Get(parameters) ?? 1f;
+    var delays = Helper.GenerateDelays(delay, repeat, repeatInterval, repeatChance);
+    DelayedSpawn.Add(delay, delays, zdoEntry, spawn.TriggerRules?.GetBool(parameters) ?? false);
   }
 
   public static ZDO? CreateObject(ZdoEntry entry, bool triggerRules)
@@ -274,30 +299,49 @@ public class Manager
     {
       var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, rot, pars, null);
       var pokeParameter = Prefab.Poke.PokeEvaluate(pars.Replace(info.PokeParameter)).Split(' ');
-      DelayedPoke.Add(info.PokeDelay, zdos, pokeParameter);
+      var delay = info.PokeDelay;
+      DelayedPoke.Add(delay, null, zdos, pokeParameter);
     }
+    var weightedPoke = info.GetWeightedPoke(pars);
+    if (weightedPoke != null)
+      RunPoke(weightedPoke, zdo, pos, rot, pars);
     if (info.Pokes == null) return;
     foreach (var poke in info.Pokes)
+      RunPoke(poke, zdo, pos, rot, pars);
+  }
+
+  private static void RunPoke(Poke poke, ZDO zdo, Vector3 pos, Quaternion rot, Parameters pars)
+  {
+    var chance = poke.Chance?.Get(pars) ?? 1f;
+    if (chance < 1f && UnityEngine.Random.value > chance)
+      return;
+
+    var args = poke.GetArgs(pars);
+    var delay = poke.Delay?.Get(pars) ?? 0f;
+    var self = poke.Self?.GetBool(pars);
+    var target = poke.Target?.Get(pars);
+    if (poke.HasPrefab)
     {
-      var args = poke.GetArgs(pars);
-      var delay = poke.Delay?.Get(pars) ?? 0f;
-      var self = poke.Self?.GetBool(pars);
-      var target = poke.Target?.Get(pars);
-      if (poke.HasPrefab)
+      var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, rot, pars, self == true ? null : zdo);
+      var repeat = poke.Repeat?.Get(pars) ?? 0;
+      var repeatInterval = poke.RepeatInterval?.Get(pars) ?? delay;
+      var repeatChance = poke.RepeatChance?.Get(pars) ?? 1f;
+      var delays = Helper.GenerateDelays(delay, repeat, repeatInterval, repeatChance);
+      DelayedPoke.Add(delay, delays, zdos, args);
+    }
+    else if (self == true || target != null)
+    {
+      var repeat = poke.Repeat?.Get(pars) ?? 0;
+      var repeatInterval = poke.RepeatInterval?.Get(pars) ?? delay;
+      var repeatChance = poke.RepeatChance?.Get(pars) ?? 1f;
+      var delays = Helper.GenerateDelays(delay, repeat, repeatInterval, repeatChance);
+      if (self == true)
+        DelayedPoke.Add(delay, delays, zdo, args);
+      if (target != null)
       {
-        var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, rot, pars, self == true ? null : zdo);
-        DelayedPoke.Add(delay, zdos, args);
-      }
-      else if (self == true || target != null)
-      {
-        if (self == true)
-          DelayedPoke.Add(delay, zdo, args);
-        if (target != null)
-        {
-          var targetZdo = ZDOMan.instance.GetZDO(target.Value);
-          if (targetZdo != null && targetZdo != zdo)
-            DelayedPoke.Add(delay, targetZdo, args);
-        }
+        var targetZdo = ZDOMan.instance.GetZDO(target.Value);
+        if (targetZdo != null && targetZdo != zdo)
+          DelayedPoke.Add(delay, delays, targetZdo, args);
       }
     }
   }
@@ -307,17 +351,31 @@ public class Manager
     {
       var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, Quaternion.identity, pars, null);
       var pokeParameter = Prefab.Poke.PokeEvaluate(pars.Replace(info.PokeParameter));
-      DelayedPoke.Add(info.PokeDelay, zdos, pokeParameter.Split(' '));
+      var delay = info.PokeDelay;
+      DelayedPoke.Add(delay, null, zdos, pokeParameter.Split(' '));
     }
+    var weightedPoke = info.GetWeightedPoke(pars);
+    if (weightedPoke != null)
+      RunGlobalPoke(weightedPoke, pos, Quaternion.identity, pars);
     if (info.Pokes == null) return;
     foreach (var poke in info.Pokes)
-    {
-      var args = poke.GetArgs(pars);
-      var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, Quaternion.identity, pars, null);
-      DelayedPoke.Add(poke.Delay?.Get(pars) ?? 0f, zdos, args);
-    }
+      RunGlobalPoke(poke, pos, Quaternion.identity, pars);
   }
+  private static void RunGlobalPoke(Poke poke, Vector3 pos, Quaternion rot, Parameters pars)
+  {
+    var chance = poke.Chance?.Get(pars) ?? 1f;
+    if (chance < 1f && UnityEngine.Random.value > chance)
+      return;
 
+    var args = poke.GetArgs(pars);
+    var delay = poke.Delay?.Get(pars) ?? 0f;
+    var repeat = poke.Repeat?.Get(pars) ?? 0;
+    var repeatInterval = poke.RepeatInterval?.Get(pars) ?? delay;
+    var repeatChance = poke.RepeatChance?.Get(pars) ?? 1f;
+    var delays = Helper.GenerateDelays(delay, repeat, repeatInterval, repeatChance);
+    var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, Quaternion.identity, pars, null);
+    DelayedPoke.Add(delay, delays, zdos, args);
+  }
   public static void Poke(ZDO[] zdos, string[] args)
   {
     foreach (var z in zdos)

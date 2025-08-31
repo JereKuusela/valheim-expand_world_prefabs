@@ -4,22 +4,29 @@ namespace ExpandWorld.Prefab;
 public class DelayedRpc(float delay, long source, long target, ZDOID id, int hash, object[] parameters)
 {
   private static readonly List<DelayedRpc> Rpcs = [];
-  public static void Add(float delay, int repeat, long source, long target, ZDOID id, int hash, object[] parameters)
+  public static void Add(float delay, List<float>? delays, long source, long target, ZDOID id, int hash, object[] parameters)
+  {
+    if (delays != null && delays.Count > 0)
+      Add(delays, source, target, id, hash, parameters);
+    else
+      Add(delay, source, target, id, hash, parameters);
+  }
+  private static void Add(List<float> delays, long source, long target, ZDOID id, int hash, object[] parameters)
+  {
+    foreach (var delay in delays)
+    {
+      if (delay <= 0f)
+        Manager.Rpc(source, target, id, hash, parameters);
+      else
+        Rpcs.Add(new(delay, source, target, id, hash, parameters));
+    }
+  }
+  private static void Add(float delay, long source, long target, ZDOID id, int hash, object[] parameters)
   {
     if (delay <= 0f)
-    {
       Manager.Rpc(source, target, id, hash, parameters);
-      return;
-    }
-    if (repeat == 0)
-    {
+    else
       Rpcs.Add(new(delay, source, target, id, hash, parameters));
-      return;
-    }
-    // First is instant.
-    Manager.Rpc(source, target, id, hash, parameters);
-    for (var i = 1; i < repeat; i++)
-      Rpcs.Add(new(delay * i, source, target, id, hash, parameters));
   }
   public static void Execute(float dt)
   {

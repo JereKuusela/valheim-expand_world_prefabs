@@ -1,13 +1,29 @@
 using System.Collections.Generic;
 using Data;
-using UnityEngine;
 
 namespace ExpandWorld.Prefab;
 
 public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
 {
   private static readonly List<DelayedSpawn> Spawns = [];
-  public static void Add(float delay, ZdoEntry zdoEntry, bool triggerRules)
+  public static void Add(float delay, List<float>? delays, ZdoEntry zdoEntry, bool triggerRules)
+  {
+    if (delays != null && delays.Count > 0)
+      Add(delays, zdoEntry, triggerRules);
+    else
+      Add(delay, zdoEntry, triggerRules);
+  }
+  private static void Add(List<float> delays, ZdoEntry zdoEntry, bool triggerRules)
+  {
+    foreach (var delay in delays)
+    {
+      if (delay <= 0f)
+        Manager.CreateObject(zdoEntry, triggerRules);
+      else
+        Spawns.Add(new(delay, zdoEntry, triggerRules));
+    }
+  }
+  private static void Add(float delay, ZdoEntry zdoEntry, bool triggerRules)
   {
     if (delay <= 0f)
     {
@@ -33,8 +49,11 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
     }
   }
   public float Delay = delay;
+  private readonly ZdoEntry ZdoEntry = zdoEntry;
+  private readonly bool TriggerRules = triggerRules;
+
   public void Execute()
   {
-    Manager.CreateObject(zdoEntry, triggerRules);
+    Manager.CreateObject(ZdoEntry, TriggerRules);
   }
 }

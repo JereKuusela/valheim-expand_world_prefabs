@@ -26,6 +26,10 @@ public abstract class RpcInfo
   private readonly KeyValuePair<string, string>[] Parameters;
   private readonly IFloatValue? Delay;
   private readonly IIntValue? Repeat;
+  private readonly IFloatValue? RepeatInterval;
+  private readonly IFloatValue? RepeatChance;
+  private readonly IFloatValue? Chance;
+  public readonly IFloatValue? Weight;
   public bool IsTarget => Target == RpcTarget.Search;
   private readonly bool Packaged;
 
@@ -59,10 +63,22 @@ public abstract class RpcInfo
       Delay = DataValue.Float(d);
     if (lines.TryGetValue("repeat", out var r))
       Repeat = DataValue.Int(r);
+    if (lines.TryGetValue("repeatInterval", out var ri))
+      RepeatInterval = DataValue.Float(ri);
+    if (lines.TryGetValue("repeatChance", out var rc))
+      RepeatChance = DataValue.Float(rc);
+    if (lines.TryGetValue("chance", out var c))
+      Chance = DataValue.Float(c);
+    if (lines.TryGetValue("weight", out var w))
+      Weight = DataValue.Float(w);
     Parameters = [.. lines.OrderBy(p => int.TryParse(p.Key, out var k) ? k : 1000).Where(p => Parse.TryInt(p.Key, out var _)).Select(p => Parse.Kvp(p.Value))];
   }
   public void Invoke(ZDO zdo, Parameters pars)
   {
+    var chance = Chance?.Get(pars) ?? 1f;
+    if (chance < 1f && UnityEngine.Random.value > chance)
+      return;
+
     var source = ZRoutedRpc.instance.m_id;
     var sourceParameter = SourceParameter?.Get(pars);
     if (sourceParameter != null && sourceParameter != "")
@@ -71,12 +87,12 @@ public abstract class RpcInfo
       source = ZDOMan.instance.GetZDO(id)?.GetOwner() ?? 0;
     }
     var delay = Delay?.Get(pars) ?? 0f;
-    var repeat = Repeat?.Get(pars) ?? 0;
+    var delays = GenerateDelays(delay, pars);
     var parameters = Packaged ? GetPackagedParameters(zdo, pars) : GetParameters(zdo, pars);
     if (Target == RpcTarget.Owner)
-      DelayedRpc.Add(delay, repeat, source, zdo.GetOwner(), GetId(zdo), Hash, parameters);
+      DelayedRpc.Add(delay, delays, source, zdo.GetOwner(), GetId(zdo), Hash, parameters);
     else if (Target == RpcTarget.All)
-      DelayedRpc.Add(delay, repeat, source, ZRoutedRpc.Everybody, GetId(zdo), Hash, parameters);
+      DelayedRpc.Add(delay, delays, source, ZRoutedRpc.Everybody, GetId(zdo), Hash, parameters);
     else if (Target == RpcTarget.ZDO)
     {
       var targetParameter = TargetParameter?.Get(pars);
@@ -85,17 +101,28 @@ public abstract class RpcInfo
         var id = Parse.ZdoId(targetParameter);
         var peerId = ZDOMan.instance.GetZDO(id)?.GetOwner();
         if (peerId.HasValue)
-          DelayedRpc.Add(delay, repeat, source, peerId.Value, GetId(zdo), Hash, parameters);
+          DelayedRpc.Add(delay, delays, source, peerId.Value, GetId(zdo), Hash, parameters);
       }
     }
   }
   public void InvokeGlobal(Parameters pars)
   {
+    var chance = Chance?.Get(pars) ?? 1f;
+    if (chance < 1f && UnityEngine.Random.value > chance)
+      return;
+
     var source = ZRoutedRpc.instance.m_id;
     var parameters = Packaged ? PackagedGetParameters(pars) : GetParameters(pars);
     var delay = Delay?.Get(pars) ?? 0f;
+    var delays = GenerateDelays(delay, pars);
+    DelayedRpc.Add(delay, delays, source, ZRoutedRpc.Everybody, ZDOID.None, Hash, parameters);
+  }
+  private List<float>? GenerateDelays(float delay, Parameters pars)
+  {
     var repeat = Repeat?.Get(pars) ?? 0;
-    DelayedRpc.Add(delay, repeat, source, ZRoutedRpc.Everybody, ZDOID.None, Hash, parameters);
+    var repeatInterval = RepeatInterval?.Get(pars) ?? delay;
+    var repeatChance = RepeatChance?.Get(pars) ?? 1f;
+    return Helper.GenerateDelays(delay, repeat, repeatInterval, repeatChance);
   }
   private object[] GetParameters(ZDO? zdo, Parameters pars)
   {
