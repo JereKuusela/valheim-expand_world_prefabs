@@ -201,23 +201,23 @@ public class Loading
   private static Tuple<Spawn[]?, Spawn[]?> ParseSpawns(string[] spawns, float? delay, bool? triggerRules)
   {
     var allSpawns = spawns.Select(s => new Spawn(s, delay, triggerRules)).ToArray();
-    var weightedSpawns = allSpawns?.Where(s => s.Weight != null).ToArray();
-    var spawn = weightedSpawns?.Where(s => s.Weight == null).ToArray();
-    if (weightedSpawns != null && weightedSpawns.Length == 0)
-      weightedSpawns = null;
-    if (spawn != null && spawn.Length == 0)
+    var spawn = allSpawns.Where(s => s.Weight == null).ToArray();
+    if (spawn.Length == 0)
       spawn = null;
+    var weightedSpawns = allSpawns.Where(s => s.Weight != null).ToArray();
+    if (weightedSpawns.Length == 0)
+      weightedSpawns = null;
     return Tuple.Create(spawn, weightedSpawns);
   }
   private static Tuple<Spawn[]?, Spawn[]?> ParseSpawns(SpawnData[] spawns, float? delay, bool? triggerRules)
   {
     var allSpawns = spawns.Select(s => new Spawn(s, delay, triggerRules)).ToArray();
-    var weightedSpawns = allSpawns?.Where(s => s.Weight != null).ToArray();
-    var spawn = weightedSpawns?.Where(s => s.Weight == null).ToArray();
-    if (weightedSpawns != null && weightedSpawns.Length == 0)
-      weightedSpawns = null;
-    if (spawn != null && spawn.Length == 0)
+    var spawn = allSpawns.Where(s => s.Weight == null).ToArray();
+    if (spawn.Length == 0)
       spawn = null;
+    var weightedSpawns = allSpawns.Where(s => s.Weight != null).ToArray();
+    if (weightedSpawns.Length == 0)
+      weightedSpawns = null;
     return Tuple.Create(spawn, weightedSpawns);
   }
 
@@ -226,36 +226,36 @@ public class Loading
   private static Tuple<Poke[]?, Poke[]?> ParsePokes(PokeData[] objects)
   {
     var allPokes = objects.Select(s => new Poke(s)).ToArray();
-    var weightedPokes = allPokes?.Where(s => s.Weight != null).ToArray();
-    var pokes = weightedPokes?.Where(s => s.Weight == null).ToArray();
-    if (weightedPokes != null && weightedPokes.Length == 0)
-      weightedPokes = null;
-    if (pokes != null && pokes.Length == 0)
+    var pokes = allPokes.Where(s => s.Weight == null).ToArray();
+    if (pokes.Length == 0)
       pokes = null;
+    var weightedPokes = allPokes.Where(s => s.Weight != null).ToArray();
+    if (weightedPokes.Length == 0)
+      weightedPokes = null;
     return Tuple.Create(pokes, weightedPokes);
   }
   private static Tuple<ObjectRpcInfo[]?, ObjectRpcInfo[]?>? ParseObjectRpcs(Data data)
   {
     if (data.objectRpc == null || data.objectRpc.Length == 0) return null;
     var allRpcs = data.objectRpc.Select(s => new ObjectRpcInfo(s)).ToArray();
-    var weightedRpcs = allRpcs.Where(s => s.Weight != null).ToArray();
-    var rpcs = weightedRpcs?.Where(s => s.Weight == null).ToArray();
-    if (weightedRpcs != null && weightedRpcs.Length == 0)
-      weightedRpcs = null;
-    if (rpcs != null && rpcs.Length == 0)
+    var rpcs = allRpcs.Where(s => s.Weight == null).ToArray();
+    if (rpcs.Length == 0)
       rpcs = null;
+    var weightedRpcs = allRpcs.Where(s => s.Weight != null).ToArray();
+    if (weightedRpcs.Length == 0)
+      weightedRpcs = null;
     return Tuple.Create(rpcs, weightedRpcs);
   }
   private static Tuple<ClientRpcInfo[]?, ClientRpcInfo[]?>? ParseClientRpcs(Data data)
   {
     if (data.clientRpc == null || data.clientRpc.Length == 0) return null;
     var allRpcs = data.clientRpc.Select(s => new ClientRpcInfo(s)).ToArray();
-    var weightedRpcs = allRpcs.Where(s => s.Weight != null).ToArray();
-    var rpcs = weightedRpcs?.Where(s => s.Weight == null).ToArray();
-    if (weightedRpcs != null && weightedRpcs.Length == 0)
-      weightedRpcs = null;
-    if (rpcs != null && rpcs.Length == 0)
+    var rpcs = allRpcs.Where(s => s.Weight == null).ToArray();
+    if (rpcs.Length == 0)
       rpcs = null;
+    var weightedRpcs = allRpcs.Where(s => s.Weight != null).ToArray();
+    if (weightedRpcs.Length == 0)
+      weightedRpcs = null;
     return Tuple.Create(rpcs, weightedRpcs);
   }
 

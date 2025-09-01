@@ -145,23 +145,22 @@ public class Manager
   {
     // Original object must be regenerated to apply data.
     var regenerateOriginal = !remove && regenerate;
-    if (info.Spawns == null && info.Swaps == null && !regenerateOriginal) return;
 
+    var weightedSpawn = info.GetWeightedSpawn(pars);
+    if (weightedSpawn != null)
+      CreateObject(weightedSpawn, zdo, customData, pars);
     if (info.Spawns != null)
       foreach (var p in info.Spawns)
         CreateObject(p, zdo, customData, pars);
-    var weightedSpawns = info.GetWeightedSpawn(pars);
-    if (weightedSpawns != null)
-      CreateObject(weightedSpawns, zdo, customData, pars);
 
-    if (info.Swaps == null && !regenerateOriginal) return;
+    var weightedSwap = info.GetWeightedSwap(pars);
+    if (info.Swaps == null && info.WeightedSwaps == null && !regenerateOriginal) return;
     var data = DataHelper.Merge(new DataEntry(zdo), customData);
+    if (weightedSwap != null)
+      CreateObject(weightedSwap, zdo, data, pars);
     if (info.Swaps != null)
       foreach (var p in info.Swaps)
         CreateObject(p, zdo, data, pars);
-    var weightedSwaps = info.GetWeightedSwap(pars);
-    if (weightedSwaps != null)
-      CreateObject(weightedSwaps, zdo, data, pars);
     if (regenerateOriginal)
     {
       var removeItems = info.RemoveItems;
