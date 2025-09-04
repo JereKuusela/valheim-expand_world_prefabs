@@ -13,9 +13,11 @@ public class Manager
   {
     if (!ZNet.instance.IsServer()) return;
     Parameters parameters = new("", args, pos);
-    var info = InfoSelector.SelectGlobal(type, args, parameters, pos, remove);
+    var info = InfoSelector.SelectGlobalWeighted(type, args, parameters, pos, remove);
     var infos = InfoSelector.SelectGlobalSeparate(type, args, parameters, pos, remove);
-    if (info == null && infos == null) return;
+    if (info == null && infos == null)
+      info = InfoSelector.SelectGlobalFallback(type, args, parameters, pos, remove);
+
     if (info != null)
       HandleGlobal(info, parameters, pos, remove);
     if (infos != null)
@@ -51,9 +53,12 @@ public class Manager
     if (!ZNet.instance.IsServer()) return false;
     var name = ZNetScene.instance.GetPrefab(zdo.m_prefab)?.name ?? "";
     ObjectParameters parameters = new(name, args, zdo);
-    var info = InfoSelector.Select(type, zdo, args, parameters);
+    var info = InfoSelector.SelectWeighted(type, zdo, args, parameters);
     var infos = InfoSelector.SelectSeparate(type, zdo, args, parameters);
+    if (info == null && infos == null)
+      info = InfoSelector.SelectFallback(type, zdo, args, parameters);
     if (info == null && infos == null) return false;
+
     bool ret = false;
     if (info != null)
       ret |= Handle(info, parameters, zdo);
@@ -136,10 +141,16 @@ public class Manager
     if (!ZNet.instance.IsServer()) return false;
     var name = ZNetScene.instance.GetPrefab(zdo.m_prefab)?.name ?? "";
     ObjectParameters parameters = new(name, args, zdo);
-    var info = InfoSelector.Select(type, zdo, args, parameters);
-    if (info == null) return false;
-    var cancel = info.Cancel?.GetBool(parameters) == true;
-    return cancel;
+    var info = InfoSelector.SelectWeighted(type, zdo, args, parameters);
+    var infos = InfoSelector.SelectSeparate(type, zdo, args, parameters);
+    if (info == null && infos == null)
+      info = InfoSelector.SelectFallback(type, zdo, args, parameters);
+    if (info == null && infos == null) return false;
+    if (info?.Cancel?.GetBool(parameters) == true)
+      return true;
+    if (infos != null)
+      return infos.Any(i => i.Cancel?.GetBool(parameters) == true);
+    return false;
   }
   private static void HandleSpawns(Info info, ZDO zdo, Parameters pars, bool remove, bool regenerate, DataEntry? customData)
   {

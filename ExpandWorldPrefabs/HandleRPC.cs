@@ -1,10 +1,58 @@
+using System;
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
+using Service;
+using UnityEngine;
 
 namespace ExpandWorld.Prefab;
 
 public class HandleRPC
 {
+  private delegate bool RPCHandler(ZDO zdo, ZRoutedRpc.RoutedRPCData data);
+
+
+  // GetSource(data.m_senderPeerID) could be used to get the player ZDO of the sender.
+  // Currently not used, but left here for future reference.
+  // For some RPCs this is always the player what did the action.
+  private static readonly Dictionary<int, RPCHandler> RPCHandlers = new()
+  {
+    { RepairHash, WNTHealthChanged },
+    { SetTriggerHash, SetTrigger },
+    { SetTargetHash, SetTarget },
+    { ShakeHash, Shake },
+    { OnStateChangedHash, OnStateChanged },
+    { SetSaddleHash, SetSaddle },
+    { SayHash, Say },
+    { FlashShieldHash, FlashShield },
+    { SetPickedHash, SetPicked },
+    { PlayMusicHash, PlayMusic },
+    { WakeupHash, Wakeup },
+    { SetAreaHealthHash, SetAreaHealth },
+    { HideHash, Hide },
+    { SetVisualItemHash, SetVisualItem },
+    { AnimateLeverHash, AnimateLever },
+    { AnimateLeverReturnHash, AnimateLeverReturn },
+    { SetArmorVisualItemHash, SetArmorVisualItem },
+    { SetSlotVisualHash, SetSlotVisual },
+    { MakePieceHash, MakePiece },
+    { OnEatHash, OnEat },
+    { OnDeathHash, OnDeath },
+    { OnSetPoseHash, OnSetPose },
+    { OnLegUseHash, OnLegUse },
+    { OnSetLoadedHash, OnSetLoaded },
+    { OnShootHash, OnShoot },
+    { OnFreezeFrameHash, OnFreezeFrame },
+    { OnResetClothHash, OnResetCloth },
+    { OnFragmentsHash, OnFragments },
+    { OnStepHash, OnStep },
+    { OnMaterialHash, OnMaterial },
+    { OnEffectsHash, OnEffects },
+    { OnHitHash, OnHit },
+    { OnUnsummonHash, OnUnsummon },
+    { OnGrowHash, OnGrow }
+  };
+
   public static void Patch(Harmony harmony)
   {
     var method = AccessTools.Method(typeof(ZRoutedRpc), nameof(ZRoutedRpc.HandleRoutedRPC));
@@ -27,59 +75,17 @@ public class HandleRPC
     }
     return !cancel;
   }
-  // Not implemented:
-  // SapCollector extract: Can be handled by created.
-  // Tameable unsummon: Can be handled by destroyed.
-  // TreeBase grow: Can be handled by created/destroyed.
-  // WearNTear destroy: Can be handled by destroyed.
-  // Player death: Can be handled by destroyed.
-  // Foot step: Not handled, might be spammy.
-  // Character resetcloth / freezeframe: Not handled, not sure what it does.
+
   static bool Handle(ZRoutedRpc.RoutedRPCData data)
   {
     var zdo = ZDOMan.instance.GetZDO(data.m_targetZDO);
     if (zdo == null) return true;
+
     var cancel = false;
-    if (data.m_methodHash == RepairHash)
-      cancel = WNTHealthChanged(zdo, data);
-    else if (data.m_methodHash == SetTriggerHash)
-      cancel = SetTrigger(zdo, data);
-    else if (data.m_methodHash == SetTargetHash)
-      cancel = SetTarget(zdo, data);
-    else if (data.m_methodHash == ShakeHash)
-      cancel = Shake(zdo);
-    else if (data.m_methodHash == OnStateChangedHash)
-      cancel = OnStateChanged(zdo, data);
-    else if (data.m_methodHash == SetSaddleHash)
-      cancel = SetSaddle(zdo, data);
-    else if (data.m_methodHash == SayHash)
-      cancel = Say(zdo, data);
-    else if (data.m_methodHash == FlashShieldHash)
-      cancel = FlashShield(zdo);
-    else if (data.m_methodHash == SetPickedHash)
-      cancel = SetPicked(zdo, data);
-    else if (data.m_methodHash == PlayMusicHash)
-      cancel = PlayMusic(zdo);
-    else if (data.m_methodHash == WakeupHash)
-      cancel = Wakeup(zdo);
-    else if (data.m_methodHash == SetAreaHealthHash)
-      cancel = SetAreaHealth(zdo);
-    else if (data.m_methodHash == HideHash)
-      cancel = Hide(zdo, data);
-    else if (data.m_methodHash == SetVisualItemHash)
-      cancel = SetVisualItem(zdo, data);
-    else if (data.m_methodHash == AnimateLeverHash)
-      cancel = AnimateLever(zdo, data);
-    else if (data.m_methodHash == AnimateLeverReturnHash)
-      cancel = AnimateLeverReturn(zdo, data);
-    else if (data.m_methodHash == SetArmorVisualItemHash)
-      cancel = SetArmorVisualItem(zdo, data);
-    else if (data.m_methodHash == SetSlotVisualHash)
-      cancel = SetSlotVisual(zdo, data);
-    else if (data.m_methodHash == MakePieceHash)
-      cancel = MakePiece(zdo, data);
-    else if (data.m_methodHash == OnEatHash)
-      cancel = OnEat(zdo, data);
+
+    if (RPCHandlers.TryGetValue(data.m_methodHash, out var handler))
+      cancel = handler(zdo, data);
+
     return !cancel;
   }
 
@@ -97,7 +103,7 @@ public class HandleRPC
     var health = (float)pars[1];
     if (health > 1E20) return false;
     if (health == wearNTear.m_health)
-      return Manager.Handle(ActionType.Repair, [], zdo, GetSource(data.m_senderPeerID));
+      return Manager.Handle(ActionType.Repair, [], zdo);
     else
       return Manager.Handle(ActionType.Damage, [], zdo);
   }
@@ -131,7 +137,7 @@ public class HandleRPC
   }
   static readonly int ShakeHash = "RPC_Shake".GetStableHashCode();
   static readonly ParameterInfo[] ShakePars = AccessTools.Method(typeof(TreeBase), nameof(TreeBase.RPC_Shake)).GetParameters();
-  private static bool Shake(ZDO zdo)
+  private static bool Shake(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
     return Manager.Handle(ActionType.Damage, [], zdo);
   }
@@ -194,7 +200,7 @@ public class HandleRPC
   }
   static readonly int FlashShieldHash = "FlashShield".GetStableHashCode();
   static readonly ParameterInfo[] FlashShieldPars = AccessTools.Method(typeof(PrivateArea), nameof(PrivateArea.RPC_FlashShield)).GetParameters();
-  private static bool FlashShield(ZDO zdo)
+  private static bool FlashShield(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
     return Manager.Handle(ActionType.State, ["flash"], zdo);
   }
@@ -210,19 +216,19 @@ public class HandleRPC
   }
   static readonly int PlayMusicHash = "RPC_PlayMusic".GetStableHashCode();
   static readonly ParameterInfo[] PlayMusicPars = AccessTools.Method(typeof(MusicVolume), nameof(MusicVolume.RPC_PlayMusic)).GetParameters();
-  private static bool PlayMusic(ZDO zdo)
+  private static bool PlayMusic(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    return Manager.Handle(ActionType.State, [], zdo);
+    return Manager.Handle(ActionType.State, ["music"], zdo);
   }
   static readonly int WakeupHash = "RPC_Wakeup".GetStableHashCode();
   static readonly ParameterInfo[] WakeupPars = AccessTools.Method(typeof(MonsterAI), nameof(MonsterAI.RPC_Wakeup)).GetParameters();
-  private static bool Wakeup(ZDO zdo)
+  private static bool Wakeup(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
     return Manager.Handle(ActionType.State, ["wakeup"], zdo);
   }
   static readonly int SetAreaHealthHash = "RPC_SetAreaHealth".GetStableHashCode();
   static readonly ParameterInfo[] SetAreaHealthPars = AccessTools.Method(typeof(MineRock5), nameof(MineRock5.RPC_SetAreaHealth)).GetParameters();
-  private static bool SetAreaHealth(ZDO zdo)
+  private static bool SetAreaHealth(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
     return Manager.Handle(ActionType.Damage, [], zdo);
   }
@@ -250,7 +256,7 @@ public class HandleRPC
     var variant = (int)pars[2];
     var quality = (int)pars[3];
     var state = item == "" ? "<none>" : item;
-    return Manager.Handle(ActionType.State, [state, variant.ToString(), quality.ToString()], zdo, GetSource(data.m_senderPeerID));
+    return Manager.Handle(ActionType.State, [state, variant.ToString(), quality.ToString()], zdo);
   }
   static readonly int SetArmorVisualItemHash = "RPC_SetVisualItem".GetStableHashCode();
   static readonly ParameterInfo[] ArmorStandPars = AccessTools.Method(typeof(ArmorStand), nameof(ArmorStand.RPC_SetVisualItem)).GetParameters();
@@ -265,19 +271,19 @@ public class HandleRPC
     var item = (string)pars[2];
     var variant = (int)pars[3];
     var state = item == "" ? "<none>" : item;
-    return Manager.Handle(ActionType.State, [state, variant.ToString(), slot.ToString()], zdo, GetSource(data.m_senderPeerID));
+    return Manager.Handle(ActionType.State, [state, variant.ToString(), slot.ToString()], zdo);
   }
   static readonly int AnimateLeverHash = "RPC_AnimateLever".GetStableHashCode();
   static readonly ParameterInfo[] AnimateLeverPars = AccessTools.Method(typeof(Incinerator), nameof(Incinerator.RPC_AnimateLever)).GetParameters();
   private static bool AnimateLever(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    return Manager.Handle(ActionType.State, ["start"], zdo, GetSource(data.m_senderPeerID));
+    return Manager.Handle(ActionType.State, ["start"], zdo);
   }
   static readonly int AnimateLeverReturnHash = "RPC_AnimateLeverReturn".GetStableHashCode();
   static readonly ParameterInfo[] AnimateLeverReturnPars = AccessTools.Method(typeof(Incinerator), nameof(Incinerator.RPC_AnimateLeverReturn)).GetParameters();
   private static bool AnimateLeverReturn(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    return Manager.Handle(ActionType.State, ["end"], zdo, GetSource(data.m_senderPeerID));
+    return Manager.Handle(ActionType.State, ["end"], zdo);
   }
   static readonly int SetSlotVisualHash = "RPC_SetSlotVisual".GetStableHashCode();
   static readonly ParameterInfo[] SetSlotVisualPars = AccessTools.Method(typeof(CookingStation), nameof(CookingStation.RPC_SetSlotVisual)).GetParameters();
@@ -289,7 +295,7 @@ public class HandleRPC
     var slot = (int)pars[1];
     var item = (string)pars[2];
     var state = item == "" ? "<none>" : item;
-    return Manager.Handle(ActionType.State, [slot.ToString(), state], zdo, GetSource(data.m_senderPeerID));
+    return Manager.Handle(ActionType.State, [slot.ToString(), state], zdo);
   }
 
 
@@ -297,16 +303,138 @@ public class HandleRPC
   static readonly ParameterInfo[] MakePieceHashPars = AccessTools.Method(typeof(ItemDrop), nameof(ItemDrop.RPC_MakePiece)).GetParameters();
   private static bool MakePiece(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    return Manager.Handle(ActionType.State, ["piece"], zdo, GetSource(data.m_senderPeerID));
+    return Manager.Handle(ActionType.State, ["piece"], zdo);
   }
 
   static readonly int OnEatHash = "RPC_OnEat".GetStableHashCode();
   static readonly ParameterInfo[] OnEatPars = AccessTools.Method(typeof(Feast), nameof(Feast.RPC_OnEat)).GetParameters();
   private static bool OnEat(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    return Manager.Handle(ActionType.State, ["eat"], zdo, GetSource(data.m_senderPeerID));
+    return Manager.Handle(ActionType.State, ["eat"], zdo);
   }
 
+  static readonly int OnDeathHash = "OnDeath".GetStableHashCode();
+  static readonly ParameterInfo[] OnDeathPars = AccessTools.Method(typeof(Player), nameof(Player.RPC_OnDeath)).GetParameters();
+  private static bool OnDeath(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    return Manager.Handle(ActionType.State, ["death"], zdo);
+  }
+
+  static readonly int OnSetPoseHash = "RPC_SetPose".GetStableHashCode();
+  static readonly ParameterInfo[] OnSetPosePars = AccessTools.Method(typeof(ArmorStand), nameof(ArmorStand.RPC_SetPose)).GetParameters();
+  private static bool OnSetPose(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetSlotVisualPars, data.m_parameters);
+    data.m_parameters.SetPos(0);
+    if (pars.Length < 2) return false;
+    var index = (int)pars[1];
+    return Manager.Handle(ActionType.State, ["pose", index.ToString()], zdo);
+  }
+
+  static readonly int OnLegUseHash = "RPC_OnLegUse".GetStableHashCode();
+  static readonly ParameterInfo[] OnLegUsePars = AccessTools.Method(typeof(Catapult), nameof(Catapult.RPC_OnLegUse)).GetParameters();
+  private static bool OnLegUse(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetSlotVisualPars, data.m_parameters);
+    data.m_parameters.SetPos(0);
+    if (pars.Length < 2) return false;
+    var legsLocked = (bool)pars[1];
+    return Manager.Handle(ActionType.State, [legsLocked ? "lock" : "release"], zdo);
+  }
+
+  static readonly int OnSetLoadedHash = "RPC_SetLoadedVisual".GetStableHashCode();
+  static readonly ParameterInfo[] OnSetLoadedPars = AccessTools.Method(typeof(Catapult), nameof(Catapult.RPC_SetLoadedVisual)).GetParameters();
+  private static bool OnSetLoaded(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetSlotVisualPars, data.m_parameters);
+    data.m_parameters.SetPos(0);
+    if (pars.Length < 2) return false;
+    var name = (string)pars[1];
+    return Manager.Handle(ActionType.State, ["loaded", name], zdo);
+  }
+
+  static readonly int OnShootHash = "RPC_Shoot".GetStableHashCode();
+  static readonly ParameterInfo[] OnShootPars = AccessTools.Method(typeof(Catapult), nameof(Catapult.RPC_Shoot)).GetParameters();
+  private static bool OnShoot(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    return Manager.Handle(ActionType.State, ["shoot"], zdo);
+  }
+
+  static readonly int OnFreezeFrameHash = "RPC_FreezeFrame".GetStableHashCode();
+  static readonly ParameterInfo[] OnFreezeFramePars = AccessTools.Method(typeof(Character), nameof(Character.RPC_FreezeFrame)).GetParameters();
+  private static bool OnFreezeFrame(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetSlotVisualPars, data.m_parameters);
+    data.m_parameters.SetPos(0);
+    if (pars.Length < 2) return false;
+    var duratiom = (float)pars[1];
+    return Manager.Handle(ActionType.State, ["freezeframe", Helper.Format2(duratiom)], zdo);
+  }
+
+  static readonly int OnResetClothHash = "RPC_ResetCloth".GetStableHashCode();
+  static readonly ParameterInfo[] OnResetClothPars = AccessTools.Method(typeof(Character), nameof(Character.RPC_ResetCloth)).GetParameters();
+  private static bool OnResetCloth(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    return Manager.Handle(ActionType.State, ["resetcloth"], zdo);
+  }
+
+  static readonly int OnFragmentsHash = "RPC_CreateFragments".GetStableHashCode();
+  static readonly ParameterInfo[] OnFragmentsPars = AccessTools.Method(typeof(Destructible), nameof(Destructible.RPC_CreateFragments)).GetParameters();
+  private static bool OnFragments(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    return Manager.Handle(ActionType.State, ["fragments"], zdo);
+  }
+
+  static readonly int OnStepHash = "Step".GetStableHashCode();
+  static readonly ParameterInfo[] OnStepPars = AccessTools.Method(typeof(FootStep), nameof(FootStep.RPC_Step)).GetParameters();
+  private static bool OnStep(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetSlotVisualPars, data.m_parameters);
+    data.m_parameters.SetPos(0);
+    if (pars.Length < 3) return false;
+    var index = (int)pars[1];
+    Vector3 pos = (Vector3)pars[2];
+    return Manager.Handle(ActionType.State, ["step", index.ToString(), Helper.Format(pos.x), Helper.Format(pos.z), Helper.Format(pos.y)], zdo);
+  }
+
+  static readonly int OnMaterialHash = "RPC_UpdateMaterial".GetStableHashCode();
+  static readonly ParameterInfo[] OnMaterialPars = AccessTools.Method(typeof(MaterialVariation), nameof(MaterialVariation.RPC_UpdateMaterial)).GetParameters();
+  private static bool OnMaterial(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetSlotVisualPars, data.m_parameters);
+    data.m_parameters.SetPos(0);
+    if (pars.Length < 2) return false;
+    var index = (int)pars[1];
+    return Manager.Handle(ActionType.State, ["material", index.ToString()], zdo);
+  }
+
+  static readonly int OnEffectsHash = "RPC_UpdateEffects".GetStableHashCode();
+  static readonly ParameterInfo[] OnEffectsPars = AccessTools.Method(typeof(SapCollector), nameof(SapCollector.RPC_UpdateEffects)).GetParameters();
+  private static bool OnEffects(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    return Manager.Handle(ActionType.State, ["effects"], zdo);
+  }
+
+  static readonly int OnHitHash = "RPC_HitNow".GetStableHashCode();
+  static readonly ParameterInfo[] OnHitPars = AccessTools.Method(typeof(ShieldGenerator), nameof(ShieldGenerator.RPC_HitNow)).GetParameters();
+  private static bool OnHit(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    return Manager.Handle(ActionType.State, ["hit"], zdo);
+  }
+
+  static readonly int OnUnsummonHash = "RPC_UnSummon".GetStableHashCode();
+  static readonly ParameterInfo[] OnUnsummonPars = AccessTools.Method(typeof(Tameable), nameof(Tameable.RPC_UnSummon)).GetParameters();
+  private static bool OnUnsummon(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    return Manager.Handle(ActionType.State, ["unsummon"], zdo);
+  }
+
+  static readonly int OnGrowHash = "RPC_Grow".GetStableHashCode();
+  static readonly ParameterInfo[] OnGrowPars = AccessTools.Method(typeof(TreeBase), nameof(TreeBase.RPC_Grow)).GetParameters();
+  private static bool OnGrow(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
+  {
+    return Manager.Handle(ActionType.State, ["grow"], zdo);
+  }
 
   private static ZDO? GetSource(long id)
   {

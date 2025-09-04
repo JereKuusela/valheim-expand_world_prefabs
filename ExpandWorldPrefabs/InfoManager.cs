@@ -103,10 +103,10 @@ public class InfoManager
       HandleChanged.Patch(EWP.Harmony, ChangeDatas);
     if (TimeDatas.Exists)
     {
-      var checkTicks = TimeDatas.Info.Any(v => v.Args.Length > 0 && v.Args[0] == "tick");
-      var checkMinutes = TimeDatas.Info.Any(v => v.Args.Length > 0 && v.Args[0] == "minute");
-      var checkHours = TimeDatas.Info.Any(v => v.Args.Length > 0 && v.Args[0] == "hour");
-      var checkDays = TimeDatas.Info.Any(v => v.Args.Length > 0 && v.Args[0] == "day");
+      var checkTicks = TimeDatas.Weighted.Any(v => v.Args.Length > 0 && v.Args[0] == "tick");
+      var checkMinutes = TimeDatas.Weighted.Any(v => v.Args.Length > 0 && v.Args[0] == "minute");
+      var checkHours = TimeDatas.Weighted.Any(v => v.Args.Length > 0 && v.Args[0] == "hour");
+      var checkDays = TimeDatas.Weighted.Any(v => v.Args.Length > 0 && v.Args[0] == "day");
       HandleTime.Patch(EWP.Harmony, checkTicks, checkMinutes, checkHours, checkDays);
     }
     DataStorage.OnSet = KeyDatas.Exists ? OnKeySet : null;
@@ -150,15 +150,15 @@ public class InfoManager
 
 public class PrefabInfo
 {
-  public readonly Dictionary<int, List<Info>> Info = [];
+  public readonly Dictionary<int, List<Info>> Weighted = [];
   public readonly Dictionary<int, List<Info>> Fallback = [];
   public readonly Dictionary<int, List<Info>> Separate = [];
-  public bool Exists => Info.Count > 0 || Fallback.Count > 0 || Separate.Count > 0;
+  public bool Exists => Weighted.Count > 0 || Fallback.Count > 0 || Separate.Count > 0;
 
 
   public void Clear()
   {
-    Info.Clear();
+    Weighted.Clear();
     Fallback.Clear();
     Separate.Clear();
   }
@@ -173,21 +173,21 @@ public class PrefabInfo
           Fallback[hash] = list = [];
         list.Add(info);
       }
-      if (info.Weight == null)
+      else if (info.Weight != null)
+      {
+        if (!Weighted.TryGetValue(hash, out var list))
+          Weighted[hash] = list = [];
+        list.Add(info);
+      }
+      else
       {
         if (!Separate.TryGetValue(hash, out var list))
           Separate[hash] = list = [];
         list.Add(info);
       }
-      if (!info.Fallback && info.Weight != null)
-      {
-        if (!Info.TryGetValue(hash, out var list))
-          Info[hash] = list = [];
-        list.Add(info);
-      }
     }
   }
-  public bool TryGetValue(int prefab, out List<Info> list) => Info.TryGetValue(prefab, out list);
+  public bool TryGetWeightedValue(int prefab, out List<Info> list) => Weighted.TryGetValue(prefab, out list);
   public bool TryGetFallbackValue(int prefab, out List<Info> list) => Fallback.TryGetValue(prefab, out list);
   public bool TryGetSeparateValue(int prefab, out List<Info> list) => Separate.TryGetValue(prefab, out list);
 
@@ -196,15 +196,15 @@ public class PrefabInfo
 
 public class GlobalInfo
 {
-  public readonly List<Info> Info = [];
+  public readonly List<Info> Weighted = [];
   public readonly List<Info> Fallback = [];
   public readonly List<Info> Separate = [];
-  public bool Exists => Info.Count > 0 || Fallback.Count > 0 || Separate.Count > 0;
+  public bool Exists => Weighted.Count > 0 || Fallback.Count > 0 || Separate.Count > 0;
 
 
   public void Clear()
   {
-    Info.Clear();
+    Weighted.Clear();
     Fallback.Clear();
     Separate.Clear();
   }
@@ -212,9 +212,9 @@ public class GlobalInfo
   {
     if (info.Fallback)
       Fallback.Add(info);
-    if (info.Weight == null)
+    else if (info.Weight != null)
+      Weighted.Add(info);
+    else
       Separate.Add(info);
-    if (!info.Fallback && info.Weight != null)
-      Info.Add(info);
   }
 }

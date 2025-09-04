@@ -31,7 +31,7 @@ public class HandleChanged
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
 
     TrackedHashes.Clear();
-    AddTracks(changeDatas.Info);
+    AddTracks(changeDatas.Weighted);
     AddTracks(changeDatas.Fallback);
     AddTracks(changeDatas.Separate);
   }

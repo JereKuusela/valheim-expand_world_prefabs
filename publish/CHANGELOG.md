@@ -11,6 +11,7 @@
   - Adds new field `chance` to spawns, pokes and RPC calls to allow randomly skipping them.
   - Adds new field `repeat` to spawns, pokes and RPC calls to allow repeating after a delay.
   - Adds new field `weight` to spawns, pokes and RPC calls to allow triggering only one of the entries.
+  - Adds new states `death`, `effects`, `fragments`, `freezeframe`, `grow`, `hit`, `leguse`, `loaded`, `material`, `resetcloth`, `shoot`, `step` and `unsummon`.
 
 - v1.44
   - Adds offset support to pokes.

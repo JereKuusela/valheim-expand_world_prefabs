@@ -8,34 +8,25 @@ namespace ExpandWorld.Prefab;
 
 public class InfoSelector
 {
-  public static Info? Select(ActionType type, ZDO zdo, string[] args, Parameters parameters)
+  public static Info? SelectWeighted(ActionType type, ZDO zdo, string[] args, Parameters parameters)
   {
     var infos = InfoManager.Select(type);
-    return SelectDefault(infos, zdo, args, parameters) ?? SelectFallback(infos, zdo, args, parameters);
+    if (!infos.TryGetWeightedValue(zdo.m_prefab, out var data)) return null;
+    return SelectInfo(data, zdo, args, parameters);
+  }
+  public static Info? SelectFallback(ActionType type, ZDO zdo, string[] args, Parameters parameters)
+  {
+    var infos = InfoManager.Select(type);
+    if (!infos.TryGetFallbackValue(zdo.m_prefab, out var data)) return null;
+    return SelectInfo(data, zdo, args, parameters);
   }
   public static Info[]? SelectSeparate(ActionType type, ZDO zdo, string[] args, Parameters parameters)
   {
     var infos = InfoManager.Select(type);
-    return SelectSeparate(infos, zdo, args, parameters);
-  }
-  private static Info? SelectDefault(PrefabInfo infos, ZDO zdo, string[] args, Parameters parameters)
-  {
-    var prefab = zdo.m_prefab;
-    if (!infos.TryGetValue(prefab, out var data)) return null;
-    return SelectInfo(data, zdo, args, parameters);
-  }
-  private static Info? SelectFallback(PrefabInfo infos, ZDO zdo, string[] args, Parameters parameters)
-  {
-    var prefab = zdo.m_prefab;
-    if (!infos.TryGetFallbackValue(prefab, out var data)) return null;
-    return SelectInfo(data, zdo, args, parameters);
-  }
-  private static Info[]? SelectSeparate(PrefabInfo infos, ZDO zdo, string[] args, Parameters parameters)
-  {
-    var prefab = zdo.m_prefab;
-    if (!infos.TryGetSeparateValue(prefab, out var data)) return null;
+    if (!infos.TryGetSeparateValue(zdo.m_prefab, out var data)) return null;
     return SelectInfos(data, zdo, args, parameters);
   }
+
   private static Info? SelectInfo(List<Info> data, ZDO zdo, string[] args, Parameters parameters)
   {
     var infos = SelectInfos(data, zdo, args, parameters);
@@ -233,10 +224,15 @@ public class InfoSelector
     Random.state = state;
     return env.m_name.ToLower();
   }
-  public static Info? SelectGlobal(ActionType type, string[] args, Parameters parameters, Vector3 pos, bool remove)
+  public static Info? SelectGlobalWeighted(ActionType type, string[] args, Parameters parameters, Vector3 pos, bool remove)
   {
     var infos = InfoManager.SelectGlobal(type);
-    return SelectGlobalInfo(infos.Info, args, parameters, pos, remove) ?? SelectGlobalInfo(infos.Fallback, args, parameters, pos, remove);
+    return SelectGlobalInfo(infos.Weighted, args, parameters, pos, remove);
+  }
+  public static Info? SelectGlobalFallback(ActionType type, string[] args, Parameters parameters, Vector3 pos, bool remove)
+  {
+    var infos = InfoManager.SelectGlobal(type);
+    return SelectGlobalInfo(infos.Fallback, args, parameters, pos, remove);
   }
   public static Info[]? SelectGlobalSeparate(ActionType type, string[] args, Parameters parameters, Vector3 pos, bool remove)
   {
