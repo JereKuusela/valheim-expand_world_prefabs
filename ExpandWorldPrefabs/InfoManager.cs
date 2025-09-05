@@ -103,10 +103,10 @@ public class InfoManager
       HandleChanged.Patch(EWP.Harmony, ChangeDatas);
     if (TimeDatas.Exists)
     {
-      var checkTicks = TimeDatas.Weighted.Any(v => v.Args.Length > 0 && v.Args[0] == "tick");
-      var checkMinutes = TimeDatas.Weighted.Any(v => v.Args.Length > 0 && v.Args[0] == "minute");
-      var checkHours = TimeDatas.Weighted.Any(v => v.Args.Length > 0 && v.Args[0] == "hour");
-      var checkDays = TimeDatas.Weighted.Any(v => v.Args.Length > 0 && v.Args[0] == "day");
+      var checkTicks = TimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "tick");
+      var checkMinutes = TimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "minute");
+      var checkHours = TimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "hour");
+      var checkDays = TimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "day");
       HandleTime.Patch(EWP.Harmony, checkTicks, checkMinutes, checkHours, checkDays);
     }
     DataStorage.OnSet = KeyDatas.Exists ? OnKeySet : null;

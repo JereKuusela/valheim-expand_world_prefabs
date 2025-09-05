@@ -140,7 +140,8 @@ public class InfoSelector
         (d.MinPaint == null || (d.MinPaint.Value.b <= paint.b && d.MinPaint.Value.g <= paint.g && d.MinPaint.Value.r <= paint.r && d.MinPaint.Value.a <= paint.a)) &&
         (d.MaxPaint == null || (d.MaxPaint.Value.b >= paint.b && d.MaxPaint.Value.g >= paint.g && d.MaxPaint.Value.r >= paint.r && d.MaxPaint.Value.a >= paint.a)))];
     }
-    return [.. linq];
+    Info[] result = [.. linq];
+    return result.Length == 0 ? null : result;
   }
   private static bool CheckLocations(Info d, Vector3 pos, Vector2i zone) => CheckBannedLocations(d, pos, zone) && CheckRequiredLocations(d, pos, zone);
   private static bool CheckBannedLocations(Info d, Vector3 pos, Vector2i zone)
@@ -269,6 +270,8 @@ public class InfoSelector
       .Where(d => DataStorage.HasEveryKey(d.Keys, parameters))
       .Where(d => !DataStorage.HasAnyKey(d.BannedKeys, parameters));
 
-    return [.. linq];
+
+    Info[] result = [.. linq];
+    return result.Length == 0 ? null : result;
   }
 }

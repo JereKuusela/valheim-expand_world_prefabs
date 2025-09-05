@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
-using Service;
 using UnityEngine;
 
 namespace ExpandWorld.Prefab;
@@ -10,48 +8,6 @@ namespace ExpandWorld.Prefab;
 public class HandleRPC
 {
   private delegate bool RPCHandler(ZDO zdo, ZRoutedRpc.RoutedRPCData data);
-
-
-  // GetSource(data.m_senderPeerID) could be used to get the player ZDO of the sender.
-  // Currently not used, but left here for future reference.
-  // For some RPCs this is always the player what did the action.
-  private static readonly Dictionary<int, RPCHandler> RPCHandlers = new()
-  {
-    { RepairHash, WNTHealthChanged },
-    { SetTriggerHash, SetTrigger },
-    { SetTargetHash, SetTarget },
-    { ShakeHash, Shake },
-    { OnStateChangedHash, OnStateChanged },
-    { SetSaddleHash, SetSaddle },
-    { SayHash, Say },
-    { FlashShieldHash, FlashShield },
-    { SetPickedHash, SetPicked },
-    { PlayMusicHash, PlayMusic },
-    { WakeupHash, Wakeup },
-    { SetAreaHealthHash, SetAreaHealth },
-    { HideHash, Hide },
-    { SetVisualItemHash, SetVisualItem },
-    { AnimateLeverHash, AnimateLever },
-    { AnimateLeverReturnHash, AnimateLeverReturn },
-    { SetArmorVisualItemHash, SetArmorVisualItem },
-    { SetSlotVisualHash, SetSlotVisual },
-    { MakePieceHash, MakePiece },
-    { OnEatHash, OnEat },
-    { OnDeathHash, OnDeath },
-    { OnSetPoseHash, OnSetPose },
-    { OnLegUseHash, OnLegUse },
-    { OnSetLoadedHash, OnSetLoaded },
-    { OnShootHash, OnShoot },
-    { OnFreezeFrameHash, OnFreezeFrame },
-    { OnResetClothHash, OnResetCloth },
-    { OnFragmentsHash, OnFragments },
-    { OnStepHash, OnStep },
-    { OnMaterialHash, OnMaterial },
-    { OnEffectsHash, OnEffects },
-    { OnHitHash, OnHit },
-    { OnUnsummonHash, OnUnsummon },
-    { OnGrowHash, OnGrow }
-  };
 
   public static void Patch(Harmony harmony)
   {
@@ -324,7 +280,7 @@ public class HandleRPC
   static readonly ParameterInfo[] OnSetPosePars = AccessTools.Method(typeof(ArmorStand), nameof(ArmorStand.RPC_SetPose)).GetParameters();
   private static bool OnSetPose(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetSlotVisualPars, data.m_parameters);
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, OnSetPosePars, data.m_parameters);
     data.m_parameters.SetPos(0);
     if (pars.Length < 2) return false;
     var index = (int)pars[1];
@@ -335,7 +291,7 @@ public class HandleRPC
   static readonly ParameterInfo[] OnLegUsePars = AccessTools.Method(typeof(Catapult), nameof(Catapult.RPC_OnLegUse)).GetParameters();
   private static bool OnLegUse(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetSlotVisualPars, data.m_parameters);
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, OnLegUsePars, data.m_parameters);
     data.m_parameters.SetPos(0);
     if (pars.Length < 2) return false;
     var legsLocked = (bool)pars[1];
@@ -346,7 +302,7 @@ public class HandleRPC
   static readonly ParameterInfo[] OnSetLoadedPars = AccessTools.Method(typeof(Catapult), nameof(Catapult.RPC_SetLoadedVisual)).GetParameters();
   private static bool OnSetLoaded(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetSlotVisualPars, data.m_parameters);
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, OnSetLoadedPars, data.m_parameters);
     data.m_parameters.SetPos(0);
     if (pars.Length < 2) return false;
     var name = (string)pars[1];
@@ -364,7 +320,7 @@ public class HandleRPC
   static readonly ParameterInfo[] OnFreezeFramePars = AccessTools.Method(typeof(Character), nameof(Character.RPC_FreezeFrame)).GetParameters();
   private static bool OnFreezeFrame(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetSlotVisualPars, data.m_parameters);
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, OnFreezeFramePars, data.m_parameters);
     data.m_parameters.SetPos(0);
     if (pars.Length < 2) return false;
     var duratiom = (float)pars[1];
@@ -389,7 +345,7 @@ public class HandleRPC
   static readonly ParameterInfo[] OnStepPars = AccessTools.Method(typeof(FootStep), nameof(FootStep.RPC_Step)).GetParameters();
   private static bool OnStep(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetSlotVisualPars, data.m_parameters);
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, OnStepPars, data.m_parameters);
     data.m_parameters.SetPos(0);
     if (pars.Length < 3) return false;
     var index = (int)pars[1];
@@ -401,7 +357,7 @@ public class HandleRPC
   static readonly ParameterInfo[] OnMaterialPars = AccessTools.Method(typeof(MaterialVariation), nameof(MaterialVariation.RPC_UpdateMaterial)).GetParameters();
   private static bool OnMaterial(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetSlotVisualPars, data.m_parameters);
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, OnMaterialPars, data.m_parameters);
     data.m_parameters.SetPos(0);
     if (pars.Length < 2) return false;
     var index = (int)pars[1];
@@ -449,4 +405,47 @@ public class HandleRPC
     }
     return source;
   }
+
+
+  // GetSource(data.m_senderPeerID) could be used to get the player ZDO of the sender.
+  // Currently not used, but left here for future reference.
+  // For some RPCs this is always the player what did the action.
+  private static readonly Dictionary<int, RPCHandler> RPCHandlers = new()
+  {
+    { RepairHash, WNTHealthChanged },
+    { SetTriggerHash, SetTrigger },
+    { SetTargetHash, SetTarget },
+    { ShakeHash, Shake },
+    { OnStateChangedHash, OnStateChanged },
+    { SetSaddleHash, SetSaddle },
+    { SayHash, Say },
+    { FlashShieldHash, FlashShield },
+    { SetPickedHash, SetPicked },
+    { PlayMusicHash, PlayMusic },
+    { WakeupHash, Wakeup },
+    { SetAreaHealthHash, SetAreaHealth },
+    { HideHash, Hide },
+    { SetVisualItemHash, SetVisualItem },
+    { AnimateLeverHash, AnimateLever },
+    { AnimateLeverReturnHash, AnimateLeverReturn },
+    { SetArmorVisualItemHash, SetArmorVisualItem },
+    { SetSlotVisualHash, SetSlotVisual },
+    { MakePieceHash, MakePiece },
+    { OnEatHash, OnEat },
+    { OnDeathHash, OnDeath },
+    { OnSetPoseHash, OnSetPose },
+    { OnLegUseHash, OnLegUse },
+    { OnSetLoadedHash, OnSetLoaded },
+    { OnShootHash, OnShoot },
+    { OnFreezeFrameHash, OnFreezeFrame },
+    { OnResetClothHash, OnResetCloth },
+    { OnFragmentsHash, OnFragments },
+    { OnStepHash, OnStep },
+    { OnMaterialHash, OnMaterial },
+    { OnEffectsHash, OnEffects },
+    { OnHitHash, OnHit },
+    { OnUnsummonHash, OnUnsummon },
+    { OnGrowHash, OnGrow }
+  };
+
 }
