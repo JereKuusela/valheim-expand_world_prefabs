@@ -191,7 +191,7 @@ public class Info
   {
     if (candidates == null || candidates.Length == 0) return null;
     var weights = candidates.Select(s => s.Weight?.Get(pars) ?? 0f).ToArray();
-    var total = weights.Sum(s => s);
+    var total = Mathf.Max(1f, weights.Sum(s => s));
     var random = UnityEngine.Random.Range(0f, total);
     for (var i = 0; i < weights.Length; i++)
     {
@@ -236,7 +236,7 @@ public class Info
   {
     if (WeightedPokes == null || WeightedPokes.Length == 0) return null;
     var weights = WeightedPokes.Select(p => p.Weight?.Get(pars) ?? 0f).ToArray();
-    var total = weights.Sum();
+    var total = Mathf.Max(1f, weights.Sum(s => s));
     var random = UnityEngine.Random.Range(0f, total);
     for (var i = 0; i < weights.Length; i++)
     {
@@ -267,7 +267,7 @@ public class Info
   {
     if (WeightedObjectRpcs == null || WeightedObjectRpcs.Length == 0) return null;
     var weights = WeightedObjectRpcs.Select(r => r.Weight?.Get(pars) ?? 0f).ToArray();
-    var total = weights.Sum();
+    var total = Mathf.Max(1f, weights.Sum(s => s));
     var random = UnityEngine.Random.Range(0f, total);
     for (var i = 0; i < weights.Length; i++)
     {
@@ -283,7 +283,7 @@ public class Info
   {
     if (WeightedClientRpcs == null || WeightedClientRpcs.Length == 0) return null;
     var weights = WeightedClientRpcs.Select(r => r.Weight?.Get(pars) ?? 0f).ToArray();
-    var total = weights.Sum();
+    var total = Mathf.Max(1f, weights.Sum(s => s));
     var random = UnityEngine.Random.Range(0f, total);
     for (var i = 0; i < weights.Length; i++)
     {

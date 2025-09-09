@@ -74,17 +74,18 @@ Most fields are put on a single line. List values are separated by `,`.
       - [Discord Guide](https://discord.com/channels/1167153871546744842/1360994829663867040)
   - Objects spawned or removed by this mod won't trigger `create` or `destroy`.
 - types: List of types.
-- weight (optional, P): Chance to get selected if multiple entries match.
-  - If not set, this entry always gets selected without affecting other entries.
+- chance (default: `1`, P): Chance to execute this entry when all filters match.
+  - This can be combined with weight and is checked after weight selection.
+- weight (optional, P): When set, only one of the weighted entries is selected.
   - All weights are summed and the probability is `weight / sum`.
-  - If the sum is less than 1, the probability is `weight`, so there is a chance to not select any entry.
+  - Sum is at least 1, so with low weights there is a chance to not select anything.
 - fallback (default: `false`): If true, this entry can only get selected if no other entries match.
-- chance (default: `1`, P): Chance to run this entry when selected.
-  - This can also be used with weight.
 
 ## Filters
 
 If a filter is not specified, it's not checked and is always considered valid.
+
+All valid entries will be executed in unspecified order. Weight system can be used trigger only one entry.
 
 - admin (P): Checks if the object owner is an admin.
   - If true, the owner must be an admin.
@@ -283,10 +284,13 @@ See object filtering [examples](examples_object_filtering.md).
   - rot: Rotation offset in y,x,z from the original object.
   - triggerRules: If true, this spawn can trigger other entries.
   - chance (default: `1`): Chance to spawn the object.
+  - weight (optional): When set, only one of the weighted spawns is selected.
+    - All weights are summed and the probability is `weight / sum`.
+    - Sum is at least 1, so with low weights there is a chance to not spawn anything.
   - delay: Delay in seconds for spawning.
   - repeat (default: `0`): How many times the spawn is repeated.
   - repeatInterval (default: `0`): Interval in seconds between repeats.
-  - repeatChance (default: `1`): Chance to spawn for each repeat.
+  - repeatChance (default: `1`): Chance to spawn for each attempt (including the original).
 - swap (P): Swaps the original object with another object.
   - Format and keywords are same as for `spawn`.
   - The initial data is copied from the original object.
@@ -316,10 +320,13 @@ Poking allows to trigger actions on other objects (or even on the original objec
     - For example if some text has math symbols, it might cause weird results.
     - Math expression are considered legacy, use [functions](Functions) instead.
   - chance (default: `1`): Chance to poke.
+  - weight (optional): When set, only one of the weighted pokes is selected.
+    - All weights are summed and the probability is `weight / sum`.
+    - Sum is at least 1, so with low weights there is a chance to not poke anything.
   - delay: Delay in seconds for poking.
   - repeat (default: `0`): How many times the poke is repeated.
   - repeatInterval (default: `0`): Interval in seconds between repeats.
-  - repeatChance (default: `1`): Chance to poke for each repeat.
+  - repeatChance (default: `1`): Chance to poke for each attempt (including the original).
   - limit: Maximum amount of poked objects. If not set, all matching objects are poked.
   - minDistance: Minimum distance from the poker.
   - maxDistance: Maximum distance from the poker. Default is 100 meters.
@@ -346,11 +353,14 @@ RPC format:
   - `all`: The is sent to all clients.
   - ZDO id: The RPC is sent to the owner of this ZDO.
     - Parameters are supported. For example `<zdo>` can be useful.
-- delay (P): Delay in seconds for the RPC call.
 - chance (default: `1`): Chance to trigger.
+- weight (optional): When set, only one of the weighted RPCs is selected.
+  - All weights are summed and the probability is `weight / sum`.
+  - Sum is at least 1, so with low weights there is a chance to not trigger anything.
+- delay (P): Delay in seconds for the RPC call.
 - repeat (default: `0`): How many times the RPC is repeated.
 - repeatInterval (default: `0`): Interval in seconds between repeats.
-- repeatChance (default: `1`): Chance to trigger for each repeat.
+- repeatChance (default: `1`): Chance to trigger for each attempt (including the original).
 - source (P): ZDO id. The RPC call is faked to be from owner of this ZDO.
   - Parameters are supported. For example `<zdo>` can be useful.
 - packaged: If true, the parameters are sent as a package. Default is false.
