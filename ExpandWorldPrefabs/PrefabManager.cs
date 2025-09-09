@@ -46,7 +46,7 @@ public class Manager
       GlobalClientRpc(info.ClientRpcs, parameters);
     PokeGlobal(info, parameters, pos);
   }
-  public static bool Handle(ActionType type, string[] args, ZDO zdo, ZDO? source = null)
+  public static bool Handle(ActionType type, string[] args, ZDO zdo)
   {
     // Already destroyed before.
     if (ZDOMan.instance.m_deadZDOs.ContainsKey(zdo.m_uid)) return false;

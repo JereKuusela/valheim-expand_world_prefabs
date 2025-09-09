@@ -156,6 +156,13 @@ By default, the RPC is sent to the owner of the object.
 ```
 
 ```yaml
+# Adds adrenaline.
+  objectRpc:
+  - name: RPC_AddAdrenaline
+    1: float, "amount"
+```
+
+```yaml
 # Deals damage to the creature.
   objectRpc:
   - name: RPC_Damage
@@ -470,13 +477,26 @@ By default, the RPC is sent to the owner of the object.
 ```yaml
 # Destroys the item.
   objectRpc:
-  - name: DestroyAttachment
+  - name: RPC_DestroyAttachment
 ```
 
 ```yaml
 # Drops the item.
   objectRpc:
-  - name: DropItem
+  - name: RPC_DropItem
+```
+
+```yaml
+# Refreshes the shown item.
+  objectRpc:
+  - name: RPC_UpdateVisual
+```
+
+```yaml
+# Asks to become owner of the ZDO (not much use as the server).
+  objectRpc:
+  - name: RPC_RequestOwn
+    source: <zdo>
 ```
 
 ```yaml
@@ -487,13 +507,6 @@ By default, the RPC is sent to the owner of the object.
     1: string, "name of the item"
     2: int, "variant number of the item"
     3: int, "level of the item"
-```
-
-```yaml
-# Asks to become owner of the ZDO (not much use as the server).
-  objectRpc:
-  - name: RPC_RequestOwn
-    source: <zdo>
 ```
 
 ### MapTable
@@ -544,6 +557,12 @@ By default, the RPC is sent to the owner of the object.
 ```
 
 ### MonsterAI
+
+```yaml
+# Puts the creature to sleep.
+  objectRpc:
+  - name: RPC_Sleep
+```
 
 ```yaml
 # Awakens the creature.
@@ -688,9 +707,16 @@ By default, the RPC is sent to the owner of the object.
 ```
 
 ```yaml
-# Sets the project as it has hit something.
+# Sets the projectile as it has hit something.
   objectRpc:
   - name: RPC_OnHit
+```
+
+```yaml
+# Sets how long the projectile stays.
+  objectRpc:
+  - name: RPC_SetStayTTL
+    1: float, "seconds to stay"
 ```
 
 ### ResourceRoot
@@ -777,6 +803,13 @@ By default, the RPC is sent to the owner of the object.
 # Adds a single fuel.
   objectRpc:
   - name: RPC_AddFuel
+```
+
+```yaml
+# Adds a single fuel.
+  objectRpc:
+  - name: RPC_SetFuel
+    1: float, "amount of fuel"
 ```
 
 ```yaml
