@@ -104,7 +104,7 @@ public class Helper
   {
     if (amount == 0) return null;
     List<float> delays = [];
-    for (var i = 0; i < amount; i++)
+    for (var i = 0; i < amount + 1; i++)
     {
       if (chance < 1f && UnityEngine.Random.value > chance)
         continue;

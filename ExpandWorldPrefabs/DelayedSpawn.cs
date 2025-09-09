@@ -1,34 +1,62 @@
 using System.Collections.Generic;
 using Data;
 using Service;
+using UnityEngine;
 
 namespace ExpandWorld.Prefab;
 
 public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
 {
   private static readonly List<DelayedSpawn> Spawns = [];
-  public static void Add(float delay, List<float>? delays, ZdoEntry zdoEntry, bool triggerRules)
+
+  public static ZDO? CreateObject(ZdoEntry entry, bool triggerRules)
   {
-    if (delays != null && delays.Count > 0)
-      Add(delays, zdoEntry, triggerRules);
-    else
-      Add(delay, zdoEntry, triggerRules);
+    HandleCreated.Skip = !triggerRules;
+    var zdo = entry.Create();
+    HandleCreated.Skip = false;
+    return zdo;
   }
-  private static void Add(List<float> delays, ZdoEntry zdoEntry, bool triggerRules)
+  public static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Parameters pars)
   {
-    foreach (var delay in delays)
+    var chance = spawn.Chance?.Get(pars) ?? 1f;
+    if (chance < 1f && Random.value > chance)
+      return;
+
+    var delay = spawn.Delay?.Get(pars) ?? 0f;
+    var repeat = spawn.Repeat?.Get(pars) ?? 0;
+    var repeatInterval = spawn.RepeatInterval?.Get(pars) ?? delay;
+    var repeatChance = spawn.RepeatChance?.Get(pars) ?? 1f;
+    var delays = Helper.GenerateDelays(delay, repeat, repeatInterval, repeatChance);
+    if (delays != null)
     {
-      if (delay <= 0f)
-        Manager.CreateObject(zdoEntry, triggerRules);
-      else
-        Spawns.Add(new(delay, zdoEntry, triggerRules));
+      foreach (var d in delays)
+        Add(spawn, originalZdo, data, pars, d);
     }
+    else
+      Add(spawn, originalZdo, data, pars, delay);
+  }
+  private static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Parameters pars, float delay)
+  {
+    var pos = originalZdo.m_position;
+    var rotQuat = originalZdo.GetRotation();
+    pos += rotQuat * (spawn.Pos?.Get(pars) ?? Vector3.zero);
+    rotQuat *= spawn.Rot?.Get(pars) ?? Quaternion.identity;
+    var rot = rotQuat.eulerAngles;
+    if (spawn.Snap?.GetBool(pars) == true)
+      pos.y = WorldGenerator.instance.GetHeight(pos.x, pos.z);
+    data = DataHelper.Merge(data, DataHelper.Get(spawn.Data, pars));
+    var prefab = spawn.GetPrefab(pars);
+    if (prefab == 0) return;
+    ZdoEntry zdoEntry = new(prefab, pos, rot, originalZdo);
+    if (data != null)
+      zdoEntry.Load(data, pars);
+    Add(delay, zdoEntry, spawn.TriggerRules?.GetBool(pars) ?? false);
   }
   private static void Add(float delay, ZdoEntry zdoEntry, bool triggerRules)
   {
     if (delay <= 0f)
     {
-      Manager.CreateObject(zdoEntry, triggerRules);
+      CreateObject(zdoEntry, triggerRules);
       return;
     }
     Spawns.Add(new(delay, zdoEntry, triggerRules));
@@ -55,6 +83,6 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
 
   public void Execute()
   {
-    Manager.CreateObject(ZdoEntry, TriggerRules);
+    CreateObject(ZdoEntry, TriggerRules);
   }
 }

@@ -74,10 +74,13 @@ Most fields are put on a single line. List values are separated by `,`.
       - [Discord Guide](https://discord.com/channels/1167153871546744842/1360994829663867040)
   - Objects spawned or removed by this mod won't trigger `create` or `destroy`.
 - types: List of types.
-- weight (default: `1`, P): Chance to be selected if multiple entries match.
+- weight (optional, P): Chance to get selected if multiple entries match.
+  - If not set, this entry always gets selected without affecting other entries.
   - All weights are summed and the probability is `weight / sum`.
   - If the sum is less than 1, the probability is `weight`, so there is a chance to not select any entry.
-- fallback (default: `false`): If true, this entry can only be selected if no other entries match.
+- fallback (default: `false`): If true, this entry can only get selected if no other entries match.
+- chance (default: `1`, P): Chance to run this entry when selected.
+  - This can also be used with weight.
 
 ## Filters
 
@@ -276,16 +279,21 @@ See object filtering [examples](examples_object_filtering.md).
   - prefab: Object id or value group.
   - data: Entry in the `data.yaml` to be used as initial data.
     - Supports `type, key, value` format to set a single data value.
-  - delay: Delay in seconds for spawning.
   - pos: Position offset in x,z,y from the original object.
   - rot: Rotation offset in y,x,z from the original object.
   - triggerRules: If true, this spawn can trigger other entries.
+  - chance (default: `1`): Chance to spawn the object.
+  - delay: Delay in seconds for spawning.
+  - repeat (default: `0`): How many times the spawn is repeated.
+  - repeatInterval (default: `0`): Interval in seconds between repeats.
+  - repeatChance (default: `1`): Chance to spawn for each repeat.
 - swap (P): Swaps the original object with another object.
   - Format and keywords are same as for `spawn`.
   - The initial data is copied from the original object.
   - Swap is done by removing the original object and spawning the swapped object.
   - If the swapped object is not valid, the original object is still removed.
   - Swapping can break ZDO connection, so spawn points may respawn even when the creature is alive.
+  - Chance works for swap too. If it fails, the original object is still removed.
 
 ### Pokes
 
@@ -307,7 +315,11 @@ Poking allows to trigger actions on other objects (or even on the original objec
   - evaluate: If false, math expressions are not calculated in the parameter. Default is true.
     - For example if some text has math symbols, it might cause weird results.
     - Math expression are considered legacy, use [functions](Functions) instead.
+  - chance (default: `1`): Chance to poke.
   - delay: Delay in seconds for poking.
+  - repeat (default: `0`): How many times the poke is repeated.
+  - repeatInterval (default: `0`): Interval in seconds between repeats.
+  - repeatChance (default: `1`): Chance to poke for each repeat.
   - limit: Maximum amount of poked objects. If not set, all matching objects are poked.
   - minDistance: Minimum distance from the poker.
   - maxDistance: Maximum distance from the poker. Default is 100 meters.
@@ -335,6 +347,10 @@ RPC format:
   - ZDO id: The RPC is sent to the owner of this ZDO.
     - Parameters are supported. For example `<zdo>` can be useful.
 - delay (P): Delay in seconds for the RPC call.
+- chance (default: `1`): Chance to trigger.
+- repeat (default: `0`): How many times the RPC is repeated.
+- repeatInterval (default: `0`): Interval in seconds between repeats.
+- repeatChance (default: `1`): Chance to trigger for each repeat.
 - source (P): ZDO id. The RPC call is faked to be from owner of this ZDO.
   - Parameters are supported. For example `<zdo>` can be useful.
 - packaged: If true, the parameters are sent as a package. Default is false.

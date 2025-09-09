@@ -79,6 +79,18 @@ public abstract class RpcInfo
     if (chance < 1f && UnityEngine.Random.value > chance)
       return;
 
+    var delay = Delay?.Get(pars) ?? 0f;
+    var delays = GenerateDelays(delay, pars);
+    if (delays != null)
+    {
+      foreach (var d in delays)
+        Invoke(zdo, pars, d);
+    }
+    else
+      Invoke(zdo, pars, delay);
+  }
+  private void Invoke(ZDO zdo, Parameters pars, float delay)
+  {
     var source = ZRoutedRpc.instance.m_id;
     var sourceParameter = SourceParameter?.Get(pars);
     if (sourceParameter != null && sourceParameter != "")
@@ -86,13 +98,12 @@ public abstract class RpcInfo
       var id = Parse.ZdoId(sourceParameter);
       source = ZDOMan.instance.GetZDO(id)?.GetOwner() ?? 0;
     }
-    var delay = Delay?.Get(pars) ?? 0f;
-    var delays = GenerateDelays(delay, pars);
+
     var parameters = Packaged ? GetPackagedParameters(zdo, pars) : GetParameters(zdo, pars);
     if (Target == RpcTarget.Owner)
-      DelayedRpc.Add(delay, delays, source, zdo.GetOwner(), GetId(zdo), Hash, parameters);
+      DelayedRpc.Add(delay, source, zdo.GetOwner(), GetId(zdo), Hash, parameters);
     else if (Target == RpcTarget.All)
-      DelayedRpc.Add(delay, delays, source, ZRoutedRpc.Everybody, GetId(zdo), Hash, parameters);
+      DelayedRpc.Add(delay, source, ZRoutedRpc.Everybody, GetId(zdo), Hash, parameters);
     else if (Target == RpcTarget.ZDO)
     {
       var targetParameter = TargetParameter?.Get(pars);
@@ -101,7 +112,7 @@ public abstract class RpcInfo
         var id = Parse.ZdoId(targetParameter);
         var peerId = ZDOMan.instance.GetZDO(id)?.GetOwner();
         if (peerId.HasValue)
-          DelayedRpc.Add(delay, delays, source, peerId.Value, GetId(zdo), Hash, parameters);
+          DelayedRpc.Add(delay, source, peerId.Value, GetId(zdo), Hash, parameters);
       }
     }
   }
@@ -111,11 +122,21 @@ public abstract class RpcInfo
     if (chance < 1f && UnityEngine.Random.value > chance)
       return;
 
-    var source = ZRoutedRpc.instance.m_id;
-    var parameters = Packaged ? PackagedGetParameters(pars) : GetParameters(pars);
     var delay = Delay?.Get(pars) ?? 0f;
     var delays = GenerateDelays(delay, pars);
-    DelayedRpc.Add(delay, delays, source, ZRoutedRpc.Everybody, ZDOID.None, Hash, parameters);
+    if (delays != null)
+    {
+      foreach (var d in delays)
+        InvokeGlobal(pars, d);
+    }
+    else
+      InvokeGlobal(pars, delay);
+  }
+  private void InvokeGlobal(Parameters pars, float delay)
+  {
+    var source = ZRoutedRpc.instance.m_id;
+    var parameters = Packaged ? PackagedGetParameters(pars) : GetParameters(pars);
+    DelayedRpc.Add(delay, source, ZRoutedRpc.Everybody, ZDOID.None, Hash, parameters);
   }
   private List<float>? GenerateDelays(float delay, Parameters pars)
   {
