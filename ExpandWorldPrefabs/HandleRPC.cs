@@ -218,7 +218,7 @@ public class HandleRPC
   static readonly ParameterInfo[] SetAreaHealthPars = AccessTools.Method(typeof(MineRock5), nameof(MineRock5.RPC_SetAreaHealth)).GetParameters();
   private static bool SetAreaHealth(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    var pars = ZNetView.Deserialize(data.m_senderPeerID, HidePars, data.m_parameters);
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, SetAreaHealthPars, data.m_parameters);
     data.m_parameters.SetPos(0);
     if (pars.Length < 3) return false;
     var index = (int)pars[1];
