@@ -40,8 +40,6 @@ Most fields are put on a single line. List values are separated by `,`.
   - Supported types are:
     - `create`: When objects are created. No parameter.
     - `destroy`: When objects are destroyed. No parameter.
-    - `repair`: When structures are repaired. No parameter.
-    - `damage`: When structures or trees are damaged. No parameter.
     - `change`: When objects data changes.
       - First parameter is the data name.
       - Second parameter is the data value.
@@ -408,27 +406,30 @@ Terrain operation:
 
 State works for following objects:
 
-- ArmorStand: Setting item triggers state with `"itemid" "variant" "slot"` or `<none> 0 "slot"`.
-  - For specific item on any slot, use `"itemid"` or `"itemid variant"`.
-  - For any item on specific slot, use `* * "slot"`.
+- ArmorStand: Setting item triggers state with `item "itemid" "variant" "slot"` or `<none> 0 "slot"`.
+  - For specific item on any slot, use `item "itemid"` or `item "itemid variant"`.
+  - For any item on specific slot, use `item * * "slot"`.
 - ArmorStand: Setting pose triggers state `pose "index"`.
 - Catapult: Using leg triggers state `lock` or `release`.
 - Catapult: Setting loaded visual triggers state `loaded "itemid"`.
 - Catapult: Shooting triggers state `shoot`.
 - Character: Freeze frame triggers state `freezeframe "duration"`.
 - Character: Reset cloth triggers state `resetcloth`.
-- CookingStation: Setting item triggers state with `"itemid" "slot"` or `<none> "slot"`.
-  - For specific item on any slot, use `"itemid"`.
-  - For any item on specific slot, use `* "slot"`.
+- Character: Being targeted by a turret triggers state `target`.
+- CookingStation: Setting item triggers state with `item "itemid" "slot"` or `item <none> "slot"`.
+  - For specific item on any slot, use `item "itemid"`.
+  - For any item on specific slot, use `item * "slot"`.
 - Destructible: When destroyed triggers state `fragments`.
 - Feast: Eating triggers state `eat`.
 - FootStep: Each footstep triggers state `step "index" "x" "z" "y"`.
 - Incinerator (obliterator): Using the lever triggers state `start` and `end`.
 - ItemDrop: Turning a drop into a piece triggers `piece`.
-- ItemStand: Setting item triggers state with `"itemid" "variant" "quality"` or `<none> 0 0`.
-  - For specific item of any variant or quality, use `"itemid"`.
-  - For any item of specific quality, use `* * "quality"`.
+- ItemStand: Setting item triggers state with `item "itemid" "variant" "quality"` or `item <none> 0 0`.
+  - For specific item of any variant or quality, use `item "itemid"`.
+  - For any item of specific quality, use `item * * "quality"`.
 - MaterialVariation: Change of material triggers state `material "index"`.
+- MineRock: Part being broken triggers state `damage "index"`.
+- MineRock5: Being hit triggers state `damage "index" "health"`.
 - MonsterAI: Waking up from sleep triggers state `wakeup`.
 - MusicVolume: Entering the volume triggers state `music`.
 - Pickable: Picking triggers state `picked` or `unpicked`.
@@ -438,11 +439,12 @@ State works for following objects:
 - ShieldGenerator: Project hit triggers state `hit`.
 - Tameable: Setting saddle triggers state `saddle` or `unsaddle`.
 - Tameable: Unsummoning triggers state `unsummon`.
-- Trap: Triggering the trap triggers state with the target id.
+- Trap: Triggering the trap triggers state `trap "state"`.
 - TreeBase: Growing triggers state `grow`.
-- TreeBase: Being hit triggers state `shake`.
-- Turret (ballista): Targeting triggers state with the target id.
-- ZSyncAnimation: Each animation such as attacks triggers state.
+- TreeBase: Being hit triggers state `damage`.
+- Turret (ballista): Targeting triggers state `targeting "targetid"`.
+- WearNTear (structure): Health change triggers either `damage` or `repair`.
+- ZSyncAnimation: Each animation such as attacks triggers `action "animation"`.
 
 ### Parameters
 

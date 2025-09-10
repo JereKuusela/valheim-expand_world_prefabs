@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
@@ -8,6 +9,7 @@ namespace ExpandWorld.Prefab;
 public class HandleRPC
 {
   private delegate bool RPCHandler(ZDO zdo, ZRoutedRpc.RoutedRPCData data);
+  private static readonly Dictionary<int, RPCHandler> Handlers = [];
 
   public static void Patch(Harmony harmony)
   {
@@ -17,6 +19,20 @@ public class HandleRPC
     method = AccessTools.Method(typeof(ZRoutedRpc), nameof(ZRoutedRpc.RouteRPC));
     patch = AccessTools.Method(typeof(HandleRPC), nameof(RouteRPC));
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
+  }
+
+  public static void SetRequiredStates(HashSet<string> requiredStates)
+  {
+    Handlers.Clear();
+
+    foreach (var (hash, handler, states) in AllAvailableHandlers)
+    {
+      foreach (var state in states)
+      {
+        if (state == "<always>" || requiredStates.Contains(state))
+          Handlers[hash] = handler;
+      }
+    }
   }
 
 
@@ -39,7 +55,7 @@ public class HandleRPC
 
     var cancel = false;
 
-    if (RPCHandlers.TryGetValue(data.m_methodHash, out var handler))
+    if (Handlers.TryGetValue(data.m_methodHash, out var handler))
       cancel = handler(zdo, data);
 
     return !cancel;
@@ -59,9 +75,17 @@ public class HandleRPC
     var health = (float)pars[1];
     if (health > 1E20) return false;
     if (health == wearNTear.m_health)
-      return Manager.Handle(ActionType.Repair, [], zdo);
+    {
+      var cancel1 = Manager.Handle(ActionType.State, ["repair"], zdo);
+      var cancel2 = Manager.Handle(ActionType.Repair, [], zdo);
+      return cancel1 || cancel2;
+    }
     else
-      return Manager.Handle(ActionType.Damage, [], zdo);
+    {
+      var cancel1 = Manager.Handle(ActionType.State, ["damage"], zdo);
+      var cancel2 = Manager.Handle(ActionType.Damage, [], zdo);
+      return cancel1 || cancel2;
+    }
   }
 
   static readonly int SetTriggerHash = "SetTrigger".GetStableHashCode();
@@ -72,7 +96,10 @@ public class HandleRPC
     data.m_parameters.SetPos(0);
     if (pars.Length < 2) return false;
     var trigger = (string)pars[1];
-    return Manager.Handle(ActionType.State, [trigger], zdo);
+
+    var cancel1 = Manager.Handle(ActionType.State, ["action", trigger], zdo);
+    var cancel2 = Manager.Handle(ActionType.State, [trigger], zdo);
+    return cancel1 || cancel2;
   }
   static readonly int SetTargetHash = "RPC_SetTarget".GetStableHashCode();
   static readonly ParameterInfo[] SetTargetPars = AccessTools.Method(typeof(Turret), nameof(Turret.RPC_SetTarget)).GetParameters();
@@ -88,14 +115,17 @@ public class HandleRPC
     var targetPrefab = ZNetScene.instance.GetPrefab(targetZDO.GetPrefab());
     if (!targetPrefab) return false;
     var cancel1 = Manager.Handle(ActionType.State, [targetPrefab.name], zdo);
-    var cancel2 = Manager.Handle(ActionType.State, ["target"], targetZDO);
-    return cancel1 || cancel2;
+    var cancel2 = Manager.Handle(ActionType.State, ["targeting", targetPrefab.name], zdo);
+    var cancel3 = Manager.Handle(ActionType.State, ["target"], targetZDO);
+    return cancel1 || cancel2 || cancel3;
   }
   static readonly int ShakeHash = "RPC_Shake".GetStableHashCode();
   static readonly ParameterInfo[] ShakePars = AccessTools.Method(typeof(TreeBase), nameof(TreeBase.RPC_Shake)).GetParameters();
   private static bool Shake(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    return Manager.Handle(ActionType.Damage, [], zdo);
+    var cancel1 = Manager.Handle(ActionType.Damage, [], zdo);
+    var cancel2 = Manager.Handle(ActionType.State, ["damage"], zdo);
+    return cancel1 || cancel2;
   }
   static readonly int OnStateChangedHash = "RPC_OnStateChanged".GetStableHashCode();
   static readonly ParameterInfo[] OnStateChangedPars = AccessTools.Method(typeof(Trap), nameof(Trap.RPC_OnStateChanged)).GetParameters();
@@ -106,7 +136,9 @@ public class HandleRPC
     if (pars.Length < 2) return false;
     var state = (int)pars[1];
     if (state == 0) return false;
-    return Manager.Handle(ActionType.State, [state.ToString()], zdo);
+    var cancel1 = Manager.Handle(ActionType.State, [state.ToString()], zdo);
+    var cancel2 = Manager.Handle(ActionType.State, ["trap", state.ToString()], zdo);
+    return cancel1 || cancel2;
   }
   static readonly int SetSaddleHash = "SetSaddle".GetStableHashCode();
   static readonly ParameterInfo[] SetSaddlePars = AccessTools.Method(typeof(Tameable), nameof(Tameable.RPC_SetSaddle)).GetParameters();
@@ -186,7 +218,14 @@ public class HandleRPC
   static readonly ParameterInfo[] SetAreaHealthPars = AccessTools.Method(typeof(MineRock5), nameof(MineRock5.RPC_SetAreaHealth)).GetParameters();
   private static bool SetAreaHealth(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    return Manager.Handle(ActionType.Damage, [], zdo);
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, HidePars, data.m_parameters);
+    data.m_parameters.SetPos(0);
+    if (pars.Length < 3) return false;
+    var index = (int)pars[1];
+    var health = (float)pars[2];
+    var cancel1 = Manager.Handle(ActionType.Damage, [], zdo);
+    var cancel2 = Manager.Handle(ActionType.State, ["damage", index.ToString(), Helper.Format2(health)], zdo);
+    return cancel1 || cancel2;
   }
   static readonly int HideHash = "Hide".GetStableHashCode();
   static readonly ParameterInfo[] HidePars = AccessTools.Method(typeof(MineRock), nameof(MineRock.RPC_Hide)).GetParameters();
@@ -196,7 +235,9 @@ public class HandleRPC
     data.m_parameters.SetPos(0);
     if (pars.Length < 2) return false;
     var index = (int)pars[1];
-    return Manager.Handle(ActionType.Damage, [index.ToString()], zdo);
+    var cancel1 = Manager.Handle(ActionType.Damage, [index.ToString()], zdo);
+    var cancel2 = Manager.Handle(ActionType.State, ["damage", index.ToString()], zdo);
+    return cancel1 || cancel2;
   }
   static readonly int SetVisualItemHash = "SetVisualItem".GetStableHashCode();
   static readonly ParameterInfo[] ItemStandPars = AccessTools.Method(typeof(ItemStand), nameof(ItemStand.RPC_SetVisualItem)).GetParameters();
@@ -212,7 +253,10 @@ public class HandleRPC
     var variant = (int)pars[2];
     var quality = (int)pars[3];
     var state = item == "" ? "<none>" : item;
-    return Manager.Handle(ActionType.State, [state, variant.ToString(), quality.ToString()], zdo);
+
+    var cancel1 = Manager.Handle(ActionType.State, [state, variant.ToString(), quality.ToString()], zdo);
+    var cancel2 = Manager.Handle(ActionType.State, ["item", state, variant.ToString(), quality.ToString()], zdo);
+    return cancel1 || cancel2;
   }
   static readonly int SetArmorVisualItemHash = "RPC_SetVisualItem".GetStableHashCode();
   static readonly ParameterInfo[] ArmorStandPars = AccessTools.Method(typeof(ArmorStand), nameof(ArmorStand.RPC_SetVisualItem)).GetParameters();
@@ -227,7 +271,10 @@ public class HandleRPC
     var item = (string)pars[2];
     var variant = (int)pars[3];
     var state = item == "" ? "<none>" : item;
-    return Manager.Handle(ActionType.State, [state, variant.ToString(), slot.ToString()], zdo);
+
+    var cancel1 = Manager.Handle(ActionType.State, [state, variant.ToString(), slot.ToString()], zdo);
+    var cancel2 = Manager.Handle(ActionType.State, ["item", state, variant.ToString(), slot.ToString()], zdo);
+    return cancel1 || cancel2;
   }
   static readonly int AnimateLeverHash = "RPC_AnimateLever".GetStableHashCode();
   static readonly ParameterInfo[] AnimateLeverPars = AccessTools.Method(typeof(Incinerator), nameof(Incinerator.RPC_AnimateLever)).GetParameters();
@@ -251,7 +298,10 @@ public class HandleRPC
     var slot = (int)pars[1];
     var item = (string)pars[2];
     var state = item == "" ? "<none>" : item;
-    return Manager.Handle(ActionType.State, [slot.ToString(), state], zdo);
+
+    var cancel1 = Manager.Handle(ActionType.State, [slot.ToString(), state], zdo);
+    var cancel2 = Manager.Handle(ActionType.State, ["item", slot.ToString(), state], zdo);
+    return cancel1 || cancel2;
   }
 
 
@@ -410,6 +460,43 @@ public class HandleRPC
   // GetSource(data.m_senderPeerID) could be used to get the player ZDO of the sender.
   // Currently not used, but left here for future reference.
   // For some RPCs this is always the player what did the action.
+  private static readonly (int Hash, RPCHandler Handler, string[] States)[] AllAvailableHandlers = [
+    (RepairHash, WNTHealthChanged, ["damage", "repair"]),
+    (SetTriggerHash, SetTrigger, ["<always>", "action"]),
+    (SetTargetHash, SetTarget, ["<always>", "target", "targeting"]),
+    (ShakeHash, Shake, ["damage"]),
+    (OnStateChangedHash, OnStateChanged, ["<always>", "trap"]),
+    (SetSaddleHash, SetSaddle, ["saddle", "unsaddle"]),
+    (SayHash, Say, ["say"]), // Uses ActionType.Say
+    (FlashShieldHash, FlashShield, ["flash"]),
+    (SetPickedHash, SetPicked, ["picked", "unpicked"]),
+    (PlayMusicHash, PlayMusic, ["music"]),
+    (WakeupHash, Wakeup, ["wakeup"]),
+    (SetAreaHealthHash, SetAreaHealth, ["damage"]),
+    (HideHash, Hide, ["damage"]),
+    (SetVisualItemHash, SetVisualItem, ["<always>", "item"]),
+    (AnimateLeverHash, AnimateLever, ["start"]),
+    (AnimateLeverReturnHash, AnimateLeverReturn, ["end"]),
+    (SetArmorVisualItemHash, SetArmorVisualItem, ["<always>", "item"]),
+    (SetSlotVisualHash, SetSlotVisual, ["<always>", "item"]),
+    (MakePieceHash, MakePiece, ["piece"]),
+    (OnEatHash, OnEat, ["eat"]),
+    (OnDeathHash, OnDeath, ["death"]),
+    (OnSetPoseHash, OnSetPose, ["pose"]),
+    (OnLegUseHash, OnLegUse, ["lock", "release"]),
+    (OnSetLoadedHash, OnSetLoaded, ["loaded"]),
+    (OnShootHash, OnShoot, ["shoot"]),
+    (OnFreezeFrameHash, OnFreezeFrame, ["freezeframe"]),
+    (OnResetClothHash, OnResetCloth, ["resetcloth"]),
+    (OnFragmentsHash, OnFragments, ["fragments"]),
+    (OnStepHash, OnStep, ["step"]),
+    (OnMaterialHash, OnMaterial, ["material"]),
+    (OnEffectsHash, OnEffects, ["effects"]),
+    (OnHitHash, OnHit, ["hit"]),
+    (OnUnsummonHash, OnUnsummon, ["unsummon"]),
+    (OnGrowHash, OnGrow, ["grow"])
+  ];
+
   private static readonly Dictionary<int, RPCHandler> RPCHandlers = new()
   {
     { RepairHash, WNTHealthChanged },

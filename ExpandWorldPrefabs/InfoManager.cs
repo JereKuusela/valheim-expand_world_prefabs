@@ -92,7 +92,10 @@ public class InfoManager
     if (RemoveDatas.Exists)
       HandleDestroyed.Patch(EWP.Harmony);
     if (RepairDatas.Exists || DamageDatas.Exists || StateDatas.Exists || SayDatas.Exists)
+    {
       HandleRPC.Patch(EWP.Harmony);
+      HandleRPC.SetRequiredStates(GetRequiredStates());
+    }
     if (SayDatas.Exists)
       ServerClient.Patch(EWP.Harmony);
     if (GlobalKeyDatas.Exists)
@@ -110,6 +113,44 @@ public class InfoManager
       HandleTime.Patch(EWP.Harmony, checkTicks, checkMinutes, checkHours, checkDays);
     }
     DataStorage.OnSet = KeyDatas.Exists ? OnKeySet : null;
+  }
+
+  private static HashSet<string> GetRequiredStates()
+  {
+    var states = new HashSet<string>();
+    if (SayDatas.Exists) states.Add("say");
+    if (DamageDatas.Exists) states.Add("damage");
+    if (RepairDatas.Exists) states.Add("repair");
+
+    // Collect from all three categories: Weighted, Fallback, and Separate
+    foreach (var infos in StateDatas.Weighted.Values)
+    {
+      foreach (var info in infos)
+      {
+        if (info.Args.Length > 0)
+          states.Add(info.Args[0]);
+      }
+    }
+
+    foreach (var infos in StateDatas.Fallback.Values)
+    {
+      foreach (var info in infos)
+      {
+        if (info.Args.Length > 0)
+          states.Add(info.Args[0]);
+      }
+    }
+
+    foreach (var infos in StateDatas.Separate.Values)
+    {
+      foreach (var info in infos)
+      {
+        if (info.Args.Length > 0)
+          states.Add(info.Args[0]);
+      }
+    }
+
+    return states;
   }
 
   private static void OnKeySet(string key, string value)
