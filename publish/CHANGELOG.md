@@ -1,3 +1,8 @@
+- v1.46
+  - Removes `type: damage` support
+  - Removes `type: repair` support.
+  - Removes deprecated `type: state` triggers.
+
 - v1.45
   - Breaking change: Scripts are now checked separately by default!
   - This means multiple scripts can run from a single trigger.

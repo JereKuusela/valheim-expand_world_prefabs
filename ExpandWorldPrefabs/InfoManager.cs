@@ -10,8 +10,6 @@ public enum ActionType
 {
   Create,
   Destroy,
-  Repair,
-  Damage,
   State,
   Command,
   Say,
@@ -26,8 +24,6 @@ public class InfoManager
 {
   public static readonly PrefabInfo CreateDatas = new();
   public static readonly PrefabInfo RemoveDatas = new();
-  public static readonly PrefabInfo RepairDatas = new();
-  public static readonly PrefabInfo DamageDatas = new();
   public static readonly PrefabInfo StateDatas = new();
   public static readonly PrefabInfo SayDatas = new();
   public static readonly PrefabInfo PokeDatas = new();
@@ -41,8 +37,6 @@ public class InfoManager
   {
     CreateDatas.Clear();
     RemoveDatas.Clear();
-    RepairDatas.Clear();
-    DamageDatas.Clear();
     StateDatas.Clear();
     SayDatas.Clear();
     PokeDatas.Clear();
@@ -91,7 +85,7 @@ public class InfoManager
       HandleCreated.Patch(EWP.Harmony);
     if (RemoveDatas.Exists)
       HandleDestroyed.Patch(EWP.Harmony);
-    if (RepairDatas.Exists || DamageDatas.Exists || StateDatas.Exists || SayDatas.Exists)
+    if (StateDatas.Exists || SayDatas.Exists)
     {
       HandleRPC.Patch(EWP.Harmony);
       HandleRPC.SetRequiredStates(GetRequiredStates());
@@ -119,8 +113,6 @@ public class InfoManager
   {
     var states = new HashSet<string>();
     if (SayDatas.Exists) states.Add("say");
-    if (DamageDatas.Exists) states.Add("damage");
-    if (RepairDatas.Exists) states.Add("repair");
 
     // Collect from all three categories: Weighted, Fallback, and Separate
     foreach (var infos in StateDatas.Weighted.Values)
@@ -160,8 +152,6 @@ public class InfoManager
   public static PrefabInfo Select(ActionType type) => type switch
   {
     ActionType.Destroy => RemoveDatas,
-    ActionType.Repair => RepairDatas,
-    ActionType.Damage => DamageDatas,
     ActionType.State => StateDatas,
     ActionType.Say => SayDatas,
     ActionType.Poke => PokeDatas,
