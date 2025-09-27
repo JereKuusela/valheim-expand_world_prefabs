@@ -9,15 +9,9 @@ Unfortunately not visible because bosses have different UI.
 ```yaml
 - prefab: Eikthyr, gd_king,Bonemass, Dragon, GoblinKing, SeekerQueen
   type: create
-  data: two_star
-```
-
-`expand_data.yaml`: Changes level to 3 (2 stars).
-
-```yaml
-- name: two_star
-  ints:
-  - level, 3
+  data: int, level, 3
+# Inject must be false to refresh the boss health.
+  injectData: false
 ```
 
 ## Stronger bosses
@@ -27,8 +21,9 @@ Unfortunately not visible because bosses have different UI.
 ```yaml
 - prefab: Bonemass
   type: create
+# Inject is false on default for data entries.
   data: ultra_bonemass
-  weight: 0.1
+  chance: 0.1
 ```
 
 `expand_data.yaml`: Changes multiple stats as an example.
@@ -56,16 +51,18 @@ Unfortunately not visible because bosses have different UI.
 ```yaml
 - prefab: Blob
   type: create
-  weight: 0.5
+  chance: 0.5
   swap: BlobElite
   objects:
-  - Bonemass, objectDistance: 50
+  - prefab: Bonemass
+    maxDistance: 50
 - prefab: Skeleton
   type: create
-  weight: 0.5
+  chance: 0.5
   swap: Draugr
   objects:
-  - Bonemass, objectDistance: 50
+  - prefab: Bonemass
+    maxDistance: 50
 ```
 
 50% chance for two stars when near Bonemass:
@@ -73,10 +70,13 @@ Unfortunately not visible because bosses have different UI.
 ```yaml
 - prefab: Blob, Skeleton
   type: create
-  weight: 0.5
-  data: two_star
+  chance: 0.5
+  data: int, level, 2
+# Inject must be false to refresh the creature health.
+  injectData: false
   objects:
-  - Bonemass, 50
+  - prefab: Bonemass
+    maxDistance: 50
 ```
 
 ## Moder: Ice blast can spawn hatchlings
@@ -86,7 +86,7 @@ In the ground:
 ```yaml
 - prefab: IceBlocker
   type: create
-  weight: 0.5
+  chance: 0.1
   swap: Hatchling
 ```
 
@@ -95,7 +95,6 @@ In the air:
 ```yaml
 - prefab: dragon_ice_projectile
   type: create
-  weight: 0.5
-# World Edit commands is needed on server for spawn_object command.
-  command: spawn_object Hatchling pos={x},{z},{y}
+  chance: 0.1
+  spawn: Hatchling
 ```

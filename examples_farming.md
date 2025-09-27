@@ -4,13 +4,14 @@ This mod can be used to enhance farming by increasing yield or adding new rare d
 
 ## Increase carrot yield on Plains
 
-`expand_prefabs.yaml`: 100% chance to inject plains_carrot data to carrots in Plains.
+`expand_prefabs.yaml`: 99% chance to inject plains_carrot data to carrots in Plains.
 
 ```yaml
 - prefab: Pickable_Carrot
   type: create
   data: plains_carrot
-  weight: 1
+  # Weight used instead of chance so that either this or rotten is used.
+  weight: 0.99
   biomes: Plains
 ```
 
@@ -51,16 +52,11 @@ This mod can be used to enhance farming by increasing yield or adding new rare d
 ```yaml
 - prefab: Pickable_Barley, Pickable_Carrot, Pickable_Flax, Pickable_Turnip
   type: create
-  weight: 0.5
-  data: windmill_crops
-  objects: windmill
-  objectDistance: 50
-```
-
-`expand_data.yaml`: Doubles the drops without changing the display name.
-
-```yaml
-- name: windmill_crops
-  ints:
-  - Pickable.m_amount, 2
+  chance: 0.5
+  data: int, Pickable.m_amount, 2
+# Inject must be false to refresh the field.
+  injectData: false
+  objects:
+  - prefab: windmill
+    maxDistance: 50
 ```

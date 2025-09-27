@@ -12,7 +12,7 @@ On vanilla, global keys can enable extra night time spawn.
 - prefab: Goblin
   type: create
   biomes: Meadows
-  swap: remove
+  remove: true
 ```
 
 Another option is to replace with another monster.
@@ -32,7 +32,6 @@ Another option is to replace with another monster.
 
 ```yaml
 - name: weak_fuling
-  type: create
   ints:
   - huntplayer, 0
   strings:
@@ -40,6 +39,19 @@ Another option is to replace with another monster.
   floats:
   - RandomSkillFactor, 0.5
 ```
+
+### Swap 33% of wolves to fenrings in high mountains
+
+```yaml
+- prefab: Wolf
+  type: create
+  swap: Fenring
+  biomes: Mountain
+  minAltitude: 100
+  chance: 0.33
+```
+
+Note: When swapping creatures, the spawn limit still checks the amount of original creature. This can lead to very high amount of creatures. Recommended to only swap some of the creatures.
 
 ## Harder early biomes after defeating a boss
 
@@ -62,9 +74,11 @@ This can be used to keep lower level areas challenging and give more loot.
   - level, 3
 ```
 
-## Set global key when defeating a special enemy
+## Set a custom key when defeating a special enemy
 
-This global key can then be used in other entries (for example farming, spawns or bosses).
+This custom key can then be used in other entries (for example farming, spawns or bosses).
+
+Custom keys are only saved in the server, so they don't cause network traffic.
 
 `expand_prefab.yaml`: 1% chance for a special wolf on tall mountains.
 
@@ -73,12 +87,24 @@ This global key can then be used in other entries (for example farming, spawns o
   type: create
   biomes: Mountains
   minAltitude: 100
-  weight: 0.01
+  chance: 0.01
   data: special_wolf
 # Only spawns if this key is set (perhaps activated by another quest or by admin).
 # Remove this line to be always available.
-  globalKeys: special_wolf
-  command: removekey special_wolf
+  keys: specialWolf
+# Custom keys can't use underscores as that is a reserved character.
+  exec: <clear_specialWolf>
+# Global key version. These can use underscores.
+# globalKeys: special_wolf
+# command: removekey special_wolf
+
+
+- prefab: Wolf
+  type: remove
+  data: special_wolf
+  exec: <save_defeatedSpecialWolf_true>
+# Global key version
+# command: setkey defeated_special_wolf
 ```
 
 `expand_data.yaml`: 3 stars with boss UI.
@@ -93,11 +119,10 @@ This global key can then be used in other entries (for example farming, spawns o
   - huntplayer, 1
   strings:
   - Humanoid.m_name, Strong Wolf
-  - Humanoid.m_defeatSetGlobalKey, defeated_special_wolf
 # Other fields also available, check example_bosses.md.
 ```
 
-## Set global key when building a structure
+## Set a custom key when building a structure
 
 This probably needs some lore or instructions to make sense.
 
@@ -110,8 +135,11 @@ This probably needs some lore or instructions to make sense.
   minAltitude: 100
 # Can only be triggered after killing Moder.
   globalKeys: defeated_dragon
-# Trigger only once.
-  bannedGlobalKeys: windmill_on_mountain
-# Server Devcommands is needed on server for broadcast command.
-  command: setkey windmill_on_mountain;event wolves {x} {z};broadcast center "Windmill on a mountain!"
+# Triggers only once.
+  bannedKeys: windmillOnMountain
+  exec: <save_windmillOnMountain_true>
+# Server Devcommands is needed on server for these commands.
+  commands:
+  - broadcast center "Someone put a windmill on a mountain!"
+  - event wolves {x} {z}
 ```
