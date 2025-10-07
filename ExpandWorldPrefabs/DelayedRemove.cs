@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 namespace ExpandWorld.Prefab;
 
-public class DelayedRemove(float delay, ZDO zdo, bool triggerRules)
+public class DelayedRemove(float delay, ZDOID zdo, bool triggerRules)
 {
   private static readonly List<DelayedRemove> Removes = [];
-  public static void Add(float delay, ZDO zdo, bool triggerRules)
+  public static void Add(float delay, ZDOID zdo, bool triggerRules)
   {
     if (delay <= 0f)
     {
@@ -29,7 +29,7 @@ public class DelayedRemove(float delay, ZDO zdo, bool triggerRules)
       Removes.RemoveAt(i);
     }
   }
-  private readonly ZDO Zdo = zdo;
+  private readonly ZDOID Zdo = zdo;
   public float Delay = delay;
   private readonly bool TriggerRules = triggerRules;
 

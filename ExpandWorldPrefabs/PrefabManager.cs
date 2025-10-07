@@ -46,6 +46,12 @@ public class Manager
       GlobalClientRpc(info.ClientRpcs, parameters);
     PokeGlobal(info, parameters, pos);
   }
+  public static bool Handle(ActionType type, string[] args, ZDOID id)
+  {
+    var zdo = ZDOMan.instance.GetZDO(id);
+    if (zdo == null) return false;
+    return Handle(type, args, zdo);
+  }
   public static bool Handle(ActionType type, string[] args, ZDO zdo)
   {
     // Already destroyed before.
@@ -110,7 +116,7 @@ public class Manager
       SpawnItems(drops, zdo, parameters);
     // Original object was regenerated to apply data.
     if (remove || regenerate)
-      DelayedRemove.Add(info.RemoveDelay?.Get(parameters) ?? 0f, zdo, remove && info.TriggerRules);
+      DelayedRemove.Add(info.RemoveDelay?.Get(parameters) ?? 0f, zdo.m_uid, remove && info.TriggerRules);
     else if (inject)
     {
       var removeItems = info.RemoveItems;
@@ -188,10 +194,12 @@ public class Manager
       }
     }
   }
-  public static void RemoveZDO(ZDO zdo, bool triggerRules)
+  public static void RemoveZDO(ZDOID id, bool triggerRules)
   {
     if (!triggerRules)
-      ZDOMan.instance.m_deadZDOs[zdo.m_uid] = ZNet.instance.GetTime().Ticks;
+      ZDOMan.instance.m_deadZDOs[id] = ZNet.instance.GetTime().Ticks;
+    var zdo = ZDOMan.instance.GetZDO(id);
+    if (zdo == null) return;
     zdo.SetOwner(ZDOMan.instance.m_sessionID);
     ZDOMan.instance.DestroyZDO(zdo);
   }
@@ -280,10 +288,10 @@ public class Manager
     }
     var weightedPoke = info.GetWeightedPoke(pars);
     if (weightedPoke != null)
-      DelayedPoke.Add(weightedPoke, zdo, pos, rot, pars);
+      DelayedPoke.Add(weightedPoke, zdo.m_uid, pos, rot, pars);
     if (info.Pokes == null) return;
     foreach (var poke in info.Pokes)
-      DelayedPoke.Add(poke, zdo, pos, rot, pars);
+      DelayedPoke.Add(poke, zdo.m_uid, pos, rot, pars);
   }
 
   public static void PokeGlobal(Info info, Parameters pars, Vector3 pos)

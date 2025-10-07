@@ -9,18 +9,18 @@ public interface IPokeable
   public float Delay { get; set; }
   void Execute();
 }
-public class DelayedSinglePoke(float delay, ZDO zdo, string[] args) : DelayedPoke, IPokeable
+public class DelayedSinglePoke(float delay, ZDOID zdo, string[] args) : DelayedPoke, IPokeable
 {
-  private readonly ZDO Zdo = zdo;
+  private readonly ZDOID Zdo = zdo;
   private readonly string[] Args = args;
 
   float IPokeable.Delay { get => delay; set => delay = value; }
   public void Execute() => Manager.Handle(ActionType.Poke, Args, Zdo);
 
 }
-public class DelayedMultiPoke(float delay, ZDO[] zdos, string[] args) : DelayedPoke, IPokeable
+public class DelayedMultiPoke(float delay, ZDOID[] zdos, string[] args) : DelayedPoke, IPokeable
 {
-  private readonly ZDO[] Zdos = zdos;
+  private readonly ZDOID[] Zdos = zdos;
   private readonly string[] Args = args;
 
   float IPokeable.Delay { get => delay; set => delay = value; }
@@ -31,7 +31,7 @@ public class DelayedMultiPoke(float delay, ZDO[] zdos, string[] args) : DelayedP
 public class DelayedPoke
 {
   private static readonly List<IPokeable> Pokes = [];
-  public static void Add(Poke poke, ZDO zdo, Vector3 pos, Quaternion rot, Parameters pars)
+  public static void Add(Poke poke, ZDOID zdo, Vector3 pos, Quaternion rot, Parameters pars)
   {
     var chance = poke.Chance?.Get(pars) ?? 1f;
     if (chance < 1f && Random.value > chance)
@@ -51,7 +51,7 @@ public class DelayedPoke
       Add(poke, zdo, pos, rot, pars, delay);
 
   }
-  private static void Add(Poke poke, ZDO zdo, Vector3 pos, Quaternion rot, Parameters pars, float delay)
+  private static void Add(Poke poke, ZDOID zdo, Vector3 pos, Quaternion rot, Parameters pars, float delay)
   {
     var args = poke.GetArgs(pars);
     var self = poke.Self?.GetBool(pars);
@@ -67,9 +67,8 @@ public class DelayedPoke
         Add(delay, zdo, args);
       if (target != null)
       {
-        var targetZdo = ZDOMan.instance.GetZDO(target.Value);
-        if (targetZdo != null && targetZdo != zdo)
-          Add(delay, targetZdo, args);
+        if (target.Value != zdo)
+          Add(delay, target.Value, args);
       }
     }
   }
@@ -98,14 +97,14 @@ public class DelayedPoke
     var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, rot, pars, null);
     Add(delay, zdos, args);
   }
-  public static void Add(float delay, ZDO[] zdos, string[] args)
+  public static void Add(float delay, ZDOID[] zdos, string[] args)
   {
     if (delay <= 0f)
       Poke(zdos, args);
     else
       Pokes.Add(new DelayedMultiPoke(delay, zdos, args));
   }
-  private static void Add(float delay, ZDO zdo, string[] args)
+  private static void Add(float delay, ZDOID zdo, string[] args)
   {
     if (delay <= 0f)
     {
@@ -131,12 +130,12 @@ public class DelayedPoke
     }
   }
 
-  protected static void Poke(ZDO[] zdos, string[] args)
+  protected static void Poke(ZDOID[] zdos, string[] args)
   {
     foreach (var z in zdos)
       Manager.Handle(ActionType.Poke, args, z);
   }
-  protected static void Poke(ZDO zdo, string[] args)
+  protected static void Poke(ZDOID zdo, string[] args)
   {
     Manager.Handle(ActionType.Poke, args, zdo);
   }

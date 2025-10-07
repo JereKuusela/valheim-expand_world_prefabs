@@ -101,6 +101,7 @@ By default, the RPC is sent to the owner of the object.
     1: int, "index of the item slot"
     2: string, "name of the item"
     3: int, "variant number of the item"
+    4: int, "orientation of the item (0 = none, 1 = vertical, 2 = horizontal, 3 = all)"
 ```
 
 ### BaseAI (AnimalAI + MonsterAI)

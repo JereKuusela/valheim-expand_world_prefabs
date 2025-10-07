@@ -1,4 +1,5 @@
 - v1.46
+  - Fixes delayed objects possibly targeting wrong objects if the targeted object was already removed.
   - Removes `type: damage` support
   - Removes `type: repair` support.
   - Removes deprecated `type: state` triggers.
@@ -36,9 +37,3 @@
   - Adds a new field `filterLimit` to set how many filters must match.
   - Fixes comment or extra space at end of the fields `spawn` or `swap` breaking the file parsing.
   - Reworks the filtering system. Now multiple filters are checked separately, instead of being combined into a single check.
-
-- v1.41
-  - Changes the field `poke` and `objects` to use `filter` instead of `data` (old way still works).
-  - Fixes multiple values not working for the field `data`.
-  - Fixes the field `exec` not working with global triggers (like time).
-  - Fixes GameObject and ItemDrop types not working for field parameters.

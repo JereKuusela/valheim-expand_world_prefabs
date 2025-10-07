@@ -1,6 +1,6 @@
 {
   "name": "Expand_World_Prefabs",
-  "version_number": "1.45.0",
+  "version_number": "1.46.0",
   "website_url": "https://discord.gg/VFRJcPwUdm",
   "description": "Allows creating rules for objects being spawned, destroyed and more.",
   "dependencies": [

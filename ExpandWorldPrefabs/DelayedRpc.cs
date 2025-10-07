@@ -1,16 +1,15 @@
 using System.Collections.Generic;
-using Data;
 namespace ExpandWorld.Prefab;
 
-public class DelayedRpc(float delay, long source, long target, ZDOID id, int hash, object[] parameters)
+public class DelayedRpc(float delay, long source, long target, ZDOID zdo, int hash, object[] parameters)
 {
   private static readonly List<DelayedRpc> Rpcs = [];
-  public static void Add(float delay, long source, long target, ZDOID id, int hash, object[] parameters)
+  public static void Add(float delay, long source, long target, ZDOID zdo, int hash, object[] parameters)
   {
     if (delay <= 0f)
-      Manager.Rpc(source, target, id, hash, parameters);
+      Manager.Rpc(source, target, zdo, hash, parameters);
     else
-      Rpcs.Add(new(delay, source, target, id, hash, parameters));
+      Rpcs.Add(new(delay, source, target, zdo, hash, parameters));
   }
   public static void Execute(float dt)
   {
@@ -31,13 +30,13 @@ public class DelayedRpc(float delay, long source, long target, ZDOID id, int has
   public float Delay = delay;
   private readonly long Source = source;
   private readonly long Target = target;
-  private readonly ZDOID Id = id;
+  private readonly ZDOID Zdo = zdo;
   private readonly int Hash = hash;
   private readonly object[] Parameters = parameters;
 
 
   public void Execute()
   {
-    Manager.Rpc(Source, Target, Id, Hash, Parameters);
+    Manager.Rpc(Source, Target, Zdo, Hash, Parameters);
   }
 }
