@@ -1,3 +1,6 @@
+- v1.47
+  - Improves support for byte array data type.
+
 - v1.46
   - Fixes delayed objects possibly targeting wrong objects if the targeted object was already removed.
   - Removes `type: damage` support

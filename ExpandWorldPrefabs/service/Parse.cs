@@ -116,9 +116,9 @@ public static class Parse
     : [.. arg.Split(split).Select(s => s.Trim())];
   public static KeyValuePair<string, string> Kvp(string str, char separator = ',')
   {
-    var split = str.Split([separator], 2);
-    if (split.Length < 2) return new(split[0], "");
-    return new(split[0], split[1].Trim());
+    var index = str.IndexOf(separator);
+    if (index < 0) return new(str, "");
+    return new(str.Substring(0, index), str.Substring(index + 1).Trim());
   }
   public static bool TryKvp(string str, out KeyValuePair<string, string> kvp, char separator = ',')
   {

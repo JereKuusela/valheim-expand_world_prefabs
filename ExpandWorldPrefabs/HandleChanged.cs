@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Data;
 using HarmonyLib;
 using Service;
@@ -29,6 +31,9 @@ public class HandleChanged
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(Quaternion)]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleQuaternion));
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(byte[])]);
+    patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleByteArray));
+    harmony.Patch(method, prefix: new HarmonyMethod(patch));
 
     TrackedHashes.Clear();
     AddTracks(changeDatas.Weighted);
@@ -53,6 +58,7 @@ public class HandleChanged
 
   private static readonly List<ChangedZdo> ChangedZDOs = [];
   private static int Index = 0;
+  public static ZDOID IgnoreZdo = ZDOID.None;
 
   public static void Execute()
   {
@@ -69,8 +75,9 @@ public class HandleChanged
     for (; Index < count; Index++)
     {
       var changed = ChangedZDOs[Index];
-      if (!changed.Zdo.Valid) continue;
-      Manager.Handle(ActionType.Change, [changed.Key, changed.Value, changed.PreviousValue], changed.Zdo);
+      var zdo = ZDOMan.instance.GetZDO(changed.Zdo);
+      if (zdo == null || !zdo.Valid) continue;
+      Manager.Handle(ActionType.Change, [changed.Key, changed.Value, changed.PreviousValue], zdo);
     }
     if (Index < ChangedZDOs.Count) return;
     Index = 0;
@@ -82,6 +89,7 @@ public class HandleChanged
     if (!TrackedHashes.TryGetValue(hash, out var tracked)) return;
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
+    if (IgnoreZdo == zid) return;
     var prev = zdo.GetInt(hash);
     if (prev == value) return;
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), value.ToString(), prev.ToString()));
@@ -96,6 +104,7 @@ public class HandleChanged
     if (!TrackedHashes.TryGetValue(hash, out var tracked)) return;
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
+    if (IgnoreZdo == zid) return;
     var prev = zdo.GetFloat(hash);
     if (prev == value) return;
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), value.ToString(NumberFormatInfo.InvariantInfo), prev.ToString(NumberFormatInfo.InvariantInfo)));
@@ -105,6 +114,7 @@ public class HandleChanged
     if (!TrackedHashes.TryGetValue(hash, out var tracked)) return;
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
+    if (IgnoreZdo == zid) return;
     var prev = zdo.GetString(hash);
     if (prev == value) return;
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), value == "" ? "<none>" : value, prev == "" ? "<none>" : prev));
@@ -114,6 +124,7 @@ public class HandleChanged
     if (!TrackedHashes.TryGetValue(hash, out var tracked)) return;
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
+    if (IgnoreZdo == zid) return;
     var prev = zdo.GetLong(hash);
     if (prev == value) return;
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), value.ToString(), prev.ToString()));
@@ -123,6 +134,7 @@ public class HandleChanged
     if (!TrackedHashes.TryGetValue(hash, out var tracked)) return;
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
+    if (IgnoreZdo == zid) return;
     var prev = Helper.FormatPos2(zdo.GetVec3(hash, Vector3.zero));
     var curr = Helper.FormatPos2(value);
     if (prev == curr) return;
@@ -133,16 +145,27 @@ public class HandleChanged
     if (!TrackedHashes.TryGetValue(hash, out var tracked)) return;
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
+    if (IgnoreZdo == zid) return;
     var prev = Helper.FormatRot2(zdo.GetQuaternion(hash, Quaternion.identity).eulerAngles);
     var curr = Helper.FormatRot2(value.eulerAngles);
     if (prev == curr) return;
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), curr, prev));
   }
+  private static void HandleByteArray(ZDOID zid, int hash, byte[] value)
+  {
+    if (!TrackedHashes.TryGetValue(hash, out var tracked)) return;
+    if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
+    if (!tracked.Contains(zdo.m_prefab)) return;
+    if (IgnoreZdo == zid) return;
+    var prev = zdo.GetByteArray(hash);
+    if (prev == null ? value == null : prev.SequenceEqual(value)) return;
+    ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), value == null ? "" : Convert.ToBase64String(value), prev == null ? "" : Convert.ToBase64String(prev)));
+  }
 }
 
 public class ChangedZdo(ZDO zdo, string key, string value, string previous)
 {
-  public ZDO Zdo = zdo;
+  public ZDOID Zdo = zdo.m_uid;
   public string Key = key;
   public string Value = value;
   public string PreviousValue = previous;

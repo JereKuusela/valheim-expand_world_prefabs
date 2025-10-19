@@ -25,6 +25,7 @@ public class DataValue
   public static ILongValue Simple(long value) => new SimpleLongValue(value);
   public static IVector3Value Simple(Vector3 value) => new SimpleVector3Value(value);
   public static IQuaternionValue Simple(Quaternion value) => new SimpleQuaternionValue(value);
+  public static IBytesValue Simple(byte[]? value) => new SimpleBytesValue(value);
 
   public static IIntValue Int(string values)
   {
@@ -68,6 +69,25 @@ public class DataValue
     return new BoolValue(split);
   }
 
+  public static IBytesValue Bytes(string values)
+  {
+    var split = SplitWithValues(values);
+    if (split.Length == 1 && !HasParameters(split[0]))
+    {
+      if (string.IsNullOrEmpty(split[0]))
+        return new SimpleBytesValue(null);
+      try
+      {
+        var bytes = System.Convert.FromBase64String(split[0]);
+        return new SimpleBytesValue(bytes);
+      }
+      catch (System.FormatException)
+      {
+        // If not valid base64, treat as a dynamic value
+      }
+    }
+    return new BytesValue(split);
+  }
 
   public static IHashValue Hash(string values)
   {

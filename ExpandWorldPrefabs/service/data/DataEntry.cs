@@ -42,7 +42,7 @@ public class DataEntry
   public Dictionary<int, ILongValue>? Longs;
   public Dictionary<int, IVector3Value>? Vecs;
   public Dictionary<int, IQuaternionValue>? Quats;
-  public Dictionary<int, byte[]>? ByteArrays;
+  public Dictionary<int, IBytesValue>? ByteArrays;
   public List<ItemValue>? Items;
   public Vector2i? ContainerSize;
   public IIntValue? ItemAmount;
@@ -65,7 +65,7 @@ public class DataEntry
     Strings = ZDOExtraData.s_strings.ContainsKey(id) ? ZDOExtraData.s_strings[id].ToDictionary(kvp => kvp.Key, kvp => DataValue.Simple(kvp.Value)) : null;
     Vecs = ZDOExtraData.s_vec3.ContainsKey(id) ? ZDOExtraData.s_vec3[id].ToDictionary(kvp => kvp.Key, kvp => DataValue.Simple(kvp.Value)) : null;
     Quats = ZDOExtraData.s_quats.ContainsKey(id) ? ZDOExtraData.s_quats[id].ToDictionary(kvp => kvp.Key, kvp => DataValue.Simple(kvp.Value)) : null;
-    ByteArrays = ZDOExtraData.s_byteArrays.ContainsKey(id) ? ZDOExtraData.s_byteArrays[id].ToDictionary(kvp => kvp.Key, kvp => kvp.Value) : null;
+    ByteArrays = ZDOExtraData.s_byteArrays.ContainsKey(id) ? ZDOExtraData.s_byteArrays[id].ToDictionary(kvp => kvp.Key, kvp => DataValue.Simple(kvp.Value)) : null;
     if (ZDOExtraData.s_connectionsHashData.TryGetValue(id, out var conn))
     {
       ConnectionType = conn.m_type;
@@ -333,7 +333,7 @@ public class DataEntry
         var hash = ZdoHelper.Hash(kvp.Key);
         if (ByteArrays.ContainsKey(hash))
           Log.Warning($"Data {data.name}: Duplicate byte array key {kvp.Key}.");
-        ByteArrays[hash] = Convert.FromBase64String(kvp.Value);
+        ByteArrays[hash] = DataValue.Bytes(kvp.Value);
       }
     }
     if (data.items != null)
@@ -399,6 +399,7 @@ public class DataEntry
     "vec",
     "vec3",
     "quat",
+    "bytes",
   ];
   public void Load(string[] tkv)
   {
@@ -448,6 +449,10 @@ public class DataEntry
       case "quat":
         Quats ??= [];
         Quats[ZdoHelper.Hash(key)] = DataValue.Quaternion(value);
+        break;
+      case "bytes":
+        ByteArrays ??= [];
+        ByteArrays[ZdoHelper.Hash(key)] = DataValue.Bytes(value);
         break;
       default:
         throw new InvalidOperationException($"Unknown type {type}.");
@@ -505,7 +510,7 @@ public class DataEntry
       ByteArrays ??= [];
       var count = pkg.ReadByte();
       for (var i = 0; i < count; ++i)
-        ByteArrays[pkg.ReadInt()] = pkg.ReadByteArray();
+        ByteArrays[pkg.ReadInt()] = new SimpleBytesValue(pkg.ReadByteArray());
     }
     if ((num & 256) != 0)
     {
@@ -529,7 +534,7 @@ public class DataEntry
     if (Hashes != null && Hashes.Any(pair => pair.Value.Match(pars, GetInt(zdo, pair.Key)) == false)) return false;
     if (Vecs != null && Vecs.Any(pair => pair.Value.Match(pars, GetVec(zdo, pair.Key)) == false)) return false;
     if (Quats != null && Quats.Any(pair => pair.Value.Match(pars, GetQuaternion(zdo, pair.Key)) == false)) return false;
-    if (ByteArrays != null && ByteArrays.Any(pair => pair.Value.SequenceEqual(zdo.GetByteArray(pair.Key)) == false)) return false;
+    if (ByteArrays != null && ByteArrays.Any(pair => pair.Value.Match(pars, zdo.GetByteArray(pair.Key)) == false)) return false;
     if (Persistent != null && Persistent.Match(pars, zdo.Persistent) == false) return false;
     if (Distant != null && Distant.Match(pars, zdo.Distant) == false) return false;
     if (Priority != null && Priority.Value != zdo.Type) return false;
@@ -568,7 +573,7 @@ public class DataEntry
     if (Hashes != null && Hashes.Any(pair => pair.Value.Match(pars, GetInt(zdo, pair.Key)) == true)) return false;
     if (Vecs != null && Vecs.Any(pair => pair.Value.Match(pars, GetVec(zdo, pair.Key)) == true)) return false;
     if (Quats != null && Quats.Any(pair => pair.Value.Match(pars, GetQuaternion(zdo, pair.Key)) == true)) return false;
-    if (ByteArrays != null && ByteArrays.Any(pair => pair.Value.SequenceEqual(zdo.GetByteArray(pair.Key)) == true)) return false;
+    if (ByteArrays != null && ByteArrays.Any(pair => pair.Value.Match(pars, zdo.GetByteArray(pair.Key)) == true)) return false;
     if (Persistent != null && Persistent.Match(pars, zdo.Persistent) == true) return false;
     if (Distant != null && Distant.Match(pars, zdo.Distant) == true) return false;
     if (Priority != null && Priority.Value == zdo.Type) return false;

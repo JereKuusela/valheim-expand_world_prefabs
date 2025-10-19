@@ -132,7 +132,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
       ByteArrays ??= [];
       foreach (var pair in data.ByteArrays)
       {
-        var value = pair.Value;
+        var value = pair.Value.Get(pars);
         if (value != null)
           ByteArrays[pair.Key] = value;
       }

@@ -119,6 +119,8 @@ public class Manager
       DelayedRemove.Add(info.RemoveDelay?.Get(parameters) ?? 0f, zdo.m_uid, remove && info.TriggerRules);
     else if (inject)
     {
+      if (!info.TriggerRules)
+        HandleChanged.IgnoreZdo = zdo.m_uid;
       var removeItems = info.RemoveItems;
       var addItems = info.AddItems;
       if (data != null)
@@ -137,6 +139,7 @@ public class Manager
         zdo.DataRevision += 100;
         ZDOMan.instance.ForceSendZDO(zdo.m_uid);
       }
+      HandleChanged.IgnoreZdo = ZDOID.None;
     }
     var cancel = info.Cancel?.GetBool(parameters) == true;
 

@@ -78,56 +78,62 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     }
     return str;
   }
-  private bool TryReplaceParameter(string key, out string? resolved)
+  private bool TryReplaceParameter(string rawKey, out string? resolved)
   {
-    resolved = GetParameter(key);
+    var key = rawKey.Substring(1, rawKey.Length - 2);
+    var keyDefault = Parse.Kvp(key, '=');
+    var defaultValue = keyDefault.Value;
+    // Ending with just '=' is probably a base64 encoded value.
+    if (defaultValue.All(c => c == '='))
+      defaultValue = "";
+    else
+      key = keyDefault.Key;
+
+    resolved = GetParameter(key, defaultValue);
     if (resolved == null)
-      resolved = ResolveValue(key);
-    return resolved != key;
+      resolved = ResolveValue(rawKey);
+    return resolved != rawKey;
   }
 
-  protected virtual string? GetParameter(string key)
+  protected virtual string? GetParameter(string key, string defaultValue)
   {
-    var value = ExecuteCode(key.Substring(1, key.Length - 2));
+    var value = ExecuteCode(key);
     if (value != null) return value;
-    value = GetGeneralParameter(key);
+    value = GetGeneralParameter(key, defaultValue);
     if (value != null) return value;
-    var kvp = Parse.Kvp(key, Separator);
-    if (kvp.Value == "") return null;
-    key = kvp.Key.Substring(1);
-    var keyValue = kvp.Value.Substring(0, kvp.Value.Length - 1);
-    var kvp2 = Parse.Kvp(keyValue, '=');
-    keyValue = kvp2.Key;
-    var defaultValue = kvp2.Value;
+    var keyArg = Parse.Kvp(key, Separator);
+    if (keyArg.Value == "") return null;
+    key = keyArg.Key;
+    var arg = keyArg.Value;
 
-    value = ExecuteCodeWithValue(key, keyValue);
+    value = ExecuteCodeWithValue(key, arg);
     if (value != null) return value;
-    return GetValueParameter(key, keyValue, defaultValue);
+    return GetValueParameter(key, arg, defaultValue);
   }
 
-  private string? GetGeneralParameter(string key) =>
+  private string? GetGeneralParameter(string key, string defaultValue) =>
     key switch
     {
-      "<prefab>" => prefab,
-      "<safeprefab>" => prefab.Replace(Separator, '-'),
-      "<par>" => string.Join(" ", args),
-      "<par0>" => GetArg(0),
-      "<par1>" => GetArg(1),
-      "<par2>" => GetArg(2),
-      "<par3>" => GetArg(3),
-      "<par4>" => GetArg(4),
-      "<par5>" => GetArg(5),
-      "<par6>" => GetArg(6),
-      "<par7>" => GetArg(7),
-      "<par8>" => GetArg(8),
-      "<par9>" => GetArg(9),
-      "<time>" => Helper.Format(time),
-      "<day>" => EnvMan.instance.GetDay(time).ToString(),
-      "<ticks>" => ((long)(time * 10000000.0)).ToString(),
-      "<x>" => Helper.Format(pos.x),
-      "<y>" => Helper.Format(pos.y),
-      "<z>" => Helper.Format(pos.z),
-      "<snap>" => Helper.Format(WorldGenerator.instance.GetHeight(pos.x, pos.z)),
+      "prefab" => prefab,
+      "safeprefab" => prefab.Replace(Separator, '-'),
+      "par" => string.Join(" ", args),
+      "par0" => GetArg(0, defaultValue),
+      "par1" => GetArg(1, defaultValue),
+      "par2" => GetArg(2, defaultValue),
+      "par3" => GetArg(3, defaultValue),
+      "par4" => GetArg(4, defaultValue),
+      "par5" => GetArg(5, defaultValue),
+      "par6" => GetArg(6, defaultValue),
+      "par7" => GetArg(7, defaultValue),
+      "par8" => GetArg(8, defaultValue),
+      "par9" => GetArg(9, defaultValue),
+      "time" => Helper.Format(time),
+      "day" => EnvMan.instance.GetDay(time).ToString(),
+      "ticks" => ((long)(time * 10000000.0)).ToString(),
+      "x" => Helper.Format(pos.x),
+      "y" => Helper.Format(pos.y),
+      "z" => Helper.Format(pos.z),
+      "snap" => Helper.Format(WorldGenerator.instance.GetHeight(pos.x, pos.z)),
       _ => null,
     };
 
@@ -146,7 +152,7 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
      "acos" => Parse.TryFloat(value, out var f) ? Mathf.Acos(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "atan" => Atan(value, defaultValue),
      "pow" => Parse.TryKvp(value, out var kvp, Separator) && Parse.TryFloat(kvp.Key, out var f1) && Parse.TryFloat(kvp.Value, out var f2) ? Mathf.Pow(f1, f2).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "log" => Log(value, defaultValue),
+     "log" => Loga(value, defaultValue),
      "exp" => Parse.TryFloat(value, out var f) ? Mathf.Exp(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "min" => HandleMin(value, defaultValue),
      "max" => HandleMax(value, defaultValue),
@@ -233,7 +239,7 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     return Mathf.Atan2(f1, f2).ToString(CultureInfo.InvariantCulture);
   }
 
-  private string Log(string value, string defaultValue)
+  private string Loga(string value, string defaultValue)
   {
     var kvp = Parse.Kvp(value, Separator);
     if (!Parse.TryFloat(kvp.Key, out var f1)) return defaultValue;
@@ -454,7 +460,7 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
 
   private string GetArg(int index, string defaultValue = "")
   {
-    return args.Length <= index ? defaultValue : args[index];
+    return args.Length <= index || args[index] == "" ? defaultValue : args[index];
   }
 
   private string HandleRank(string value, string defaultValue)
@@ -532,41 +538,37 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
   private Inventory? inventory;
 
 
-  protected override string? GetParameter(string key)
+  protected override string? GetParameter(string key, string defaultValue)
   {
-    var value = base.GetParameter(key);
+    var value = base.GetParameter(key, defaultValue);
     if (value != null) return value;
     value = GetGeneralParameter(key);
     if (value != null) return value;
-    var kvp = Parse.Kvp(key, Separator);
-    if (kvp.Value == "") return null;
-    key = kvp.Key.Substring(1);
-    var keyValue = kvp.Value.Substring(0, kvp.Value.Length - 1);
-    var kvp2 = Parse.Kvp(keyValue, '=');
-    keyValue = kvp2.Key;
-    var defaultValue = kvp2.Value;
-
-    value = ExecuteCodeWithValue(key, keyValue);
+    var keyArg = Parse.Kvp(key, Separator);
+    if (keyArg.Value == "") return null;
+    key = keyArg.Key;
+    var arg = keyArg.Value;
+    value = ExecuteCodeWithValue(key, arg);
     if (value != null) return value;
-    value = base.GetValueParameter(key, keyValue, defaultValue);
+    value = base.GetValueParameter(key, arg, defaultValue);
     if (value != null) return value;
-    return GetValueParameter(key, keyValue, defaultValue);
+    return GetValueParameter(key, arg, defaultValue);
   }
 
   private string? GetGeneralParameter(string key) =>
     key switch
     {
-      "<zdo>" => zdo.m_uid.ToString(),
-      "<pos>" => Helper.FormatPos(zdo.m_position),
-      "<i>" => ZoneSystem.GetZone(zdo.m_position).x.ToString(),
-      "<j>" => ZoneSystem.GetZone(zdo.m_position).y.ToString(),
-      "<a>" => Helper.Format(zdo.m_rotation.y),
-      "<rot>" => Helper.FormatRot(zdo.m_rotation),
-      "<pid>" => GetPid(zdo),
-      "<pname>" => GetPname(zdo),
-      "<pchar>" => GetPchar(zdo),
-      "<owner>" => zdo.GetOwner().ToString(),
-      "<biome>" => WorldGenerator.instance.GetBiome(zdo.m_position).ToString(),
+      "zdo" => zdo.m_uid.ToString(),
+      "pos" => Helper.FormatPos(zdo.m_position),
+      "i" => ZoneSystem.GetZone(zdo.m_position).x.ToString(),
+      "j" => ZoneSystem.GetZone(zdo.m_position).y.ToString(),
+      "a" => Helper.Format(zdo.m_rotation.y),
+      "rot" => Helper.FormatRot(zdo.m_rotation),
+      "pid" => GetPid(zdo),
+      "pname" => GetPname(zdo),
+      "pchar" => GetPchar(zdo),
+      "owner" => zdo.GetOwner().ToString(),
+      "biome" => WorldGenerator.instance.GetBiome(zdo.m_position).ToString(),
       _ => null,
     };
 
@@ -612,7 +614,7 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
      "hash" => GetHash(value, defaultValue),
      "vec" => DataEntry.PrintVectorXZY(GetVec(value, defaultValue)),
      "quat" => DataEntry.PrintAngleYXZ(GetQuaternion(value, defaultValue)),
-     "byte" => Convert.ToBase64String(zdo.GetByteArray(value)),
+     "byte" => GetBytes(value, defaultValue),
      "zdo" => zdo.GetZDOID(value).ToString(),
      "amount" => GetAmount(value, defaultValue),
      "quality" => GetQuality(value, defaultValue),
@@ -623,6 +625,12 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
      _ => null,
    };
 
+
+  private string GetBytes(string value, string defaultValue)
+  {
+    var bytes = zdo.GetByteArray(value);
+    return bytes == null ? defaultValue : Convert.ToBase64String(bytes);
+  }
   private string GetString(string value, string defaultValue) => ZdoHelper.GetString(zdo, value, defaultValue);
   private float GetFloat(string value, string defaultValue) => ZdoHelper.GetFloat(zdo, value, defaultValue);
   private int GetInt(string value, string defaultValue) => ZdoHelper.GetInt(zdo, value, defaultValue);

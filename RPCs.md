@@ -672,6 +672,12 @@ By default, the RPC is sent to the owner of the object.
     1: float, "amount of stamina"
 ```
 
+```yaml
+# Triggers perfect dodge.
+  objectRpc:
+  - name: RPC_HitWhileDodging
+```
+
 ### PrivateArea
 
 ```yaml
