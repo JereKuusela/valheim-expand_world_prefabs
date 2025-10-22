@@ -167,7 +167,7 @@ public class Yaml
   private static void ReadConfigValues(string path, ConfigFile config)
   {
     if (!File.Exists(path)) return;
-    BackupFile(path);
+    BackupFile(path, true);
     try
     {
       config.Reload();
@@ -178,8 +178,20 @@ public class Yaml
       Log.Error("Please check your config entries for spelling and format!");
     }
   }
-  public static void SetupWatcher(string pattern, Action<string> action) => SetupWatcher(Paths.ConfigPath, pattern, action);
-  public static void SetupWatcher(string folder, string pattern, Action<string> action)
+  public static void SetupWatcher(string pattern, Action<string> action) => SetupWatcherSub(Paths.ConfigPath, pattern, action);
+  public static void SetupWatcher(string folder, string pattern, Action action, bool overwriteBackup) => SetupWatcherSub(folder, pattern, file =>
+  {
+    BackupFile(file, overwriteBackup);
+    action();
+  });
+  public static void SetupWatcher(string pattern, Action action, bool overwriteBackup) => SetupWatcherSub(BaseDirectory, pattern, file =>
+  {
+    BackupFile(file, overwriteBackup);
+    action();
+  });
+
+
+  private static void SetupWatcherSub(string folder, string pattern, Action<string> action)
   {
     FileSystemWatcher watcher = new(folder, pattern);
     watcher.Created += (s, e) => action(e.FullPath);
@@ -190,7 +202,7 @@ public class Yaml
     watcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
     watcher.EnableRaisingEvents = true;
   }
-  public static void SetupWatcher(string folder, string pattern, Action action)
+  private static void SetupWatcherSub(string folder, string pattern, Action action)
   {
     FileSystemWatcher watcher = new(folder, pattern);
     watcher.Created += (s, e) => action();
@@ -201,19 +213,18 @@ public class Yaml
     watcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
     watcher.EnableRaisingEvents = true;
   }
-  public static void SetupWatcher(string pattern, Action action) => SetupWatcher(BaseDirectory, pattern, file =>
-  {
-    BackupFile(file);
-    action();
-  });
-  private static void BackupFile(string path)
+  public static void BackupFile(string path, bool overwrite)
   {
     if (!File.Exists(path)) return;
     if (!Directory.Exists(BackupDirectory))
       Directory.CreateDirectory(BackupDirectory);
     var stamp = DateTime.Now.ToString("yyyy-MM-dd");
     var name = $"{Path.GetFileNameWithoutExtension(path)}_{stamp}{Path.GetExtension(path)}.bak";
-    File.Copy(path, Path.Combine(BackupDirectory, name), true);
+    var backupPath = Path.Combine(BackupDirectory, name);
+    if (overwrite)
+      File.Copy(path, backupPath, true);
+    else if (!File.Exists(backupPath))
+      File.Copy(path, backupPath);
   }
 
   public static void Init()

@@ -267,7 +267,7 @@ public class Loading
   {
     if (!Directory.Exists(Yaml.BaseDirectory))
       Directory.CreateDirectory(Yaml.BaseDirectory);
-    Yaml.SetupWatcher(Pattern, FromFile);
+    Yaml.SetupWatcher(Pattern, FromFile, true);
   }
   private static DataEntry? HandleItems(string items)
   {

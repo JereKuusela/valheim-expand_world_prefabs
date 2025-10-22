@@ -179,10 +179,10 @@ public class DataLoading
       Directory.CreateDirectory(ProfilePath);
     if (!Directory.Exists(Yaml.BaseDirectory))
       Directory.CreateDirectory(Yaml.BaseDirectory);
-    Yaml.SetupWatcher(GamePath, "*", LoadEntries);
+    Yaml.SetupWatcher(GamePath, "*", LoadEntries, true);
     if (GamePath != ProfilePath)
-      Yaml.SetupWatcher(ProfilePath, "*", LoadEntries);
-    Yaml.SetupWatcher(Pattern, LoadEntries);
+      Yaml.SetupWatcher(ProfilePath, "*", LoadEntries, true);
+    Yaml.SetupWatcher(Pattern, LoadEntries, true);
   }
 
 }

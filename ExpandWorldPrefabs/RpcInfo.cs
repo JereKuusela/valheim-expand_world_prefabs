@@ -99,7 +99,7 @@ public abstract class RpcInfo
       source = ZDOMan.instance.GetZDO(id)?.GetOwner() ?? 0;
     }
 
-    var parameters = Packaged ? GetPackagedParameters(zdo, pars) : GetParameters(zdo, pars);
+    var parameters = Packaged ? GetPackagedParameters(pars) : GetParameters(zdo, pars);
     if (Target == RpcTarget.Owner)
       DelayedRpc.Add(delay, source, zdo.GetOwner(), GetId(zdo), Hash, parameters);
     else if (Target == RpcTarget.All)
@@ -178,7 +178,7 @@ public abstract class RpcInfo
     UserId = PlatformManager.DistributionPlatform.LocalUser.PlatformUserID
   };
 
-  private object[] GetPackagedParameters(ZDO? zdo, Parameters pars)
+  private object[] GetPackagedParameters(Parameters pars)
   {
     ZPackage pkg = new();
     var parameters = Parameters.Select(p => pars.Replace(p.Value)).ToArray<object>();
@@ -205,7 +205,7 @@ public abstract class RpcInfo
   }
 
   private object[] GetParameters(Parameters pars) => GetParameters(null, pars);
-  private object[] PackagedGetParameters(Parameters pars) => GetPackagedParameters(null, pars);
+  private object[] PackagedGetParameters(Parameters pars) => GetPackagedParameters(pars);
 }
 
 
