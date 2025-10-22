@@ -196,6 +196,16 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
      "rank" => HandleRank(value, defaultValue),
      "small" => HandleSmall(value, defaultValue),
      "large" => HandleLarge(value, defaultValue),
+     "eq" => HandleEqual(value, defaultValue),
+     "ne" => HandleNotEqual(value, defaultValue),
+     "gt" => HandleGreater(value, defaultValue),
+     "ge" => HandleGreaterOrEqual(value, defaultValue),
+     "lt" => HandleLess(value, defaultValue),
+     "le" => HandleLessOrEqual(value, defaultValue),
+     "even" => HandleEven(value, defaultValue),
+     "odd" => HandleOdd(value, defaultValue),
+     "findupper" => HandleFindUpper(value, defaultValue),
+     "findlower" => HandleFindLower(value, defaultValue),
      _ => null,
    };
 
@@ -506,6 +516,96 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     var numbers = values.Skip(1).Select(v => Parse.Float(v, float.MinValue)).ToList();
     numbers.Sort();
     return numbers[index].ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleEqual(string value, string defaultValue)
+  {
+    var kvp = Parse.Kvp(value, Separator);
+    if (kvp.Value == "") return defaultValue;
+
+    // Try numeric comparison first
+    if (Parse.TryFloat(kvp.Key, out var f1) && Parse.TryFloat(kvp.Value, out var f2))
+      return (Math.Abs(f1 - f2) < float.Epsilon) ? "true" : "false";
+
+    // Fall back to string comparison
+    return string.Equals(kvp.Key, kvp.Value, StringComparison.OrdinalIgnoreCase) ? "true" : "false";
+  }
+
+  private string HandleNotEqual(string value, string defaultValue)
+  {
+    var kvp = Parse.Kvp(value, Separator);
+    if (kvp.Value == "") return defaultValue;
+
+    // Try numeric comparison first
+    if (Parse.TryFloat(kvp.Key, out var f1) && Parse.TryFloat(kvp.Value, out var f2))
+      return (Math.Abs(f1 - f2) >= float.Epsilon) ? "true" : "false";
+
+    // Fall back to string comparison
+    return !string.Equals(kvp.Key, kvp.Value, StringComparison.OrdinalIgnoreCase) ? "true" : "false";
+  }
+
+  private string HandleGreater(string value, string defaultValue)
+  {
+    var kvp = Parse.Kvp(value, Separator);
+    if (kvp.Value == "" || !Parse.TryFloat(kvp.Key, out var f1) || !Parse.TryFloat(kvp.Value, out var f2))
+      return defaultValue;
+
+    return (f1 > f2) ? "true" : "false";
+  }
+
+  private string HandleGreaterOrEqual(string value, string defaultValue)
+  {
+    var kvp = Parse.Kvp(value, Separator);
+    if (kvp.Value == "" || !Parse.TryFloat(kvp.Key, out var f1) || !Parse.TryFloat(kvp.Value, out var f2))
+      return defaultValue;
+
+    return (f1 >= f2) ? "true" : "false";
+  }
+
+  private string HandleLess(string value, string defaultValue)
+  {
+    var kvp = Parse.Kvp(value, Separator);
+    if (kvp.Value == "" || !Parse.TryFloat(kvp.Key, out var f1) || !Parse.TryFloat(kvp.Value, out var f2))
+      return defaultValue;
+
+    return (f1 < f2) ? "true" : "false";
+  }
+
+  private string HandleLessOrEqual(string value, string defaultValue)
+  {
+    var kvp = Parse.Kvp(value, Separator);
+    if (kvp.Value == "" || !Parse.TryFloat(kvp.Key, out var f1) || !Parse.TryFloat(kvp.Value, out var f2))
+      return defaultValue;
+
+    return (f1 <= f2) ? "true" : "false";
+  }
+
+  private string HandleEven(string value, string defaultValue)
+  {
+    if (!Parse.TryInt(value, out var number))
+      return defaultValue;
+
+    return (number % 2 == 0) ? "true" : "false";
+  }
+
+  private string HandleOdd(string value, string defaultValue)
+  {
+    if (!Parse.TryInt(value, out var number))
+      return defaultValue;
+
+    return (number % 2 != 0) ? "true" : "false";
+  }
+
+  private string HandleFindUpper(string value, string defaultValue)
+  {
+    if (string.IsNullOrEmpty(value)) return defaultValue;
+    return value.Where(char.IsUpper).ToString();
+  }
+
+  private string HandleFindLower(string value, string defaultValue)
+  {
+    if (string.IsNullOrEmpty(value)) return defaultValue;
+    return value.Where(char.IsLower).ToString();
   }
 
   // Parameter value could be a value group, so that has to be resolved.

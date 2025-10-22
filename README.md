@@ -502,15 +502,22 @@ Custom functions: See [Expand World Code](https://github.com/JereKuusela/valheim
 
 Text related functions:
 
+- `<findlower_X>`: Returns the lowercase letters in text X.
+- `<findupper_X>`: Returns the uppercase letters in text X.
+- `<hashof_X>`: Returns hash of the text X.
+- `<left_X_Y>`: Returns the leftmost Y characters of text X.
 - `<len_X>`: Returns length of the text X.
 - `<lower_X>`: Returns lower case of the text X.
+- `<mid_X_Y_Z>`: Returns Z characters from text X starting at position Y.
 - `<par>`: Returns the whole parameter.
 - `<par_X`>: Returns parameter X.
-- `<upper_X>`: Returns upper case of the text X.
+- `<proper_X>`: Returns text X with proper case (first letter of each word capitalized).
 - `<rest_X>`: Returns the rest of the text starting from par X.
-- `<trim_X>`: Returns text X without leading and trailing spaces.
-- `<hashof_X>`: Returns hash of the text X.
+- `<right_X_Y>`: Returns the rightmost Y characters of text X.
+- `<search_X_Y_Z>`: Searches for text X in text Y starting at position Z, returns position or default.
 - `<textof_X>`: Returns text of the hash X.
+- `<trim_X>`: Returns text X without leading and trailing spaces.
+- `<upper_X>`: Returns upper case of the text X.
 
 Number related functions:
 
@@ -525,19 +532,32 @@ Number related functions:
 - `<ceil_X>`: Returns smallest integer greater than or equal to X.
 - `<cos_X>`: Returns cosine of X.
 - `<div_X_Y>`: Returns quotient of X and Y.
+- `<eq_X_Y>`: Returns "true" if X equals Y, "false" otherwise.
+- `<even_X>`: Returns "true" if X is even, "false" if odd.
 - `<exp_X>`: Returns e raised to the power of X.
 - `<floor_X>`: Returns largest integer less than or equal to X.
+- `<ge_X_Y>`: Returns "true" if X is greater than or equal to Y, "false" otherwise.
+- `<gt_X_Y>`: Returns "true" if X is greater than Y, "false" otherwise.
+- `<large_X_Y...>`: Returns the Xth largest value from the list of numbers Y....
+- `<le_X_Y>`: Returns "true" if X is less than or equal to Y, "false" otherwise.
 - `<log_X>`: Returns natural logarithm of X.
 - `<log_X_Y>`: Returns logarithm of X with base Y.
+- `<lt_X_Y>`: Returns "true" if X is less than Y, "false" otherwise.
 - `<max_X_Y>`: Returns maximum of X and Y.
 - `<min_X_Y>`: Returns minimum of X and Y.
 - `<mod_X_Y>`: Returns remainder of X divided by Y.
+- `<ne_X_Y>`: Returns "true" if X is not equal to Y, "false" otherwise.
+- `<odd_X>`: Returns "true" if X is odd, "false" if even.
 - `<mul_X_Y>`: Returns product of X and Y.
 - `<pow_X_Y>`: Returns X raised to the power of Y.
+- `<randf_X_Y>`: Returns random decimal number between X and Y.
+- `<randi_X_Y>`: Returns random integer number between X and Y.
 - `<randomfloat_X_Y>`: Returns random decimal number between X and Y.
 - `<randomint_X_Y>`: Returns random integer number between X and Y.
+- `<rank_X_Y...>`: Returns how many numbers in the list Y... are greater than X.
 - `<round_X>`: Returns nearest integer of X.
 - `<sin_X>`: Returns sine of X.
+- `<small_X_Y...>`: Returns the Xth smallest value from the list of numbers Y....
 - `<sqrt_X>`: Returns square root of X.
 - `<sub_X_Y>`: Returns difference of X and Y.
 - `<tan_X>`: Returns tangent of X.
@@ -553,13 +573,13 @@ Long number related functions (usually only needed when calculating with game ti
 
 Custom data related functions:
 
+- `<clear_X>`: Removes custom data with key X.
+  - Wildcard * in the key name can be used to remove multiple keys at once.
+- `<load_X=default>`: Gets custom data with key X. If not found, returns the given default value.
 - `<save_X_Y>`: Saves custom data with key X and value Y.
   - Wildcard * in the key name can be used to set multiple keys at once (these keys must already exist).
 - `<save++_X>`: Shorthand for increasing the value of key X by 1. Missing keys are created with value 1.
 - `<save--_X>`: Shorthand for decreasing the value of key X by 1. Missing keys are created with value -1.
-- `<clear_X>`: Removes custom data with key X.
-  - Wildcard * in the key name can be used to remove multiple keys at once.
-- `<load_X=default>`: Gets custom data with key X. If not found, returns the given default value.
 
 Custom data can be used to replace global keys. The biggest benefit is that custom data is not sent to clients, which reduces network traffic and keeps them hidden from players.
 

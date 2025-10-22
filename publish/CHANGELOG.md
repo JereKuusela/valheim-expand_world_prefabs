@@ -1,6 +1,7 @@
 - v1.47
   - Adds automatic backup for EWP data files (once per day).
   - Adds automatic backup for data files (once per day).
+  - Adds some new function parameters.
   - Improves support for byte array data type.
 
 - v1.46
