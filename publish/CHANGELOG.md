@@ -2,6 +2,7 @@
   - Adds automatic backup for EWP data files (once per day).
   - Adds automatic backup for data files (once per day).
   - Adds some new function parameters.
+  - Adds new field `overwrite` to RPC calls to allow canceling existing delayed calls.
   - Improves support for byte array data type.
 
 - v1.46

@@ -599,13 +599,13 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
   private string HandleFindUpper(string value, string defaultValue)
   {
     if (string.IsNullOrEmpty(value)) return defaultValue;
-    return value.Where(char.IsUpper).ToString();
+    return new string([.. value.Where(char.IsUpper)]);
   }
 
   private string HandleFindLower(string value, string defaultValue)
   {
     if (string.IsNullOrEmpty(value)) return defaultValue;
-    return value.Where(char.IsLower).ToString();
+    return new string([.. value.Where(char.IsLower)]);
   }
 
   // Parameter value could be a value group, so that has to be resolved.

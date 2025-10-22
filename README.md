@@ -359,6 +359,8 @@ RPC format:
 - repeat (default: `0`): How many times the RPC is repeated.
 - repeatInterval (default: `0`): Interval in seconds between repeats.
 - repeatChance (default: `1`): Chance to trigger for each attempt (including the original).
+- overwrite (default: `false`): If true, the RPC call overwrites any existing delayed calls with same name and target.
+  - This is useful for messages so that only the last one is shown.
 - source (P): ZDO id. The RPC call is faked to be from owner of this ZDO.
   - Parameters are supported. For example `<zdo>` can be useful.
 - packaged: If true, the parameters are sent as a package. Default is false.
