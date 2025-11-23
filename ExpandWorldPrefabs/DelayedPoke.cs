@@ -15,7 +15,7 @@ public class DelayedSinglePoke(float delay, ZDOID zdo, string[] args) : DelayedP
   private readonly string[] Args = args;
 
   float IPokeable.Delay { get => delay; set => delay = value; }
-  public void Execute() => Manager.Handle(ActionType.Poke, Args, Zdo);
+  public void Execute() => Poke(Zdo, Args);
 
 }
 public class DelayedMultiPoke(float delay, ZDOID[] zdos, string[] args) : DelayedPoke, IPokeable
@@ -107,11 +107,9 @@ public class DelayedPoke
   private static void Add(float delay, ZDOID zdo, string[] args)
   {
     if (delay <= 0f)
-    {
-      Manager.Handle(ActionType.Poke, args, zdo);
-      return;
-    }
-    Pokes.Add(new DelayedSinglePoke(delay, zdo, args));
+      Poke(zdo, args);
+    else
+      Pokes.Add(new DelayedSinglePoke(delay, zdo, args));
   }
   public static void Execute(float dt)
   {
@@ -122,11 +120,8 @@ public class DelayedPoke
       poke.Delay -= dt;
       if (poke.Delay > -0.001) continue;
       poke.Execute();
-    }
-    for (var i = Pokes.Count - 1; i >= 0; i--)
-    {
-      if (Pokes[i].Delay > -0.001) continue;
       Pokes.RemoveAt(i);
+      i--;
     }
   }
 

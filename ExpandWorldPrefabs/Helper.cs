@@ -110,6 +110,9 @@ public class Helper
         continue;
       delays.Add(delay + interval * i);
     }
+    // Reversing ensures that instant actions are executed last.
+    // This ensures all actions are added before state is changed.
+    delays.Reverse();
     return delays;
   }
 }

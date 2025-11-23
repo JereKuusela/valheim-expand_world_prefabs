@@ -47,11 +47,8 @@ public class DelayedOwner(float delay, ZDOID zdo, long owner)
       remove.Delay -= dt;
       if (remove.Delay > -0.001) continue;
       remove.Execute();
-    }
-    for (var i = Owners.Count - 1; i >= 0; i--)
-    {
-      if (Owners[i].Delay > -0.001) continue;
       Owners.RemoveAt(i);
+      i--;
     }
   }
   private readonly ZDOID Zdo = zdo;

@@ -31,11 +31,8 @@ public class DelayedRpc(float delay, long source, long target, ZDOID zdo, int ha
       rpc.Delay -= dt;
       if (rpc.Delay > -0.001) continue;
       rpc.Execute();
-    }
-    for (var i = Rpcs.Count - 1; i >= 0; i--)
-    {
-      if (Rpcs[i].Delay > -0.001) continue;
       Rpcs.RemoveAt(i);
+      i--;
     }
   }
   public float Delay = delay;

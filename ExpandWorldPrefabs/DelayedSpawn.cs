@@ -70,11 +70,8 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
       spawn.Delay -= dt;
       if (spawn.Delay > -0.001) continue;
       spawn.Execute();
-    }
-    for (var i = Spawns.Count - 1; i >= 0; i--)
-    {
-      if (Spawns[i].Delay > -0.001) continue;
       Spawns.RemoveAt(i);
+      i--;
     }
   }
   public float Delay = delay;

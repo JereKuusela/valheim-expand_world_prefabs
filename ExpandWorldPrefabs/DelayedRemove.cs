@@ -22,11 +22,8 @@ public class DelayedRemove(float delay, ZDOID zdo, bool triggerRules)
       remove.Delay -= dt;
       if (remove.Delay > -0.001) continue;
       remove.Execute();
-    }
-    for (var i = Removes.Count - 1; i >= 0; i--)
-    {
-      if (Removes[i].Delay > -0.001) continue;
       Removes.RemoveAt(i);
+      i--;
     }
   }
   private readonly ZDOID Zdo = zdo;

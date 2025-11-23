@@ -27,11 +27,8 @@ public class DelayedTerrain(float delay, long source, Vector3 pos, float size, Z
       terrain.Delay -= dt;
       if (terrain.Delay > -0.001) continue;
       terrain.Execute();
-    }
-    for (var i = Terrains.Count - 1; i >= 0; i--)
-    {
-      if (Terrains[i].Delay > -0.001) continue;
       Terrains.RemoveAt(i);
+      i--;
     }
   }
   public float Delay = delay;
