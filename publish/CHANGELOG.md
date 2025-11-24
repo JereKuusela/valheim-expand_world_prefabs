@@ -1,10 +1,13 @@
 - v1.47
   - Adds automatic backup for EWP data files (once per day).
   - Adds automatic backup for data files (once per day).
-  - Adds some new function parameters.
+  - Adds some new function parameters (proper, right, search, eq, even, ge, gt, large, le, lt, ne, odd, rank, small, left, findlower, findupper).
   - Adds new field `overwrite` to RPC calls to allow canceling existing delayed calls.
+  - Adds default value support to `<par>`.
   - Fixes inconsistent state for repeated pokes (first poke could modify state, now all pokes use the original state).
-  - Improves support for byte array data type.
+  - Fixes `type: change` not using field `triggerRules`.
+  - Improves support for byte array data type (`type: change` and field `data`).
+  - Improves base64 parsing.
 
 - v1.46
   - Fixes delayed objects possibly targeting wrong objects if the targeted object was already removed.
