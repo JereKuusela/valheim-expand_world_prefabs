@@ -487,8 +487,10 @@ Following parameters are available to be used in the yaml file:
 - `<pdata_*>`: Player data.
   - `<pdata_baseValue>`: Amount of nearby player base structures.
   - `<pdata_possibleEvents>`: List of possible events.
-- `<pid>`: Steam/Playfab of the client that controls the object.
+- `<pid>`: Steam/Playfab id of the client that controls the object.
   - The client always controls its player object.
+- `<platform>`: Platform of the client that controls the object.
+  - Can be combined with `<pid>` to get full id.
 - `<pname>`: Player name of the client that controls the object.
 - `<pchar>`: Character id of the client that controls the object.
 - `<owner>`: Id of the owner client (long number).

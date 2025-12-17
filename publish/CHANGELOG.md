@@ -1,3 +1,8 @@
+- v1.48
+  - Adds new parameter `<amount>` to get the amount of poked objects.
+  - Adds new parameters`<platform>` to get the platform of the client that controls the object.
+  - Breaking change: Changes the parameter `<pid>` to return only the user id instead of the full platform user id.
+
 - v1.47
   - Adds automatic backup for EWP data files (once per day).
   - Adds automatic backup for data files (once per day).

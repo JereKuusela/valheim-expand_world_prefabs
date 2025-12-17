@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Data;
+using HarmonyLib;
 using Service;
+using Splatform;
 using UnityEngine;
 
 namespace ExpandWorld.Prefab;
@@ -114,5 +116,36 @@ public class Helper
     // This ensures all actions are added before state is changed.
     delays.Reverse();
     return delays;
+  }
+}
+
+[HarmonyPatch(typeof(ZNet), nameof(ZNet.ClearPlayerData))]
+public class PeerManager
+{
+  private static readonly Dictionary<ZNetPeer, PlatformUserID> PeerIds = [];
+  public static string GetPid(ZNetPeer peer)
+  {
+    if (PeerIds.TryGetValue(peer, out var id))
+      return id.m_userID.ToString();
+    PeerIds[peer] = GetUserId(peer);
+    return PeerIds[peer].m_userID.ToString();
+  }
+  public static string GetPlatform(ZNetPeer peer)
+  {
+    if (PeerIds.TryGetValue(peer, out var id))
+      return id.m_platform.ToString();
+    PeerIds[peer] = GetUserId(peer);
+    return PeerIds[peer].m_platform.ToString();
+  }
+  private static PlatformUserID GetUserId(ZNetPeer peer)
+  {
+    if (ZNet.m_onlineBackend == OnlineBackendType.Steamworks)
+      return new PlatformUserID(ZNet.instance.m_steamPlatform, peer.m_socket.GetHostName());
+    else
+      return new PlatformUserID(peer.m_socket.GetHostName());
+  }
+  static void Postfix(ZNetPeer peer)
+  {
+    PeerIds.Remove(peer);
   }
 }

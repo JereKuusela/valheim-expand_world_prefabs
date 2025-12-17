@@ -53,16 +53,18 @@ public class DelayedPoke
   }
   private static void Add(Poke poke, ZDOID zdo, Vector3 pos, Quaternion rot, Parameters pars, float delay)
   {
-    var args = poke.GetArgs(pars);
     var self = poke.Self?.GetBool(pars);
     var target = poke.Target?.Get(pars);
     if (poke.HasPrefab)
     {
       var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, rot, pars, self == true ? null : zdo);
+      pars.Amount = zdos.Length;
+      var args = poke.GetArgs(pars);
       Add(delay, zdos, args);
     }
     else if (self == true || target != null)
     {
+      var args = poke.GetArgs(pars);
       if (self == true)
         Add(delay, zdo, args);
       if (target != null)

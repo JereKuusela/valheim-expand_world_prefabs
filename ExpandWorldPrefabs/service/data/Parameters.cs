@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using ExpandWorld.Prefab;
 using Service;
+using Splatform;
 using UnityEngine;
 
 namespace Data;
@@ -20,7 +21,9 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
 
   private readonly double time = ZNet.instance.GetTimeSeconds();
 
-  public string Replace(string str)
+  public int Amount = 0;
+  public string Replace(string str) => Replace(str, false);
+  public string Replace(string str, bool preventInjections)
   {
     StringBuilder parts = new();
     int nesting = 0;
@@ -42,7 +45,14 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
         if (nesting == 1)
         {
           var key = str.Substring(start, i - start + 1);
-          parts.Append(ResolveParameters(key));
+          var resolved = ResolveParameters(key);
+          // Server Devcommands mod supports running commands separated by ';'.
+          // This allows injection attacks when players can control parameter values.
+          // For example with player name, chat messages or sign texts.
+          Log.Info($"Resolved parameter: {key} -> {resolved}");
+          if (preventInjections && resolved.Contains(";"))
+            resolved = resolved.Replace(";", ",");
+          parts.Append(resolved);
           start = i + 1;
         }
         if (nesting > 0)
@@ -134,6 +144,8 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
       "y" => Helper.Format(pos.y),
       "z" => Helper.Format(pos.z),
       "snap" => Helper.Format(WorldGenerator.instance.GetHeight(pos.x, pos.z)),
+      // Need arg check to avoid conflict with value operations.
+      "amount" => args.Length < 2 ? Amount.ToString() : null,
       _ => null,
     };
 
@@ -665,6 +677,7 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       "a" => Helper.Format(zdo.m_rotation.y),
       "rot" => Helper.FormatRot(zdo.m_rotation),
       "pid" => GetPid(zdo),
+      "platform" => GetPlatform(zdo),
       "pname" => GetPname(zdo),
       "pchar" => GetPchar(zdo),
       "owner" => zdo.GetOwner().ToString(),
@@ -675,8 +688,17 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
   private static string GetPid(ZDO zdo)
   {
     var peer = GetPeer(zdo);
-    if (peer != null)
-      return peer.m_rpc.GetSocket().GetHostName();
+    if (peer != null && peer.IsReady())
+      return PeerManager.GetPid(peer);
+    else if (Player.m_localPlayer)
+      return "Server";
+    return "";
+  }
+  private static string GetPlatform(ZDO zdo)
+  {
+    var peer = GetPeer(zdo);
+    if (peer != null && peer.IsReady())
+      return PeerManager.GetPlatform(peer);
     else if (Player.m_localPlayer)
       return "Server";
     return "";
