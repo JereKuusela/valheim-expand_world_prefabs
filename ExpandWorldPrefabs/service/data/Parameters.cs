@@ -49,7 +49,6 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
           // Server Devcommands mod supports running commands separated by ';'.
           // This allows injection attacks when players can control parameter values.
           // For example with player name, chat messages or sign texts.
-          Log.Info($"Resolved parameter: {key} -> {resolved}");
           if (preventInjections && resolved.Contains(";"))
             resolved = resolved.Replace(";", ",");
           parts.Append(resolved);

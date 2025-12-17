@@ -1,3 +1,6 @@
+- v1.49
+  - Hotfix to remove debug logging.
+
 - v1.48
   - Adds new parameter `<amount>` to get the amount of poked objects.
   - Adds new parameters`<platform>` to get the platform of the client that controls the object.
