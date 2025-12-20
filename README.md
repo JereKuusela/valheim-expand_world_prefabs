@@ -70,6 +70,10 @@ Most fields are put on a single line. List values are separated by `,`.
       - Second parameter is the condition (single value, multiple values, range).
       - Note: Valheim day is 30 minutes, Valheim hour is 1.25 minutes, Valheim minute is 1.25 seconds.
       - [Discord Guide](https://discord.com/channels/1167153871546744842/1360994829663867040)
+    - `realtime`: When the real-world time changes.
+      - First parameter is the granularity (day, hour, minute, second).
+      - Second parameter is the condition (single value, multiple values, range).
+      - Uses server timezone.
   - Objects spawned or removed by this mod won't trigger `create` or `destroy`.
 - types: List of types.
 - chance (default: `1`, P): Chance to execute this entry when all filters match.
@@ -337,7 +341,7 @@ Poking allows to trigger actions on other objects (or even on the original objec
 
 RPC calls are way to send data to clients. Usually these are used by clients but server can call them too.
 
-Checks possible RPCs [here](RPCs.md).
+Check possible RPCs in [RPC documentation](RPCs.md).
 
 - objectRpc: List of RPC calls. The RPC must be related to the triggering object.
 - clientRpc: List of RPC calls. These calls are not related to any object.
@@ -462,11 +466,6 @@ Following parameters are available to be used in the yaml file:
 - `<i>` and `<j>`: Object zone indices.
 - `<a>`: Object rotation.
 - `<rot>`: Object rotation as y,x,z.
-- `<day>`: Days since the world start (int type).
-- `<time>`: Seconds since the world start (float type).
-  - Each day is 1800 seconds.
-- `<ticks>`: Ticks since the world start (long type).
-  - Each second is 10000000 ticks.
 - `<key_*>`: Global key value.
 - `<int_*>`: Integer value from the object data.
 - `<float_*>`: Decimal value from the object data.
@@ -586,6 +585,25 @@ Custom data related functions:
 - `<save--_X>`: Shorthand for decreasing the value of key X by 1. Missing keys are created with value -1.
 
 Custom data can be used to replace global keys. The biggest benefit is that custom data is not sent to clients, which reduces network traffic and keeps them hidden from players.
+
+Time related functions:
+
+- `<day>`: Days since the world start (int type).
+- `<time>`: Seconds since the world start (float type).
+  - Each day is 1800 seconds.
+- `<ticks>`: Ticks since the world start (long type).
+  - Each second is 10000000 ticks.
+- `<time_X>`: Formats game time using format string X.
+  - Game time is converted from seconds to a date starting from January 1, 2000.
+  - Uses the game's day length system (default 1800 seconds per day).
+  - Supports .NET DateTime format strings (e.g., `<time_yyyy-MM-dd HH:mm:ss>`).
+- `<realtime>`: Seonds since Unix epoch (January 1, 1970) in UTC (long type).
+- `<realtime_X>`: Formatted real-world time.
+  - Supports .NET DateTime format strings (e.g., `<realtime_yyyy-MM-dd HH:mm:ss>`).
+  - Uses the server timezone.
+- `<realtime_X_Y>`: Formatted real-world time with custom timezone.
+  - This can be used if the server timezone is different from desired timezone.
+  - Example: `<realtime_HH:mm_-5>` for Eastern Standard Time.
 
 ### Legacy
 

@@ -1,3 +1,8 @@
+- v1.50
+  - Adds formatting support to parameter `<time>`.
+  - Adds a new parameter `<realtime>` to get the real-world time (can be formatted).
+  - Adds new trigger type `realtime` to trigger actions based on real-world time changes.
+
 - v1.49
   - Hotfix to remove debug logging.
 
@@ -22,18 +27,3 @@
   - Removes `type: damage` support
   - Removes `type: repair` support.
   - Removes deprecated `type: state` triggers.
-
-- v1.45
-  - Breaking change: Scripts are now checked separately by default!
-  - This means multiple scripts can run from a single trigger.
-  - Weight system is only used when the field `weight` is explicitly set.
-  - Adds new field `excludePrefab` to exclude prefabs from the field `prefab`.
-  - Adds default value groups for structure material types and item drop types.
-  - Adds new field `pars` to pokes for structured parameter handling.
-  - Adds support for a wildcard `*` in the middle of the text (for example sfx_*_destroyed).
-  - Adds `drops` support to plants.
-  - Adds new field `chance` to allow randomly skipping the selected action.
-  - Adds new field `chance` to spawns, pokes and RPC calls to allow randomly skipping them.
-  - Adds new field `repeat` to spawns, pokes and RPC calls to allow repeating after a delay.
-  - Adds new field `weight` to spawns, pokes and RPC calls to allow triggering only one of the entries.
-  - Adds new states `death`, `effects`, `fragments`, `freezeframe`, `grow`, `hit`, `leguse`, `loaded`, `material`, `resetcloth`, `shoot`, `step` and `unsummon`.

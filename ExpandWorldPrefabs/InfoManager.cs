@@ -18,7 +18,8 @@ public enum ActionType
   Event,
   Change,
   Key,
-  Time
+  Time,
+  RealTime
 }
 public class InfoManager
 {
@@ -32,6 +33,7 @@ public class InfoManager
   public static readonly GlobalInfo KeyDatas = new();
   public static readonly GlobalInfo EventDatas = new();
   public static readonly GlobalInfo TimeDatas = new();
+  public static readonly GlobalInfo RealTimeDatas = new();
 
   public static void Clear()
   {
@@ -45,6 +47,7 @@ public class InfoManager
     EventDatas.Clear();
     ChangeDatas.Clear();
     TimeDatas.Clear();
+    RealTimeDatas.Clear();
   }
   public static void Add(Info info)
   {
@@ -66,6 +69,11 @@ public class InfoManager
     if (info.Type == ActionType.Time)
     {
       TimeDatas.Add(info);
+      return;
+    }
+    if (info.Type == ActionType.RealTime)
+    {
+      RealTimeDatas.Add(info);
       return;
     }
     if (info.Type == ActionType.Command)
@@ -105,6 +113,14 @@ public class InfoManager
       var checkHours = TimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "hour");
       var checkDays = TimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "day");
       HandleTime.Patch(EWP.Harmony, checkTicks, checkMinutes, checkHours, checkDays);
+    }
+    if (RealTimeDatas.Exists)
+    {
+      var checkSeconds = RealTimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "second");
+      var checkMinutes = RealTimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "minute");
+      var checkHours = RealTimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "hour");
+      var checkDays = RealTimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "day");
+      HandleTime.PatchRealTime(EWP.Harmony, checkSeconds, checkMinutes, checkHours, checkDays);
     }
     DataStorage.OnSet = KeyDatas.Exists ? OnKeySet : null;
   }
@@ -170,6 +186,7 @@ public class InfoManager
     ActionType.Key => KeyDatas,
     ActionType.Event => EventDatas,
     ActionType.Time => TimeDatas,
+    ActionType.RealTime => RealTimeDatas,
     _ => ErrorGlobal(type),
   };
   private static GlobalInfo ErrorGlobal(ActionType type)

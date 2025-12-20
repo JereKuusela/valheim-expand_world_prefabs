@@ -136,7 +136,6 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
       "par7" => GetArg(7, defaultValue),
       "par8" => GetArg(8, defaultValue),
       "par9" => GetArg(9, defaultValue),
-      "time" => Helper.Format(time),
       "day" => EnvMan.instance.GetDay(time).ToString(),
       "ticks" => ((long)(time * 10000000.0)).ToString(),
       "x" => Helper.Format(pos.x),
@@ -145,6 +144,8 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
       "snap" => Helper.Format(WorldGenerator.instance.GetHeight(pos.x, pos.z)),
       // Need arg check to avoid conflict with value operations.
       "amount" => args.Length < 2 ? Amount.ToString() : null,
+      "time" => Helper.Format(time),
+      "realtime" => DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
       _ => null,
     };
 
@@ -217,6 +218,8 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
      "odd" => HandleOdd(value, defaultValue),
      "findupper" => HandleFindUpper(value, defaultValue),
      "findlower" => HandleFindLower(value, defaultValue),
+     "time" => HandleTime(value),
+     "realtime" => HandleRealtime(value),
      _ => null,
    };
 
@@ -617,6 +620,37 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
   {
     if (string.IsNullOrEmpty(value)) return defaultValue;
     return new string([.. value.Where(char.IsLower)]);
+  }
+
+  private string HandleTime(string value)
+  {
+    var format = value;
+    var dayLength = EnvMan.instance.m_dayLengthSec;
+    var hourLength = dayLength / 24.0;
+    var minuteLength = hourLength / 60.0;
+    var day = (int)(time / dayLength);
+    var hours = time - (day * dayLength);
+    var hour = (int)(hours / hourLength);
+    var minute = (int)((hours - (hour * hourLength)) / minuteLength);
+    var second = (int)((hours - (hour * hourLength) - (minute * minuteLength)) / (minuteLength / 60.0));
+    
+    // Create a DateTimeOffset representing the game time
+    var dt = new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero)
+      .AddDays(day)
+      .AddHours(hour)
+      .AddMinutes(minute)
+      .AddSeconds(second);
+    
+    return dt.ToString(format, CultureInfo.InvariantCulture);
+  }
+  private string HandleRealtime(string value)
+  {
+    var parts = value.Split(Separator);
+    var format = parts[0];
+    var timezoneOffset = parts.Length > 1 ? Parse.Float(parts[1], 0f) : (float)TimeZoneInfo.Local.BaseUtcOffset.TotalHours;
+    var utcNow = DateTimeOffset.UtcNow;
+    var offsetTime = utcNow.AddHours(timezoneOffset);
+    return offsetTime.ToString(format, CultureInfo.InvariantCulture);
   }
 
   // Parameter value could be a value group, so that has to be resolved.
