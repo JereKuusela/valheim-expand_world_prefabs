@@ -59,7 +59,7 @@ public class Loading
     var allSpawns = data.spawn == null ? data.spawns == null ? null : ParseSpawns(data.spawns, spawnDelay, triggerRules) : ParseSpawns(data.spawn, spawnDelay, triggerRules);
 
     var types = (data.types ?? [data.type]).Select(s => new InfoType(data.prefab, s)).ToArray();
-    if (data.prefab == "" && types.Any(t => t.Type != ActionType.GlobalKey && t.Type != ActionType.Key && t.Type != ActionType.Event && t.Type != ActionType.Time))
+    if (data.prefab == "" && types.Any(t => t.Type != ActionType.GlobalKey && t.Type != ActionType.Key && t.Type != ActionType.Event && t.Type != ActionType.Time && t.Type != ActionType.RealTime))
       Log.Warning($"Prefab missing for type {data.type}");
     HashSet<string> events = [.. Parse.ToList(data.events)];
     var commands = data.commands ?? (data.command == null ? [] : [data.command]);

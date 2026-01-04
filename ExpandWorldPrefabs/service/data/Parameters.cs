@@ -633,14 +633,14 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     var hour = (int)(hours / hourLength);
     var minute = (int)((hours - (hour * hourLength)) / minuteLength);
     var second = (int)((hours - (hour * hourLength) - (minute * minuteLength)) / (minuteLength / 60.0));
-    
+
     // Create a DateTimeOffset representing the game time
     var dt = new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero)
       .AddDays(day)
       .AddHours(hour)
       .AddMinutes(minute)
       .AddSeconds(second);
-    
+
     return dt.ToString(format, CultureInfo.InvariantCulture);
   }
   private string HandleRealtime(string value)
@@ -711,8 +711,9 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       "rot" => Helper.FormatRot(zdo.m_rotation),
       "pid" => GetPid(zdo),
       "platform" => GetPlatform(zdo),
-      "pname" => GetPname(zdo),
-      "pchar" => GetPchar(zdo),
+      "pname" => GetPName(zdo),
+      "pchar" => GetPChar(zdo),
+      "pvisible" => GetPVisible(zdo),
       "owner" => zdo.GetOwner().ToString(),
       "biome" => WorldGenerator.instance.GetBiome(zdo.m_position).ToString(),
       _ => null,
@@ -736,7 +737,7 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       return "Server";
     return "";
   }
-  private static string GetPname(ZDO zdo)
+  private static string GetPName(ZDO zdo)
   {
     var peer = GetPeer(zdo);
     if (peer != null)
@@ -745,13 +746,22 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       return Player.m_localPlayer.GetPlayerName();
     return "";
   }
-  private static string GetPchar(ZDO zdo)
+  private static string GetPChar(ZDO zdo)
   {
     var peer = GetPeer(zdo);
     if (peer != null)
       return peer.m_characterID.ToString();
     else if (Player.m_localPlayer)
       return Player.m_localPlayer.GetPlayerID().ToString();
+    return "";
+  }
+  private static string GetPVisible(ZDO zdo)
+  {
+    var peer = GetPeer(zdo);
+    if (peer != null)
+      return peer.m_publicRefPos.ToString();
+    else if (Minimap.m_instance)
+      return Minimap.instance.m_publicPosition.isOn.ToString();
     return "";
   }
   private static ZNetPeer? GetPeer(ZDO zdo) => zdo.GetOwner() != 0 ? ZNet.instance.GetPeer(zdo.GetOwner()) : null;

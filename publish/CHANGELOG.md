@@ -2,6 +2,7 @@
   - Adds formatting support to parameter `<time>`.
   - Adds a new parameter `<realtime>` to get the real-world time (can be formatted).
   - Adds new trigger type `realtime` to trigger actions based on real-world time changes.
+  - Adds new parameter `<pvisible>` to get whether the player has public visibility enabled.
 
 - v1.49
   - Hotfix to remove debug logging.
