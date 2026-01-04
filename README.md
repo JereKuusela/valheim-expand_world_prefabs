@@ -212,7 +212,7 @@ bannedFilters:
 
 ### Object filters
 
-- objectsLimit: How many of the `objects` must match (`min` or `min-max`).
+- objectsLimit: How many of the `objects` must match (`min` or `min;max`).
   - If not set, then each entry must be found at least once. One object can match multiple filters.
   - If set, that many entries must be found. Each filter can be matched by multiple entries.
   - When using max, all objects must be searched.
@@ -226,7 +226,7 @@ bannedFilters:
   - weight: How much this object counts towards the `objectsLimit`. Default is 1.
   - offset: Position offset in x,z,y from the original object position and rotation.  
   - Data filters like `filter`, `filters`, `bannedFilter` and `bannedFilters` can be used to filter the object.
-- bannedObjectsLimit: How many of the `bannedObjects` must not match (`min` or `min-max`).
+- bannedObjectsLimit: How many of the `bannedObjects` must not match (`min` or `min;max`).
   - If not set, then all of the entries must not be found.
   - If set, that many `bannedObjects` must not be found. Each filter can be matched by multiple entries.
   - When using max, all objects must be searched.
@@ -614,11 +614,11 @@ Old way of object filtering. When using both old and new format, entries with th
 
 - objects (P): List of required nearby objects. Format is `- id, distance, data, weight, height`:
   - id: Object id.
-  - distance: Distance to the object (`max` or `min-max`). Default is up to 100 meters.
+  - distance: Distance to the object (`max` or `min;max`). Default is up to 100 meters.
     - All objects are searched if the max distance is more than 10000 meters.
   - data: Optional. Entry in the `data.yaml` to be used as filter. All data entries must match.
   - weight: Optional. How much tis match counts towards the `objectsLimit`. Default is 1.
-  - height: Optional. Height difference to the object  (`max` or `min-max`).'
+  - height: Optional. Height difference to the object  (`max` or `min;max`).'
 - bannedObjects (P): List of banned nearby objects.
 
 Old way of poking.
@@ -629,7 +629,7 @@ Old way of poking.
   - If not set, all matching objects are poked.
 - pokes: List of object information. Format is `- id, distance, data`:
   - id: Object id or value group.
-  - distance: Distance to the object (`max` or `min-max`). Default is up to 100 meters.
+  - distance: Distance to the object (`max` or `min;max`). Default is up to 100 meters.
   - data: Optional. Entry in the `data.yaml` to be used as filter. All data entries must match.
 
 Old way of spawning.
