@@ -492,6 +492,7 @@ Following parameters are available to be used in the yaml file:
   - Can be combined with `<pid>` to get full id.
 - `<pname>`: Player name of the client that controls the object.
 - `<pchar>`: Character id of the client that controls the object.
+- `<pvisible>`: Whether the player has public visibility enabled (true or false).
 - `<owner>`: Id of the owner client (long number).
 - `<none>` Empty or lack of value when using filters.
 

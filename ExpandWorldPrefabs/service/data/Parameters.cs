@@ -760,8 +760,8 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
     var peer = GetPeer(zdo);
     if (peer != null)
       return peer.m_publicRefPos.ToString();
-    else if (Minimap.m_instance)
-      return Minimap.instance.m_publicPosition.isOn.ToString();
+    else if (ZNet.instance)
+      return ZNet.instance.IsReferencePositionPublic().ToString();
     return "";
   }
   private static ZNetPeer? GetPeer(ZDO zdo) => zdo.GetOwner() != 0 ? ZNet.instance.GetPeer(zdo.GetOwner()) : null;
