@@ -94,6 +94,7 @@ All valid entries will be executed in unspecified order. Weight system can be us
   - If false, the owner must not be an admin.
   - If not set, nothing is checked.
 - biomes: List of valid biomes.
+- bannedBiomes: List of invalid biomes.
 - day (P): Valid during the day.
 - night (P): Valid during the night.
 - minDistance (P): Minimum distance from the world center.
