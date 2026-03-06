@@ -13,7 +13,7 @@ public class EWP : BaseUnityPlugin
 {
   public const string GUID = "expand_world_prefabs";
   public const string NAME = "Expand World Prefabs";
-  public const string VERSION = "1.49.2";
+  public const string VERSION = "1.49.3";
 #nullable disable
   public static Harmony Harmony;
 #nullable enable
@@ -28,7 +28,7 @@ public class EWP : BaseUnityPlugin
     {
       DataLoading.SetupWatcher();
       Loading.SetupWatcher();
-      DataStorage.SetupWatcher();
+      DataStorage.LoadSavedData();
     }
     catch (Exception e)
     {
@@ -41,6 +41,10 @@ public class EWP : BaseUnityPlugin
     {
       ExpandEvents = plugin.Instance.GetType().Assembly;
     }
+    new Terminal.ConsoleCommand("ewp_reload", "Manually reloads the ewp_data.yaml file.", (args) =>
+    {
+      DataStorage.LoadSavedData();
+    }, true);
   }
   public void LateUpdate()
   {

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Data;
@@ -15,7 +16,6 @@ public class DataStorage
 
   public static void LoadSavedData()
   {
-    if (UnsavedChanges) return;
     if (!Directory.Exists(Yaml.BaseDirectory))
       Directory.CreateDirectory(Yaml.BaseDirectory);
     if (!File.Exists(SavedDataFile)) return;
@@ -27,20 +27,20 @@ public class DataStorage
     }
     Log.Info($"Reloaded saved data ({Database.Count} entries).");
   }
-  private static bool UnsavedChanges = false;
-  private static long LastSave = 0;
+  private static readonly Stopwatch LastSaveStopwatch = Stopwatch.StartNew();
   private static readonly string SavedDataFile = Path.Combine(Yaml.BaseDirectory, "ewp_data.yaml");
+  private static bool UnsavedChanges = false;
   public static void SaveSavedData()
   {
     if (!UnsavedChanges) return;
     // Save every 10 seconds at most.
-    if (DateTime.Now.Ticks - LastSave < 10000000) return;
-    LastSave = DateTime.Now.Ticks;
+    if (LastSaveStopwatch.Elapsed.TotalSeconds < 10) return;
+    UnsavedChanges = false;
+    LastSaveStopwatch.Restart();
     if (!Directory.Exists(Yaml.BaseDirectory))
       Directory.CreateDirectory(Yaml.BaseDirectory);
     var yaml = Yaml.SerializeData(Database);
     File.WriteAllText(SavedDataFile, yaml);
-    UnsavedChanges = false;
   }
   public static Action<string, string>? OnSet;
   public static string GetValue(string key, string defaultValue = "") => Database.TryGetValue(key.ToLowerInvariant(), out var value) ? value : defaultValue;
@@ -167,13 +167,5 @@ public class DataStorage
       }
     }
     return true;
-  }
-
-  public static void SetupWatcher()
-  {
-    if (!Directory.Exists(Yaml.BaseDirectory))
-      Directory.CreateDirectory(Yaml.BaseDirectory);
-    Yaml.SetupWatcher(Yaml.BaseDirectory, "ewp_data.yaml", LoadSavedData, false);
-    LoadSavedData();
   }
 }

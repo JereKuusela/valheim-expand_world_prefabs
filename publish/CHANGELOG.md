@@ -1,8 +1,10 @@
 - v1.50
   - Adds formatting support to parameter `<time>`.
-  - Adds a new parameter `<realtime>` to get the real-world time (can be formatted).
+  - Adds new parameter `<realtime>` to get the real-world time (can be formatted).
   - Adds new trigger type `realtime` to trigger actions based on real-world time changes.
   - Adds new parameter `<pvisible>` to get whether the player has public visibility enabled.
+  - Adds new command `ewp_reload` to manually reload the `ewp_data.yaml` file (if the file has been manually modified).
+  - Removes file watcher from `ewp_data.yaml` to reduce performance issues.
 
 - v1.49
   - Hotfix to remove debug logging.
