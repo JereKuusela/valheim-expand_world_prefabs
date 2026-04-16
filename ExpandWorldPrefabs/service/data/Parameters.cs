@@ -710,6 +710,7 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       "a" => Helper.Format(zdo.m_rotation.y),
       "rot" => Helper.FormatRot(zdo.m_rotation),
       "pid" => GetPid(zdo),
+      "cid" => GetCid(zdo),
       "platform" => GetPlatform(zdo),
       "pname" => GetPName(zdo),
       "pchar" => GetPChar(zdo),
@@ -726,6 +727,23 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       return PeerManager.GetPid(peer);
     else if (Player.m_localPlayer)
       return "Server";
+    return "";
+  }
+  private static string GetCid(ZDO zdo)
+  {
+    var peer = GetPeer(zdo);
+    if (peer != null)
+    {
+      var characterZdo = ZDOMan.instance.GetZDO(peer.m_characterID);
+      if (characterZdo != null)
+      {
+        var cid = ZdoHelper.TryGetLong(characterZdo, ZDOVars.s_playerID);
+        if (cid != null)
+          return cid.Value.ToString();
+      }
+    }
+    else if (Player.m_localPlayer)
+      return Player.m_localPlayer.GetPlayerID().ToString();
     return "";
   }
   private static string GetPlatform(ZDO zdo)
