@@ -21,8 +21,17 @@ public class DelayedOwner(float delay, ZDOID zdo, long owner)
       owner = closestClient?.m_peer.m_uid ?? 0;
     }
     var prefab = ZNetScene.instance.GetPrefab(zdo.m_prefab);
-    if (prefab.GetComponent<ItemDrop>() || prefab.GetComponent<Ship>())
+    if (prefab.GetComponent<ItemDrop>())
+    {
+      // This is normally set on Awake which won't trigger for server spawned.
+      // Without this, "remove old loot" is instantly triggered.
+      zdo.Set(ZDOVars.s_spawnTime, ZNet.instance.GetTime().Ticks);
       Add(0.1f, zdo, owner);
+    }
+    else if (prefab.GetComponent<Ship>())
+    {
+      Add(0.1f, zdo, owner);
+    }
     else
       zdo.SetOwnerInternal(owner);
   }

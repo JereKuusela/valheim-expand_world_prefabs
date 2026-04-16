@@ -208,7 +208,7 @@ By default, the RPC is sent to the owner of the object.
 ```
 
 ```yaml
-# Teleports the creature. Only implemented for players.
+# Teleports the player. Implementation doesn't exist for other creatures.
   objectRpc:
   - name: RPC_TeleportTo
     1: vec, "location to teleport to"

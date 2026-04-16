@@ -4,6 +4,7 @@
   - Adds new trigger type `realtime` to trigger actions based on real-world time changes.
   - Adds new parameter `<pvisible>` to get whether the player has public visibility enabled.
   - Adds new command `ewp_reload` to manually reload the `ewp_data.yaml` file (if the file has been manually modified).
+  - Fixes spawned item drops possibly disappearing (no spawn time was set so clean up for old loot was instantly triggered).
   - Removes file watcher from `ewp_data.yaml` to reduce performance issues.
 
 - v1.49

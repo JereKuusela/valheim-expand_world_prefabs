@@ -1,8 +1,6 @@
 using System;
-using System.Globalization;
 using System.Linq;
 using Data;
-using Service;
 using UnityEngine;
 
 namespace ExpandWorld.Prefab;
