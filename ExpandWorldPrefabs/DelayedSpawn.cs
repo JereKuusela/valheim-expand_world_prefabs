@@ -50,6 +50,9 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
     ZdoEntry zdoEntry = new(prefab, pos, rot, originalZdo);
     if (data != null)
       zdoEntry.Load(data, pars);
+    var owner = spawn.Owner?.Get(pars);
+    if (owner.HasValue)
+      zdoEntry.Owner = owner.Value;
     Add(delay, zdoEntry, spawn.TriggerRules?.GetBool(pars) ?? false);
   }
   private static void Add(float delay, ZdoEntry zdoEntry, bool triggerRules)

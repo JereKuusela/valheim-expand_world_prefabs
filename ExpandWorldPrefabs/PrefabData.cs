@@ -334,6 +334,8 @@ public class SpawnData
   [DefaultValue(null)]
   public string? weight;
   [DefaultValue(null)]
+  public string? owner;
+  [DefaultValue(null)]
   public string? triggerRules;
 }
 
@@ -350,6 +352,7 @@ public class Spawn
   public readonly IFloatValue? RepeatChance;
   public readonly IFloatValue? Chance;
   public readonly IFloatValue? Weight;
+  public readonly ILongValue? Owner;
   public readonly IBoolValue? TriggerRules;
 
   public Spawn(SpawnData data, float? delay, bool? triggerRules)
@@ -365,6 +368,7 @@ public class Spawn
     RepeatChance = data.repeatChance == null ? null : DataValue.Float(data.repeatChance);
     Chance = data.chance == null ? null : DataValue.Float(data.chance);
     Weight = data.weight == null ? null : DataValue.Float(data.weight);
+    Owner = data.owner == null ? null : DataValue.Long(data.owner);
     TriggerRules = data.triggerRules == null ? triggerRules == null ? null : new SimpleBoolValue(triggerRules.Value) : DataValue.Bool(data.triggerRules);
   }
 
@@ -376,6 +380,7 @@ public class Spawn
     RepeatChance = null;
     Chance = null;
     Weight = null;
+    Owner = null;
     TriggerRules = triggerRules == null ? null : new SimpleBoolValue(triggerRules.Value);
     var split = Parse.ToList(line);
     Prefab = DataValue.Prefab(split[0]);

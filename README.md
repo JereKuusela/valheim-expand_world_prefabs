@@ -294,6 +294,7 @@ See object filtering [examples](examples_object_filtering.md).
   - repeat (default: `0`): How many times the spawn is repeated.
   - repeatInterval (default: `0`): Interval in seconds between repeats.
   - repeatChance (default: `1`): Chance to spawn for each attempt (including the original).
+  - owner: Overrides the default initial owner assignment. For example with `<owner>` parameter.
 - swap (P): Swaps the original object with another object.
   - Format and keywords are same as for `spawn`.
   - The initial data is copied from the original object.
