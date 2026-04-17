@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using ExpandWorld.Prefab;
 using Service;
-using Splatform;
 using UnityEngine;
 
 namespace Data;
@@ -106,7 +104,9 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
 
   protected virtual string? GetParameter(string key, string defaultValue)
   {
-    var value = ExecuteCode(key);
+    var value = Api.ResolveParameter(key);
+    if (value != null) return value;
+    value = ExecuteCode(key);
     if (value != null) return value;
     value = GetGeneralParameter(key, defaultValue);
     if (value != null) return value;
@@ -115,6 +115,8 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     key = keyArg.Key;
     var arg = keyArg.Value;
 
+    value = Api.ResolveValueParameter(key, arg);
+    if (value != null) return value;
     value = ExecuteCodeWithValue(key, arg);
     if (value != null) return value;
     return GetValueParameter(key, arg, defaultValue);
