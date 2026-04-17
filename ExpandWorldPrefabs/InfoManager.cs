@@ -18,6 +18,7 @@ public enum ActionType
   Event,
   Change,
   Key,
+  Custom,
   Time,
   RealTime
 }
@@ -31,6 +32,7 @@ public class InfoManager
   public static readonly PrefabInfo ChangeDatas = new();
   public static readonly GlobalInfo GlobalKeyDatas = new();
   public static readonly GlobalInfo KeyDatas = new();
+  public static readonly GlobalInfo CustomDatas = new();
   public static readonly GlobalInfo EventDatas = new();
   public static readonly GlobalInfo TimeDatas = new();
   public static readonly GlobalInfo RealTimeDatas = new();
@@ -44,6 +46,7 @@ public class InfoManager
     PokeDatas.Clear();
     GlobalKeyDatas.Clear();
     KeyDatas.Clear();
+    CustomDatas.Clear();
     EventDatas.Clear();
     ChangeDatas.Clear();
     TimeDatas.Clear();
@@ -59,6 +62,11 @@ public class InfoManager
     if (info.Type == ActionType.Key)
     {
       KeyDatas.Add(info);
+      return;
+    }
+    if (info.Type == ActionType.Custom)
+    {
+      CustomDatas.Add(info);
       return;
     }
     if (info.Type == ActionType.Event)
@@ -184,6 +192,7 @@ public class InfoManager
   {
     ActionType.GlobalKey => GlobalKeyDatas,
     ActionType.Key => KeyDatas,
+    ActionType.Custom => CustomDatas,
     ActionType.Event => EventDatas,
     ActionType.Time => TimeDatas,
     ActionType.RealTime => RealTimeDatas,

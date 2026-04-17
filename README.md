@@ -62,6 +62,9 @@ Most fields are put on a single line. List values are separated by `,`.
       - Use field `remove` to trigger on data removal.
       - This only triggers when the saved data actually changes.
       - There is no prefab or position for this type, so most fields won't work.
+    - `custom`: Manual custom event. Can be only triggered by custom code.
+      - See [API documentation](developers.md) for more info.
+      - There is no prefab for this type, so most fields won't work.
     - `event`: When an event starts or ends. Parameter is the event name.
       - Use field `end` to trigger on event end.
       - There is no prefab for this type, so most fields won't work.

@@ -2,6 +2,8 @@
 
 Mods can register custom parameter handlers for Expand World Prefabs.
 
+Mods can also directly use custom triggers.
+
 Add a new file to your project `ExpandWorldPrefabsApi.cs`
 
 This adds a soft dependency. If Expand World Prefabs is not installed, then nothing happens.
@@ -11,6 +13,7 @@ using System;
 using System.Reflection;
 using BepInEx.Bootstrap;
 using HarmonyLib;
+using UnityEngine;
 
 namespace EWP;
 
@@ -22,6 +25,8 @@ public static class Api
   private static MethodInfo? registerSimpleParameterHandlerMethod;
   private static MethodInfo? registerValueParameterHandlerMethod;
   private static MethodInfo? unregisterParameterHandlerMethod;
+  private static MethodInfo? triggerCustomMethod;
+  private static MethodInfo? triggerCustomWithPositionMethod;
 
   private static void SetupIfNeeded()
   {
@@ -40,6 +45,8 @@ public static class Api
     registerSimpleParameterHandlerMethod = AccessTools.Method(type, "RegisterParameterHandler", [typeof(string), typeof(Func<string?>)]);
     registerValueParameterHandlerMethod = AccessTools.Method(type, "RegisterParameterHandler", [typeof(string), typeof(Func<string, string?>)]);
     unregisterParameterHandlerMethod = AccessTools.Method(type, "UnregisterParameterHandler", [typeof(string)]);
+    triggerCustomMethod = AccessTools.Method(type, "TriggerCustom", [typeof(string[])]);
+    triggerCustomWithPositionMethod = AccessTools.Method(type, "TriggerCustom", [typeof(Vector3), typeof(string[])]);
   }
 
   public static void AddParameter(string key, Func<string?> handler)
@@ -58,6 +65,18 @@ public static class Api
   {
     SetupIfNeeded();
     unregisterParameterHandlerMethod?.Invoke(null, [key]);
+  }
+
+  public static void TriggerCustom(params string[] args)
+  {
+    SetupIfNeeded();
+    triggerCustomMethod?.Invoke(null, [args]);
+  }
+
+  public static void TriggerCustom(Vector3 pos, params string[] args)
+  {
+    SetupIfNeeded();
+    triggerCustomWithPositionMethod?.Invoke(null, [pos, args]);
   }
 }
 ```
@@ -78,5 +97,11 @@ private string GetSomething()
 private string AnotherTest(string value)
 {
   return $"You sent {value}";
+}
+
+private void TriggerExample()
+{
+  EWP.Api.TriggerCustom("my_event", "arg1", "arg2");
+  EWP.Api.TriggerCustom(transform.position, "my_event", "arg1", "arg2");
 }
 ```

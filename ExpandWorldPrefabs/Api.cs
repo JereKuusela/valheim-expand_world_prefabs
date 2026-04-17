@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace ExpandWorld.Prefab;
 
@@ -41,5 +42,17 @@ public static class Api
     if (ValueParameterHandlers.TryGetValue(key, out var handler))
       return handler(value);
     return null;
+  }
+
+  public static void TriggerCustom(params string[] args)
+  {
+    TriggerCustom(Vector3.zero, args);
+  }
+
+  public static void TriggerCustom(Vector3 pos, params string[] args)
+  {
+    if (args == null || args.Length == 0) return;
+    if (args[0] == "") return;
+    Manager.HandleGlobal(ActionType.Custom, args, pos, false);
   }
 }
