@@ -1,7 +1,8 @@
 - v1.51
   - Adds new parameter `<cid>` to get the character id of the client that controls the object.
   - Adds new parameter `<owner>` to spawn data to override the initial owner assignment.
-  - Adds API for developers to register own parameter handlers.
+  - Adds new states `join`, `leave` and `respawn` to player triggers.
+  - Adds API for developers to register own parameter handlers and to use custom triggers.
   - Obsoletes parameter `<pchar>` as it returned wrong information anyways.
 
 - v1.50

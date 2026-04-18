@@ -50,6 +50,7 @@ public class Manager
     if (zdo == null) return false;
     return Handle(type, args, zdo);
   }
+
   public static bool Handle(ActionType type, string[] args, ZDO zdo)
   {
     // Already destroyed before.

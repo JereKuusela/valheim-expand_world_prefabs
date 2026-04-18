@@ -444,7 +444,11 @@ State works for following objects:
 - MonsterAI: Waking up from sleep triggers state `wakeup`.
 - MusicVolume: Entering the volume triggers state `music`.
 - Pickable: Picking triggers state `picked` or `unpicked`.
-- Player: Death triggers state `death`.
+- Player:
+  - Death triggers state `death`.
+  - Joining server triggers state `join`.
+  - Leaving server triggers state `leave`.
+  - Respawning triggers state `respawn`.
 - PrivateArea (ward): Triggering the ward triggers state `flash`.
 - SapCollector: Using the tap triggers state `effects`.
 - ShieldGenerator: Project hit triggers state `hit`.

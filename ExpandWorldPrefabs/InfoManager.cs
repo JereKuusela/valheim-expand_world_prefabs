@@ -97,14 +97,17 @@ public class InfoManager
     if (Helper.IsClient())
       return;
     EWP.Harmony.PatchAll();
-    if (CreateDatas.Exists)
+    // Disconnecting is rare event so simpler to just always patch.
+    HandleJoined.Patch(EWP.Harmony);
+    var requiredStates = GetRequiredStates();
+    if (CreateDatas.Exists || requiredStates.Contains("join") || requiredStates.Contains("respawn"))
       HandleCreated.Patch(EWP.Harmony);
     if (RemoveDatas.Exists)
       HandleDestroyed.Patch(EWP.Harmony);
     if (StateDatas.Exists || SayDatas.Exists)
     {
       HandleRPC.Patch(EWP.Harmony);
-      HandleRPC.SetRequiredStates(GetRequiredStates());
+      HandleRPC.SetRequiredStates(requiredStates);
     }
     if (SayDatas.Exists)
       ServerClient.Patch(EWP.Harmony);

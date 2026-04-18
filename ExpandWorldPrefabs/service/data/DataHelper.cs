@@ -73,31 +73,6 @@ public class DataHelper
       return values;
     return null;
   }
-  // This is mainly used to simplify code.
-  // Not very efficient because usually only a single prefab is used.
-  // So only use when the result is cached.
-  public static List<string> ResolvePrefabs(string values)
-  {
-    HashSet<string> prefabs = [];
-    ResolvePrefabsSub(prefabs, values);
-    return [.. prefabs];
-  }
-  private static void ResolvePrefabsSub(HashSet<string> prefabs, string value)
-  {
-    if (value == "all" || ZNetScene.instance.m_namedPrefabs.ContainsKey(value.GetStableHashCode()))
-    {
-      prefabs.Add(value);
-      return;
-    }
-    var values = GetValuesFromGroup(value);
-    if (values != null)
-    {
-      foreach (var v in values)
-        ResolvePrefabsSub(prefabs, v);
-      return;
-    }
-    Log.Warning($"Failed to resolve prefab: {value}");
-  }
 
   public static string GetGlobalKey(string key)
   {

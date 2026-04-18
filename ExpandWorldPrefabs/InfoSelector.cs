@@ -24,24 +24,24 @@ public class InfoSelector
   {
     var infos = InfoManager.Select(type);
     if (!infos.TryGetSeparateValue(zdo.m_prefab, out var data)) return null;
-    return SelectInfos(data, zdo, args, parameters);
+    return SelectInfos(data, zdo.m_position, zdo, args, parameters);
   }
 
   private static Info? SelectInfo(List<Info> data, ZDO zdo, string[] args, Parameters parameters)
   {
-    var infos = SelectInfos(data, zdo, args, parameters);
+    var infos = SelectInfos(data, zdo.m_position, zdo, args, parameters);
     if (infos == null || infos.Length == 0) return null;
     return Randomize(infos, parameters);
   }
 
-  private static Info[]? SelectInfos(List<Info> data, ZDO zdo, string[] args, Parameters parameters)
+  private static Info[]? SelectInfos(List<Info> data, Vector3 pos, ZDO zdo, string[] args, Parameters parameters)
   {
     if (data.Count == 0) return null;
-    var pos = zdo.m_position;
     var biome = WorldGenerator.instance.GetBiome(pos);
     var distance = Utils.LengthXZ(pos);
     var day = EnvMan.IsDay();
     var waterY = pos.y - ZoneSystem.instance.m_waterLevel;
+    ZNetPeer? peer = null;
     var linq = data
       .Where(d => CheckArgs(d, args))
       .Where(d => (d.Biomes & biome) == biome)
@@ -109,7 +109,7 @@ public class InfoSelector
     }
     if (checkAdmin)
     {
-      var peer = ZNet.instance.GetPeer(zdo.GetOwner());
+      peer = ZNet.instance.GetPeer(zdo.GetOwner());
       var admin = peer != null && ZNet.instance.IsAdmin(peer.m_socket.GetHostName());
       linq = [.. linq.Where(d => d.Admin == null || d.Admin.GetBool(parameters) == admin)];
     }
@@ -120,7 +120,8 @@ public class InfoSelector
     }
     if (checkPlayerEvents)
     {
-      var eventData = ObjectParameters.GetPlayerData(zdo, "possibleEvents");
+      peer = ZNet.instance.GetPeer(zdo.GetOwner());
+      var eventData = ObjectParameters.GetPlayerData(peer, "possibleEvents");
       var events = eventData.Split(',');
       linq = [.. linq.Where(d =>
       {
