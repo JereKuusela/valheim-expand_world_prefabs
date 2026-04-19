@@ -34,6 +34,8 @@ Most fields are put on a single line. List values are separated by `,`.
     - By default, each object component has its own value group. For example `Tameable` or `Piece`.
     - By default, keywords `creature` (Humanoid) and `structure` (WearNTear) have their own value group.
     - Values from groups are cached, so the prefab yaml must be manually saved when changing an already used value group.
+- excludePrefab: List of excluded object ids.
+  - This can be used to skip specific objects when a wildcard or component is used in the `prefab` field.
 - type: Type of the trigger and parameter (`type, parameter1 parameter2`).
   - Parameters are optional and can be used to specify the trigger.
   - Parameters supports numeric ranges (`min;max`) and multiple values (`value1,value2`).
