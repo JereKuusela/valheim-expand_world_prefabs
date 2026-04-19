@@ -8,6 +8,7 @@ public static class Api
 {
   private static readonly Dictionary<string, Func<string?>> ParameterHandlers = new(StringComparer.OrdinalIgnoreCase);
   private static readonly Dictionary<string, Func<string, string?>> ValueParameterHandlers = new(StringComparer.OrdinalIgnoreCase);
+  private static readonly Dictionary<string, Func<string, long, string, bool>> GroupHandlers = new(StringComparer.OrdinalIgnoreCase);
 
   public static void RegisterParameterHandler(string key, Func<string?> handler)
   {
@@ -30,6 +31,18 @@ public static class Api
     return result;
   }
 
+  public static void RegisterGroupHandler(string key, Func<string, long, string, bool> handler)
+  {
+    if (key == "" || handler == null) return;
+    GroupHandlers[key] = handler;
+  }
+
+  public static bool UnregisterGroupHandler(string key)
+  {
+    if (key == "") return false;
+    return GroupHandlers.Remove(key);
+  }
+
   internal static string? ResolveParameter(string key)
   {
     if (ParameterHandlers.TryGetValue(key, out var handler))
@@ -42,6 +55,16 @@ public static class Api
     if (ValueParameterHandlers.TryGetValue(key, out var handler))
       return handler(value);
     return null;
+  }
+
+  internal static bool IsInGroup(string playerId, long characterId, string group)
+  {
+    if (group == "") return false;
+    foreach (var handler in GroupHandlers.Values)
+    {
+      if (handler(playerId, characterId, group)) return true;
+    }
+    return false;
   }
 
   public static void TriggerCustom(params string[] args)

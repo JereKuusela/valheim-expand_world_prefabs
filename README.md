@@ -148,6 +148,9 @@ All valid entries will be executed in unspecified order. Weight system can be us
   - The list is created even when player based events are not enabled.
   - You can use the parameter `<pdata_possibleEvents>` to print them.
 - bannedPlayerEvents: List of event ids. None must be possible for the player.
+- groups: List og groups. Player must be in at least one of these groups.
+  - Requires using Server Devcommands mod or some other mod that provides group implementation.
+- bannedGroups: List of groups. Player must not be in any of these groups.
 
 ### Data filters (P)
 

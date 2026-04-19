@@ -428,7 +428,7 @@ public class HandleRPC
       source = Player.m_localPlayer?.m_nview?.GetZDO();
     else
     {
-      var peer = ZNet.instance.GetPeer(id);
+      var peer = PeerManager.GetPeer(id);
       if (peer != null)
         source = ZDOMan.instance.GetZDO(peer.m_characterID);
     }

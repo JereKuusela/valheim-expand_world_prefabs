@@ -38,80 +38,16 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       "j" => ZoneSystem.GetZone(zdo.m_position).y.ToString(),
       "a" => Helper.Format(zdo.m_rotation.y),
       "rot" => Helper.FormatRot(zdo.m_rotation),
-      "pid" => GetPid(zdo),
-      "cid" => GetCid(zdo),
-      "platform" => GetPlatform(zdo),
-      "pname" => GetPName(zdo),
-      "pchar" => GetPChar(zdo),
-      "pvisible" => GetPVisible(zdo),
+      "pid" => PeerManager.GetPid(zdo),
+      "cid" => PeerManager.GetCid(zdo)?.ToString() ?? "",
+      "platform" => PeerManager.GetPlatform(zdo),
+      "pname" => PeerManager.GetPName(zdo),
+      "pchar" => PeerManager.GetPChar(zdo),
+      "pvisible" => PeerManager.GetPVisible(zdo),
       "owner" => zdo.GetOwner().ToString(),
       "biome" => WorldGenerator.instance.GetBiome(zdo.m_position).ToString(),
       _ => null,
     };
-
-  private static string GetPid(ZDO zdo)
-  {
-    var peer = GetPeer(zdo);
-    if (peer != null && peer.IsReady())
-      return PeerManager.GetPid(peer);
-    else if (Player.m_localPlayer)
-      return "Server";
-    return "";
-  }
-  private static string GetCid(ZDO zdo)
-  {
-    var peer = GetPeer(zdo);
-    if (peer != null)
-    {
-      var characterZdo = ZDOMan.instance.GetZDO(peer.m_characterID);
-      if (characterZdo != null)
-      {
-        var cid = ZdoHelper.TryGetLong(characterZdo, ZDOVars.s_playerID);
-        if (cid != null)
-          return cid.Value.ToString();
-      }
-    }
-    else if (Player.m_localPlayer)
-      return Player.m_localPlayer.GetPlayerID().ToString();
-    return "";
-  }
-  private static string GetPlatform(ZDO zdo)
-  {
-    var peer = GetPeer(zdo);
-    if (peer != null && peer.IsReady())
-      return PeerManager.GetPlatform(peer);
-    else if (Player.m_localPlayer)
-      return "Server";
-    return "";
-  }
-  private static string GetPName(ZDO zdo)
-  {
-    var peer = GetPeer(zdo);
-    if (peer != null)
-      return peer.m_playerName;
-    else if (Player.m_localPlayer)
-      return Player.m_localPlayer.GetPlayerName();
-    return "";
-  }
-  private static string GetPChar(ZDO zdo)
-  {
-    var peer = GetPeer(zdo);
-    if (peer != null)
-      return peer.m_characterID.ToString();
-    else if (Player.m_localPlayer)
-      return Player.m_localPlayer.GetPlayerID().ToString();
-    return "";
-  }
-  private static string GetPVisible(ZDO zdo)
-  {
-    var peer = GetPeer(zdo);
-    if (peer != null)
-      return peer.m_publicRefPos.ToString();
-    else if (ZNet.instance)
-      return ZNet.instance.IsReferencePositionPublic().ToString();
-    return "";
-  }
-  private static ZNetPeer? GetPeer(ZDO zdo) => zdo.GetOwner() != 0 ? ZNet.instance.GetPeer(zdo.GetOwner()) : null;
 
 
   protected override string? GetValueParameter(string key, string value, string defaultValue) =>
@@ -133,7 +69,7 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
      "durability" => GetDurability(value, defaultValue),
      "item" => GetItem(value, defaultValue),
      "pos" => DataEntry.PrintVectorXZY(GetPos(value)),
-     "pdata" => GetPlayerData(GetPeer(zdo), value),
+     "pdata" => PeerManager.GetPlayerData(zdo, value),
      _ => null,
    };
 
@@ -276,14 +212,5 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
   {
     var offset = Parse.VectorXZY(value);
     return zdo.GetPosition() + zdo.GetRotation() * offset;
-  }
-
-  public static string GetPlayerData(ZNetPeer? peer, string key)
-  {
-    if (peer != null)
-      return peer.m_serverSyncedPlayerData.TryGetValue(key, out var data) ? data : "";
-    else if (Player.m_localPlayer)
-      return ZNet.instance.m_serverSyncedPlayerData.TryGetValue(key, out var data) ? data : "";
-    return "";
   }
 }

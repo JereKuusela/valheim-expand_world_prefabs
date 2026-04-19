@@ -29,7 +29,7 @@ public class HandleCreated
       var uid = CreatedZDOs[i];
       var zdo = ZDOMan.instance.GetZDO(uid);
       if (zdo == null) continue;
-      HandleJoined.HandlePlayerCreatedState(zdo);
+      PeerManager.HandlePlayerCreatedState(zdo);
       Manager.Handle(ActionType.Create, [], zdo);
     }
     ZNetView.m_ghostInit = true;

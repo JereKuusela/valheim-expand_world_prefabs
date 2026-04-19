@@ -41,7 +41,6 @@ public class InfoSelector
     var distance = Utils.LengthXZ(pos);
     var day = EnvMan.IsDay();
     var waterY = pos.y - ZoneSystem.instance.m_waterLevel;
-    ZNetPeer? peer = null;
     var linq = data
       .Where(d => CheckArgs(d, args))
       .Where(d => (d.Biomes & biome) == biome)
@@ -70,6 +69,7 @@ public class InfoSelector
     var checkBannedObjects = linq.Any(d => d.BannedObjects != null);
     var checkLocations = linq.Any(d => d.Locations != null || d.BannedLocations != null);
     var checkPlayerEvents = linq.Any(d => d.PlayerEvents != null || d.BannedPlayerEvents != null);
+    var checkGroups = linq.Any(d => d.Groups != null || d.BannedGroups != null);
     var checkFilters = linq.Any(d => d.Filters != null);
     var checkPaint = linq.Any(d => d.MinPaint != null || d.MaxPaint != null);
     var checkTerrainHeight = linq.Any(d => d.MinTerrainHeight != null || d.MaxTerrainHeight != null);
@@ -109,8 +109,7 @@ public class InfoSelector
     }
     if (checkAdmin)
     {
-      peer = ZNet.instance.GetPeer(zdo.GetOwner());
-      var admin = peer != null && ZNet.instance.IsAdmin(peer.m_socket.GetHostName());
+      var admin = PeerManager.IsAdmin(zdo);
       linq = [.. linq.Where(d => d.Admin == null || d.Admin.GetBool(parameters) == admin)];
     }
     if (checkLocations)
@@ -120,8 +119,7 @@ public class InfoSelector
     }
     if (checkPlayerEvents)
     {
-      peer = ZNet.instance.GetPeer(zdo.GetOwner());
-      var eventData = ObjectParameters.GetPlayerData(peer, "possibleEvents");
+      var eventData = PeerManager.GetPlayerData(zdo, "possibleEvents");
       var events = eventData.Split(',');
       linq = [.. linq.Where(d =>
       {
@@ -129,6 +127,12 @@ public class InfoSelector
         if (d.PlayerEvents == null) return true;
         return events.Any(ev => d.PlayerEvents.Contains(ev));
       })];
+    }
+    if (checkGroups)
+    {
+      var pid = PeerManager.GetPid(zdo);
+      var cid = PeerManager.GetCid(zdo) ?? 0;
+      linq = [.. linq.Where(d => CheckGroups(d, pid, cid))];
     }
     if (checkFilters)
     {
@@ -143,6 +147,12 @@ public class InfoSelector
     }
     Info[] result = [.. linq];
     return result.Length == 0 ? null : result;
+  }
+  private static bool CheckGroups(Info d, string pid, long cid)
+  {
+    if (d.BannedGroups != null && d.BannedGroups.Any(group => Api.IsInGroup(pid, cid, group))) return false;
+    if (d.Groups == null) return true;
+    return d.Groups.Any(group => Api.IsInGroup(pid, cid, group));
   }
   private static bool CheckLocations(Info d, Vector3 pos, Vector2i zone) => CheckBannedLocations(d, pos, zone) && CheckRequiredLocations(d, pos, zone);
   private static bool CheckBannedLocations(Info d, Vector3 pos, Vector2i zone)

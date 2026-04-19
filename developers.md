@@ -1,8 +1,8 @@
 # Developers
 
-Mods can register custom parameter handlers for Expand World Prefabs.
-
-Mods can also directly use custom triggers.
+- Mods can register custom parameter handlers for Expand World Prefabs.
+- Mods can register custom group handlers for Expand World Prefabs.
+- Mods can directly use custom triggers.
 
 Add a new file to your project `ExpandWorldPrefabsApi.cs`
 
@@ -25,6 +25,8 @@ public static class Api
   private static MethodInfo? registerSimpleParameterHandlerMethod;
   private static MethodInfo? registerValueParameterHandlerMethod;
   private static MethodInfo? unregisterParameterHandlerMethod;
+  private static MethodInfo? registerGroupHandlerMethod;
+  private static MethodInfo? unregisterGroupHandlerMethod;
   private static MethodInfo? triggerCustomMethod;
   private static MethodInfo? triggerCustomWithPositionMethod;
 
@@ -45,6 +47,8 @@ public static class Api
     registerSimpleParameterHandlerMethod = AccessTools.Method(type, "RegisterParameterHandler", [typeof(string), typeof(Func<string?>)]);
     registerValueParameterHandlerMethod = AccessTools.Method(type, "RegisterParameterHandler", [typeof(string), typeof(Func<string, string?>)]);
     unregisterParameterHandlerMethod = AccessTools.Method(type, "UnregisterParameterHandler", [typeof(string)]);
+    registerGroupHandlerMethod = AccessTools.Method(type, "RegisterGroupHandler", [typeof(string), typeof(Func<string, long, string, bool>)]);
+    unregisterGroupHandlerMethod = AccessTools.Method(type, "UnregisterGroupHandler", [typeof(string)]);
     triggerCustomMethod = AccessTools.Method(type, "TriggerCustom", [typeof(string[])]);
     triggerCustomWithPositionMethod = AccessTools.Method(type, "TriggerCustom", [typeof(Vector3), typeof(string[])]);
   }
@@ -65,6 +69,18 @@ public static class Api
   {
     SetupIfNeeded();
     unregisterParameterHandlerMethod?.Invoke(null, [key]);
+  }
+
+  public static void RegisterGroupHandler(string key, Func<string, long, string, bool> handler)
+  {
+    SetupIfNeeded();
+    registerGroupHandlerMethod?.Invoke(null, [key, handler]);
+  }
+
+  public static void UnregisterGroupHandler(string key)
+  {
+    SetupIfNeeded();
+    unregisterGroupHandlerMethod?.Invoke(null, [key]);
   }
 
   public static void TriggerCustom(params string[] args)
@@ -88,6 +104,7 @@ public void Start()
 {
   EWP.Api.AddParameter("test", GetSomething);
   EWP.Api.AddValueParameter("anothertest", AnotherTest);
+  EWP.Api.RegisterGroupHandler("modgroup", IsInModGroup);
 }
 
 private string GetSomething()
@@ -97,6 +114,11 @@ private string GetSomething()
 private string AnotherTest(string value)
 {
   return $"You sent {value}";
+}
+
+private bool IsInModGroup(string playerId, long characterId, string group)
+{
+  return group == "modgroup" && playerId == "MySpecialPlayer";
 }
 
 private void TriggerExample()

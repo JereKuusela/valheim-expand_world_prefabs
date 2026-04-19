@@ -124,6 +124,10 @@ public class Data
   [DefaultValue(null)]
   public string? bannedPlayerEvents;
   [DefaultValue(null)]
+  public string? groups;
+  [DefaultValue(null)]
+  public string? bannedGroups;
+  [DefaultValue(null)]
   public string[]? filters = null;
   [DefaultValue(null)]
   public string[]? bannedFilters = null;
@@ -259,6 +263,8 @@ public class Info
   public float BannedLocationDistance = 0f;
   public HashSet<string>? PlayerEvents;
   public HashSet<string>? BannedPlayerEvents;
+  public HashSet<string>? Groups;
+  public HashSet<string>? BannedGroups;
   public Filters? Filters;
   public bool TriggerRules;
   public ObjectRpcInfo[]? ObjectRpcs;

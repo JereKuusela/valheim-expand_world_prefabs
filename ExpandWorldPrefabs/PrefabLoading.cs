@@ -69,6 +69,8 @@ public class Loading
     HashSet<string>? bannedLocations = data.bannedLocations == null ? null : [.. Parse.ToList(data.bannedLocations)];
     HashSet<string>? playerEvents = data.playerEvents == null ? null : [.. Parse.ToList(data.playerEvents)];
     HashSet<string>? bannedPlayerEvents = data.bannedPlayerEvents == null ? null : [.. Parse.ToList(data.bannedPlayerEvents)];
+    HashSet<string>? groups = data.groups == null ? null : [.. Parse.ToList(data.groups)];
+    HashSet<string>? bannedGroups = data.bannedGroups == null ? null : [.. Parse.ToList(data.bannedGroups)];
     var objectsLimit = ParseObjectsLimit(data.objectsLimit);
     var objects = data.objects == null ? null : ParseObjects(data.objects);
     var bannedObjects = data.bannedObjects == null ? null : ParseObjects(data.bannedObjects);
@@ -159,6 +161,8 @@ public class Loading
         BannedLocations = bannedLocations,
         PlayerEvents = playerEvents,
         BannedPlayerEvents = bannedPlayerEvents,
+        Groups = groups,
+        BannedGroups = bannedGroups,
         PokeLimit = data.pokeLimit,
         PokeParameter = data.pokeParameter,
         Pokes = allPokes?.Item1,
