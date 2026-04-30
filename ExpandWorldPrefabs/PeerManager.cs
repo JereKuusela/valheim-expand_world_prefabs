@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using Data;
 using HarmonyLib;
+using Service;
 using Splatform;
 
 namespace ExpandWorld.Prefab;
 
+[HarmonyPatch]
 public class PeerManager
 {
   private static readonly Dictionary<long, ZNetPeer> PeersByOwner = [];

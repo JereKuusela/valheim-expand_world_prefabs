@@ -1,3 +1,6 @@
+- v1.53
+  - Fixes state `leave` not working.
+
 - v1.52
   - Adds new parameter `<cid>` to get the character id of the client that controls the object.
   - Adds new parameter `<owner>` to spawn data to override the initial owner assignment.
@@ -20,8 +23,3 @@
 
 - v1.49
   - Hotfix to remove debug logging.
-
-- v1.48
-  - Adds new parameter `<amount>` to get the amount of poked objects.
-  - Adds new parameters`<platform>` to get the platform of the client that controls the object.
-  - Breaking change: Changes the parameter `<pid>` to return only the user id instead of the full platform user id.
