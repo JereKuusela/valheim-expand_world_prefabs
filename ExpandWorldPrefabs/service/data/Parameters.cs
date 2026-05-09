@@ -516,10 +516,11 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     if (values.Length < 2) return defaultValue;
 
     if (!Parse.TryInt(values[0], out var index)) return defaultValue;
-    if (index < 1 || index >= values.Length) return defaultValue;
 
     var numbers = values.Skip(1).Select(v => Parse.Float(v, float.MaxValue)).ToList();
     numbers.Sort();
+    if (index < 1) return numbers[0].ToString(CultureInfo.InvariantCulture);
+    if (index > numbers.Count) return numbers[numbers.Count - 1].ToString(CultureInfo.InvariantCulture);
     return numbers[index - 1].ToString(CultureInfo.InvariantCulture);
   }
 
@@ -529,10 +530,11 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     if (values.Length < 2) return defaultValue;
 
     if (!Parse.TryInt(values[0], out var index)) return defaultValue;
-    if (index < 1 || index >= values.Length) return defaultValue;
 
     var numbers = values.Skip(1).Select(v => Parse.Float(v, float.MinValue)).ToList();
     numbers.Sort();
+    if (index < 1) return numbers[numbers.Count - 1].ToString(CultureInfo.InvariantCulture);
+    if (index > numbers.Count) return numbers[0].ToString(CultureInfo.InvariantCulture);
     return numbers[numbers.Count - index].ToString(CultureInfo.InvariantCulture);
   }
 

@@ -556,6 +556,8 @@ Number related functions:
 - `<ge_X_Y>`: Returns "true" if X is greater than or equal to Y, "false" otherwise.
 - `<gt_X_Y>`: Returns "true" if X is greater than Y, "false" otherwise.
 - `<large_X_Y...>`: Returns the Xth largest value from the list of numbers Y....
+  - If X is less than 1, it returns the largest value.
+  - If X is greater than the amount of numbers, it returns the smallest value.
 - `<le_X_Y>`: Returns "true" if X is less than or equal to Y, "false" otherwise.
 - `<log_X>`: Returns natural logarithm of X.
 - `<log_X_Y>`: Returns logarithm of X with base Y.
@@ -575,6 +577,8 @@ Number related functions:
 - `<round_X>`: Returns nearest integer of X.
 - `<sin_X>`: Returns sine of X.
 - `<small_X_Y...>`: Returns the Xth smallest value from the list of numbers Y....
+  - If X is less than 1, it returns the smallest value.
+  - If X is greater than the amount of numbers, it returns the largest value.
 - `<sqrt_X>`: Returns square root of X.
 - `<sub_X_Y>`: Returns difference of X and Y.
 - `<tan_X>`: Returns tangent of X.
