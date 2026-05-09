@@ -256,7 +256,6 @@ See object filtering [examples](examples_object_filtering.md).
   - For example chat messages can be cancelled so that they are never shown to other players (for example for non-admin custom commands).
 - command: Console command to run.
   - Parameters are supported.
-  - Basic arithmetic is supported. For example `<x>+10` would add 10 meters to the x coordinate.
   - Using `say` command requires either Discord Control mod or Server Devcommands mod (with Server chat enabled).
 - commands: List of console commands to run.
 - data (P): Sets multiple values when using a data entry (name from from `data.yaml`).

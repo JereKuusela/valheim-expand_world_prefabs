@@ -510,90 +510,33 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     return rank.ToString(CultureInfo.InvariantCulture);
   }
 
-    private string HandleSmall(string value, string defaultValue)
-    {
-        string[] values = value.Split(Separator);
+  private string HandleSmall(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length < 2) return defaultValue;
 
-        if (values.Length < 2)
-        {
-            return defaultValue;
-        }
+    if (!Parse.TryInt(values[0], out var index)) return defaultValue;
+    if (index < 1 || index >= values.Length) return defaultValue;
 
-        int index;
-        if (!Parse.TryInt(values[0], out index))
-        {
-            return defaultValue;
-        }
+    var numbers = values.Skip(1).Select(v => Parse.Float(v, float.MaxValue)).ToList();
+    numbers.Sort();
+    return numbers[index - 1].ToString(CultureInfo.InvariantCulture);
+  }
 
-        List<float> numbers = new List<float>();
+  private string HandleLarge(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length < 2) return defaultValue;
 
-        for (int i = 1; i < values.Length; i++)
-        {
-            numbers.Add(Parse.Float(values[i], float.MaxValue));
-        }
+    if (!Parse.TryInt(values[0], out var index)) return defaultValue;
+    if (index < 1 || index >= values.Length) return defaultValue;
 
-        if (index < 1 || index > numbers.Count)
-        {
-            return "Index starts from 1 (must be between 1 and " + numbers.Count.ToString() + ")";
-        }
+    var numbers = values.Skip(1).Select(v => Parse.Float(v, float.MinValue)).ToList();
+    numbers.Sort();
+    return numbers[numbers.Count - index].ToString(CultureInfo.InvariantCulture);
+  }
 
-        /**
-        * BUG FIX: The previous code failed silently if the index was 0 or out of bounds,
-        * passing an empty string or default value to the game engine. I mean I am LUA-ing here
-        * but index 0 probably not sensible.
-        * So I enforce 1-based indexing explicitly LUA-ing the thingand return a clear error string 
-        * directly to the chat when the user requests an impossible index.
-        */
-        numbers.Sort();
-
-        int listIndex = index - 1;
-
-        return numbers[listIndex].ToString(CultureInfo.InvariantCulture);
-    }
-
-    private string HandleLarge(string value, string defaultValue)
-    {
-        string[] values = value.Split(Separator);
-
-        if (values.Length < 2)
-        {
-            return defaultValue;
-        }
-
-        int index;
-        if (!Parse.TryInt(values[0], out index))
-        {
-            return defaultValue;
-        }
-
-        List<float> numbers = new List<float>();
-
-        for (int i = 1; i < values.Length; i++)
-        {
-            numbers.Add(Parse.Float(values[i], float.MinValue));
-        }
-
-        if (index < 1 || index > numbers.Count)
-        {
-            return "Index starts from 1 (must be between 1 and " + numbers.Count.ToString() + ")";
-        }
-
-        /**
-        * BUG FIX: The old formula was "index = values.Length - index" which was wrong.
-        * When you call <large_1_1_2_3_4_5>, values =["1", "1", "2", "3", "4", "5"] (6 items).
-        * I extract the index (1st largest) and create numbers =[1, 2, 3, 4, 5] (5 items).
-        * The old code calculated: index = 6 - 1 = 5, then tried to access numbers[5].
-        * This caused an IndexOutOfRangeException because a 5-item list stops at index 4.
-        * I can now explicitly use numbers.Count and calculate position: (numbers.Count - index).
-        */
-        numbers.Sort();
-
-        int listIndex = numbers.Count - index;
-
-        return numbers[listIndex].ToString(CultureInfo.InvariantCulture);
-    }
-
-    private string HandleEqual(string value, string defaultValue)
+  private string HandleEqual(string value, string defaultValue)
   {
     var kvp = Parse.Kvp(value, Separator);
     if (kvp.Value == "") return defaultValue;

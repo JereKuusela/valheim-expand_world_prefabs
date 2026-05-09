@@ -1,5 +1,8 @@
 - v1.53
   - Fixes state `leave` not working.
+  - Fixes parameters `<large>` and `<small>` not working properly. Thanks Kurios.ZeuS!
+  - Improves parameters `<calci>`, `<calcf>` and `<calcl>` to support more complex calculations.
+  - Removes basic arithmetic support from commands. Use parameters instead.
 
 - v1.52
   - Adds new parameter `<cid>` to get the character id of the client that controls the object.
