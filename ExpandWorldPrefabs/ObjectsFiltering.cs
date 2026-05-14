@@ -18,10 +18,10 @@ public class ObjectsFiltering
     if (maxRadius > 10000)
     {
       var zdos = ZDOMan.instance.m_objectsByID.Values;
-      return GetObjects(limit, zdos, objects, pos, parameters, exclude);
+      return GetObjects(limit, zdos, objects, parameters, exclude);
     }
     var zdoLists = GetSectorIndices(objects);
-    return GetObjects(limit, zdoLists, objects, pos, parameters, exclude);
+    return GetObjects(limit, zdoLists, objects, parameters, exclude);
   }
   public static ZDOID[] GetNearby(int limit, Object objects, Vector3 pos, Quaternion rot, Parameters parameters, ZDOID? exclude)
   {
@@ -30,41 +30,41 @@ public class ObjectsFiltering
     if (maxRadius > 10000)
     {
       var zdos = ZDOMan.instance.m_objectsByID.Values;
-      return GetObjects(limit, zdos, objects, pos, parameters, exclude);
+      return GetObjects(limit, zdos, objects, parameters, exclude);
     }
     var zdoLists = GetSectorIndices(objects);
-    return GetObjects(limit, zdoLists, objects, pos, parameters, exclude);
+    return GetObjects(limit, zdoLists, objects, parameters, exclude);
   }
-  private static ZDOID[] GetObjects(int limit, List<List<ZDO>> zdoLists, Object objects, Vector3 pos, Parameters parameters, ZDOID? exclude)
+  private static ZDOID[] GetObjects(int limit, List<List<ZDO>> zdoLists, Object objects, Parameters parameters, ZDOID? exclude)
   {
     var zm = ZDOMan.instance;
     var query = zdoLists.SelectMany(z => z).Where(z => z.m_uid != exclude && objects.IsValid(z, parameters));
     if (limit > 0)
-      query = query.OrderBy(z => Utils.DistanceXZ(z.m_position, pos)).Take(limit);
+      query = query.OrderBy(z => Utils.DistanceXZ(z.m_position, objects.CachedPosition)).Take(limit);
     return [.. query.Select(z => z.m_uid)];
   }
-  private static ZDOID[] GetObjects(int limit, Dictionary<ZDOID, ZDO>.ValueCollection zdos, Object objects, Vector3 pos, Parameters parameters, ZDOID? exclude)
+  private static ZDOID[] GetObjects(int limit, Dictionary<ZDOID, ZDO>.ValueCollection zdos, Object objects, Parameters parameters, ZDOID? exclude)
   {
     var zm = ZDOMan.instance;
     var query = zdos.Where(z => z.m_uid != exclude && objects.IsValid(z, parameters));
     if (limit > 0)
-      query = query.OrderBy(z => Utils.DistanceXZ(z.m_position, pos)).Take(limit);
+      query = query.OrderBy(z => Utils.DistanceXZ(z.m_position, objects.CachedPosition)).Take(limit);
     return [.. query.Select(z => z.m_uid)];
   }
-  private static ZDOID[] GetObjects(int limit, List<List<ZDO>> zdoLists, Object[] objects, Vector3 pos, Parameters parameters, ZDOID? exclude)
+  private static ZDOID[] GetObjects(int limit, List<List<ZDO>> zdoLists, Object[] objects, Parameters parameters, ZDOID? exclude)
   {
     var zm = ZDOMan.instance;
     var query = zdoLists.SelectMany(z => z).Where(z => z.m_uid != exclude && objects.Any(o => o.IsValid(z, parameters)));
     if (limit > 0)
-      query = query.OrderBy(z => Utils.DistanceXZ(z.m_position, pos)).Take(limit);
+      query = query.OrderBy(z => Utils.DistanceXZ(z.m_position, objects[0].CachedPosition)).Take(limit);
     return [.. query.Select(z => z.m_uid)];
   }
-  private static ZDOID[] GetObjects(int limit, Dictionary<ZDOID, ZDO>.ValueCollection zdos, Object[] objects, Vector3 pos, Parameters parameters, ZDOID? exclude)
+  private static ZDOID[] GetObjects(int limit, Dictionary<ZDOID, ZDO>.ValueCollection zdos, Object[] objects, Parameters parameters, ZDOID? exclude)
   {
     var zm = ZDOMan.instance;
     var query = zdos.Where(z => z.m_uid != exclude && objects.Any(o => o.IsValid(z, parameters)));
     if (limit > 0)
-      query = query.OrderBy(z => Utils.DistanceXZ(z.m_position, pos)).Take(limit);
+      query = query.OrderBy(z => Utils.DistanceXZ(z.m_position, objects[0].CachedPosition)).Take(limit);
     return [.. query.Select(z => z.m_uid)];
   }
 
