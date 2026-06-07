@@ -1,9 +1,9 @@
 - v1.53
+  - BREAKING CHANGE: Removes basic arithmetic support from commands. Use parameters instead.
   - Fixes state `leave` not working.
   - Fixes parameters `<large>` and `<small>` not working properly. Thanks Kurios.ZeuS!
   - Fixes poke limit not using offset, instead it was always based on object position.
   - Improves parameters `<calci>`, `<calcf>` and `<calcl>` to support more complex calculations.
-  - Removes basic arithmetic support from commands. Use parameters instead.
 
 - v1.52
   - Adds new parameter `<cid>` to get the character id of the client that controls the object.
@@ -24,6 +24,3 @@
   - Adds new command `ewp_reload` to manually reload the `ewp_data.yaml` file (if the file has been manually modified).
   - Fixes spawned item drops possibly disappearing (no spawn time was set so clean up for old loot was instantly triggered).
   - Removes file watcher from `ewp_data.yaml` to reduce performance issues.
-
-- v1.49
-  - Hotfix to remove debug logging.
