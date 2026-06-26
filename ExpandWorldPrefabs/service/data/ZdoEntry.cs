@@ -34,15 +34,25 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
 
   public ZDO? Create()
   {
-    var zdo = Spawn(Prefab, Position, Rotation, Owner);
+    var zdo = SpawnZDO(Prefab, Position, Rotation);
     if (zdo == null) return null;
     Write(zdo);
+    DelayedOwner.Check(zdo, Owner);
     return zdo;
   }
 
   // Helper function to ensure everything is initialized correctly.
   // Normally this is done by ZNetView which is not available purely server side.
   public static ZDO? Spawn(int prefab, Vector3 position, Vector3 rotation, long owner)
+  {
+    var zdo = SpawnZDO(prefab, position, rotation);
+    if (zdo == null) return null;
+    DelayedOwner.Check(zdo, owner);
+    return zdo;
+  }
+
+
+  private static ZDO? SpawnZDO(int prefab, Vector3 position, Vector3 rotation)
   {
     if (prefab == 0) return null;
     var prefabObj = ZNetScene.instance.GetPrefab(prefab);
@@ -59,7 +69,6 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     zdo.Persistent = view.m_persistent;
     zdo.Distant = view.m_distant;
     zdo.Type = view.m_type;
-    DelayedOwner.Check(zdo, owner);
     return zdo;
   }
 

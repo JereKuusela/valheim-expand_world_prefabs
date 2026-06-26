@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 namespace ExpandWorld.Prefab;
 
 // Game has annoying feature that pre-existing objects have their body set to sleep.
@@ -21,17 +22,20 @@ public class DelayedOwner(float delay, ZDOID zdo, long owner)
       owner = closestClient?.m_peer.m_uid ?? 0;
     }
     var prefab = ZNetScene.instance.GetPrefab(zdo.m_prefab);
-    if (prefab.GetComponent<ItemDrop>())
-    {
-      // This is normally set on Awake which won't trigger for server spawned.
-      // Without this, "remove old loot" is instantly triggered.
+
+    bool isItem = prefab.GetComponent<ItemDrop>();
+    bool isShip = prefab.GetComponent<Ship>();
+    bool isHack = Hack.IsHack(zdo);
+    bool delay = isItem || isHack || isShip;
+    // This is normally set on Awake which won't trigger for server spawned.
+    // Without this, "remove old loot" is instantly triggered.
+    if (isItem)
       zdo.Set(ZDOVars.s_spawnTime, ZNet.instance.GetTime().Ticks);
+    if (isHack)
+      Hack.SetScaleBackup(zdo);
+
+    if (delay)
       Add(0.1f, zdo, owner);
-    }
-    else if (prefab.GetComponent<Ship>())
-    {
-      Add(0.1f, zdo, owner);
-    }
     else
       zdo.SetOwnerInternal(owner);
   }
@@ -47,6 +51,8 @@ public class DelayedOwner(float delay, ZDOID zdo, long owner)
     }
     Owners.Add(new(delay, zdo.m_uid, owner));
   }
+
+
   public static void Execute(float dt)
   {
     // Two loops to preserve order.

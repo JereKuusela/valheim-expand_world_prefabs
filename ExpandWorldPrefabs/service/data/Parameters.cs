@@ -176,6 +176,8 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
      "mul" => HandleMul(value, defaultValue),
      "div" => HandleDiv(value, defaultValue),
      "mod" => HandleMod(value, defaultValue),
+     "iter" => HandleIter(value, defaultValue),
+     "iter2" => HandleIter2(value, defaultValue),
      "addlong" => HandleAddLong(value, defaultValue),
      "sublong" => HandleSubLong(value, defaultValue),
      "mullong" => HandleMulLong(value, defaultValue),
@@ -237,6 +239,110 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     var values = value.Split(Separator);
     if (values.Length == 0) return defaultValue;
     return values.Select(v => Parse.Float(v, float.MinValue)).Max().ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleIter(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length < 4) return defaultValue;
+    var operation = values[0];
+    if (!Parse.TryInt(values[1], out var minI)) return defaultValue;
+    if (!Parse.TryInt(values[2], out var maxI)) return defaultValue;
+    var template = BuildIteratorTemplate(string.Join(Separator.ToString(), values.Skip(3)), defaultValue);
+    return BuildIteratorReduceExpression(operation, template, minI, maxI, null, null, defaultValue);
+  }
+
+  private string HandleIter2(string value, string defaultValue)
+  {
+    var values = value.Split(Separator);
+    if (values.Length < 6) return defaultValue;
+    var operation = values[0];
+    if (!Parse.TryInt(values[1], out var minI)) return defaultValue;
+    if (!Parse.TryInt(values[2], out var maxI)) return defaultValue;
+    if (!Parse.TryInt(values[3], out var minJ)) return defaultValue;
+    if (!Parse.TryInt(values[4], out var maxJ)) return defaultValue;
+    var template = BuildIteratorTemplate(string.Join(Separator.ToString(), values.Skip(5)), defaultValue);
+    return BuildIteratorReduceExpression(operation, template, minI, maxI, minJ, maxJ, defaultValue);
+  }
+
+  private static string BuildIteratorTemplate(string template, string defaultValue)
+  {
+    if (defaultValue == "") return template;
+    if (template.Contains("=")) return template;
+    return $"{template}={defaultValue}";
+  }
+
+  private string BuildIteratorReduceExpression(string operation, string template, int minI, int maxI, int? minJ, int? maxJ, string defaultValue)
+  {
+    if (operation == "" || template == "") return defaultValue;
+    if (minI > maxI) return defaultValue;
+    if (minJ.HasValue && maxJ.HasValue && minJ.Value > maxJ.Value) return defaultValue;
+
+    var values = new List<string>();
+    if (minJ.HasValue && maxJ.HasValue)
+    {
+      for (var j = minJ.Value; j <= maxJ.Value; ++j)
+      {
+        for (var i = minI; i <= maxI; ++i)
+        {
+          values.Add(RenderIteratorTemplate(template, i, j));
+        }
+      }
+    }
+    else
+    {
+      for (var i = minI; i <= maxI; ++i)
+      {
+        values.Add(RenderIteratorTemplate(template, i, null));
+      }
+    }
+
+    if (values.Count == 0) return defaultValue;
+    if (values.Count == 1) return values[0];
+    return $"<{operation}_{string.Join(Separator.ToString(), values)}>";
+  }
+
+  private static string RenderIteratorTemplate(string template, int i, int? j)
+  {
+    var value = ReplaceIteratorToken(template, "i", i.ToString(CultureInfo.InvariantCulture));
+    if (j.HasValue)
+      value = ReplaceIteratorToken(value, "j", j.Value.ToString(CultureInfo.InvariantCulture));
+    if (value.StartsWith("<", StringComparison.Ordinal) && value.EndsWith(">", StringComparison.Ordinal))
+      return value;
+    if (IsIteratorLiteral(value))
+      return value;
+    return $"<{value}>";
+  }
+
+  private static bool IsIteratorLiteral(string value)
+  {
+    return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _);
+  }
+
+  private static string ReplaceIteratorToken(string input, string token, string replacement)
+  {
+    if (input == "") return input;
+
+    var tokenLength = token.Length;
+    var result = new StringBuilder(input.Length);
+    var i = 0;
+    while (i < input.Length)
+    {
+      if (i <= input.Length - tokenLength
+        && string.CompareOrdinal(input, i, token, 0, tokenLength) == 0
+        && (i == 0 || !char.IsLetterOrDigit(input[i - 1]))
+        && (i + tokenLength == input.Length || !char.IsLetterOrDigit(input[i + tokenLength])))
+      {
+        result.Append(replacement);
+        i += tokenLength;
+      }
+      else
+      {
+        result.Append(input[i]);
+        ++i;
+      }
+    }
+    return result.ToString();
   }
 
   private string SetValue(string value)

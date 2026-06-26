@@ -97,6 +97,8 @@ public class InfoManager
     if (Helper.IsClient())
       return;
     EWP.Harmony.PatchAll();
+    if (EWP.EnableScaleRestoreHack.Value)
+      Hack.Patch(EWP.Harmony);
     var requiredStates = GetRequiredStates();
     if (CreateDatas.Exists || requiredStates.Contains("join") || requiredStates.Contains("respawn"))
       HandleCreated.Patch(EWP.Harmony);

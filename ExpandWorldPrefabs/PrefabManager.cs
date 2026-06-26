@@ -134,10 +134,7 @@ public class Manager
       if (owner.HasValue)
         zdo.SetOwner(owner.Value);
       if (data != null || removeItems != null || addItems != null || owner.HasValue)
-      {
         zdo.DataRevision += 100;
-        ZDOMan.instance.ForceSendZDO(zdo.m_uid);
-      }
       HandleChanged.IgnoreZdo = ZDOID.None;
     }
     var cancel = info.Cancel?.GetBool(parameters) == true;

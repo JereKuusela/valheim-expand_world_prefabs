@@ -234,6 +234,54 @@ public class ParametersTests
   }
 
   [Test]
+  public void HandleIter_BuildsReduceExpressionForSingleIterator()
+  {
+    var result = Invoke("HandleIter", "add_0_3_amount_i=-2", "");
+
+    Assert.That(result, Is.EqualTo("<add_<amount_0=-2>_<amount_1=-2>_<amount_2=-2>_<amount_3=-2>>"));
+  }
+
+  [Test]
+  public void HandleIter_BuildsReduceExpressionForNumericTemplate()
+  {
+    var result = Invoke("HandleIter", "add_0_10_i", "");
+
+    Assert.That(result, Is.EqualTo("<add_0_1_2_3_4_5_6_7_8_9_10>"));
+  }
+
+  [Test]
+  public void HandleIter_AppendsOuterDefaultValueToTemplate()
+  {
+    var result = Invoke("HandleIter", "add_0_3_amount_i", "-2");
+
+    Assert.That(result, Is.EqualTo("<add_<amount_0=-2>_<amount_1=-2>_<amount_2=-2>_<amount_3=-2>>"));
+  }
+
+  [Test]
+  public void HandleIter2_BuildsReduceExpressionForTwoIterators()
+  {
+    var result = Invoke("HandleIter2", "add_0_1_0_2_amount_i_j=-1", "");
+
+    Assert.That(result, Is.EqualTo("<add_<amount_0_0=-1>_<amount_1_0=-1>_<amount_0_1=-1>_<amount_1_1=-1>_<amount_0_2=-1>_<amount_1_2=-1>>"));
+  }
+
+  [Test]
+  public void HandleIter2_AppendsOuterDefaultValueToTemplate()
+  {
+    var result = Invoke("HandleIter2", "add_0_1_0_1_amount_i_j", "-1");
+
+    Assert.That(result, Is.EqualTo("<add_<amount_0_0=-1>_<amount_1_0=-1>_<amount_0_1=-1>_<amount_1_1=-1>>"));
+  }
+
+  [Test]
+  public void HandleIter_WithInvalidRange_ReturnsDefault()
+  {
+    var result = Invoke("HandleIter", "add_3_1_amount_i=missing", "missing");
+
+    Assert.That(result, Is.EqualTo("missing"));
+  }
+
+  [Test]
   public void Replace_UsesExecuteCodeForSimpleParameter()
   {
     Parameters.ExecuteCode = key => key == "name" ? "Alice" : null;

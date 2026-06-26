@@ -555,6 +555,10 @@ Number related functions:
 - `<floor_X>`: Returns largest integer less than or equal to X.
 - `<ge_X_Y>`: Returns "true" if X is greater than or equal to Y, "false" otherwise.
 - `<gt_X_Y>`: Returns "true" if X is greater than Y, "false" otherwise.
+- `<iter_OP_MINI_MAXI_TEMPLATE=default>`: Expands TEMPLATE over index `i` from MINI to MAXI and reduces results with OP.
+  - Example: `<iter_add_0_10_i>` returns 55.
+  - Example: `<iter_add_0_7_i=-999>`.
+  - `i` is replaced only when used as a standalone token (for example `amount_i`, but not `limit`).
 - `<large_X_Y...>`: Returns the Xth largest value from the list of numbers Y....
   - If X is less than 1, it returns the largest value.
   - If X is greater than the amount of numbers, it returns the smallest value.
@@ -567,6 +571,10 @@ Number related functions:
 - `<mod_X_Y>`: Returns remainder of X divided by Y.
 - `<ne_X_Y>`: Returns "true" if X is not equal to Y, "false" otherwise.
 - `<odd_X>`: Returns "true" if X is odd, "false" if even.
+- `<iter2_OP_MINI_MAXI_MINJ_MAXJ_TEMPLATE=default>`: Expands TEMPLATE over indexes `i` and `j`, then reduces results with OP.
+  - `i` loops from MINI to MAXI and `j` loops from MINJ to MAXJ.
+  - Example: `<iter2_add_0_7_0_3_amount_i_j=-9999999999999>`.
+  - `i` and `j` are replaced only when used as standalone tokens.
 - `<mul_X_Y>`: Returns product of X and Y.
 - `<pow_X_Y>`: Returns X raised to the power of Y.
 - `<randf_X_Y>`: Returns random decimal number between X and Y.

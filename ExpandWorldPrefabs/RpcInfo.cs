@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Data;
 using Service;
-using Splatform;
 
 namespace ExpandWorld.Prefab;
 
@@ -183,8 +182,8 @@ public abstract class RpcInfo
 
   private UserInfo GetInfo(string arg) => new()
   {
-    Name = arg == "" ? Game.instance.GetPlayerProfile().GetName() : arg,
-    UserId = PlatformManager.DistributionPlatform.LocalUser.PlatformUserID
+    Name = arg == "" ? ServerClient.Client.m_userInfo.m_displayName : arg,
+    UserId = ServerClient.Client.m_userInfo.m_id
   };
 
   private object[] GetPackagedParameters(Parameters pars)

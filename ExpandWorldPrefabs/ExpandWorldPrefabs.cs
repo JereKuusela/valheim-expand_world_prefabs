@@ -2,6 +2,7 @@
 using System.Reflection;
 using BepInEx;
 using BepInEx.Bootstrap;
+using BepInEx.Configuration;
 using Data;
 using HarmonyLib;
 using Service;
@@ -13,21 +14,27 @@ public class EWP : BaseUnityPlugin
 {
   public const string GUID = "expand_world_prefabs";
   public const string NAME = "Expand World Prefabs";
-  public const string VERSION = "1.53";
+  public const string VERSION = "1.53.3";
 #nullable disable
   public static Harmony Harmony;
+  public static ConfigEntry<bool> EnableScaleRestoreHack;
 #nullable enable
   public static Assembly? ExpandEvents;
   public void Awake()
   {
+    var configReload = Config.Bind("General", "Automatic file reload", true, "Settings are automatically reloaded on file changes. Requires restart to take effect.");
+    EnableScaleRestoreHack = Config.Bind("General", "Enable scale restore hack", true, "Applies workaround patch that restores scale values after ZDO deserialization.");
     Harmony = new(GUID);
     Harmony.PatchAll();
     Log.Init(Logger);
     Yaml.Init();
     try
     {
-      DataLoading.SetupWatcher();
-      Loading.SetupWatcher();
+      if (configReload.Value)
+      {
+        DataLoading.SetupWatcher();
+        Loading.SetupWatcher();
+      }
       DataStorage.LoadSavedData();
     }
     catch (Exception e)
@@ -41,8 +48,14 @@ public class EWP : BaseUnityPlugin
     {
       ExpandEvents = plugin.Instance.GetType().Assembly;
     }
-    new Terminal.ConsoleCommand("ewp_reload", "Manually reloads the ewp_data.yaml file.", (args) =>
+    new Terminal.ConsoleCommand("ewp_reload_data", "Manually reloads the ewp_data.yaml file.", (args) =>
     {
+      DataStorage.LoadSavedData();
+    }, true);
+    new Terminal.ConsoleCommand("ewp_reload", "Manually reloads all config and data files.", (args) =>
+    {
+      DataLoading.LoadEntries();
+      Loading.FromFile();
       DataStorage.LoadSavedData();
     }, true);
   }
