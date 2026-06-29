@@ -1,4 +1,4 @@
-using System.Globalization;
+using Service;
 using UnityEngine;
 
 namespace Data;
@@ -11,13 +11,13 @@ public class LongValue(string[] values) : AnyValue(values), ILongValue
     if (value == null)
       return null;
     if (!value.Contains(";"))
-      return Calculator.EvaluateLong(value);
+      return Parse.LongNull(value);
     // Format for range is "start;end;step;statement".
     var split = value.Split(';');
     if (split.Length < 2)
       throw new System.InvalidOperationException($"Invalid range format: {value}");
-    var min = Calculator.EvaluateLong(split[0]);
-    var max = Calculator.EvaluateLong(split[1]);
+    var min = Parse.LongNull(split[0]);
+    var max = Parse.LongNull(split[1]);
     if (min == null || max == null)
       return null;
     long? roll;
@@ -25,7 +25,7 @@ public class LongValue(string[] values) : AnyValue(values), ILongValue
       roll = (long?)(Random.value * (max.Value - min.Value) + min.Value);
     else
     {
-      var step = Calculator.EvaluateLong(split[2]);
+      var step = Parse.LongNull(split[2]);
       if (step == null)
         roll = (long?)(Random.value * (max.Value - min.Value) + min.Value);
       else
@@ -35,9 +35,7 @@ public class LongValue(string[] values) : AnyValue(values), ILongValue
         roll = (long?)(min + rollStep * step);
       }
     }
-    if (split.Length < 4)
-      return roll;
-    return Calculator.EvaluateLong(split[3].Replace("<value>", roll.ToString()));
+    return roll;
   }
   public bool? Match(Parameters pars, long value)
   {
@@ -49,7 +47,7 @@ public class LongValue(string[] values) : AnyValue(values), ILongValue
       // Case 1: Simple value.
       if (!v.Contains(";"))
       {
-        var parsed = Calculator.EvaluateLong(v);
+        var parsed = Parse.LongNull(v);
         if (parsed == null) continue;
         allNull = false;
         if (parsed.Value == value)
@@ -59,8 +57,8 @@ public class LongValue(string[] values) : AnyValue(values), ILongValue
       var split = v.Split(';');
       if (split.Length < 2)
         throw new System.InvalidOperationException($"Invalid range format: {v}");
-      var min = Calculator.EvaluateLong(split[0]);
-      var max = Calculator.EvaluateLong(split[1]);
+      var min = Parse.LongNull(split[0]);
+      var max = Parse.LongNull(split[1]);
       if (min == null || max == null)
         continue;
       // Case 2: Range.
@@ -71,9 +69,9 @@ public class LongValue(string[] values) : AnyValue(values), ILongValue
           return true;
       }
       // Case 3: Range with step.
-      else if (split.Length < 4)
+      else
       {
-        var step = Calculator.EvaluateLong(split[2]);
+        var step = Parse.LongNull(split[2]);
         if (step == null)
           continue;
         allNull = false;
@@ -83,37 +81,6 @@ public class LongValue(string[] values) : AnyValue(values), ILongValue
           var roll = min.Value + i * step.Value;
           if (roll == value)
             return true;
-        }
-      }
-      else
-      {
-        // Case 4: Range with statement.
-        if (split[2] == "")
-        {
-          var minValue = Calculator.EvaluateLong(split[3].Replace("<value>", min?.ToString(CultureInfo.InvariantCulture)));
-          var maxValue = Calculator.EvaluateLong(split[3].Replace("<value>", max?.ToString(CultureInfo.InvariantCulture)));
-          if (minValue == null || maxValue == null)
-            continue;
-          allNull = false;
-          if (value >= minValue.Value && value <= maxValue.Value)
-            return true;
-        }
-        else
-        {
-          // Case 5: Range with step and statement.
-          var step = Calculator.EvaluateLong(split[2]);
-          if (step == null)
-            continue;
-          allNull = false;
-          var steps = (max.Value - min.Value) / step.Value;
-          for (var i = 0; i <= steps; ++i)
-          {
-            var roll = min + i * step;
-            var parsed = Calculator.EvaluateLong(split[3].Replace("<value>", roll?.ToString(CultureInfo.InvariantCulture)));
-            if (parsed == null) continue;
-            if (parsed.Value == value)
-              return true;
-          }
         }
       }
     }

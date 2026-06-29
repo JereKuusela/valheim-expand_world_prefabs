@@ -234,6 +234,22 @@ public class ParametersTests
   }
 
   [Test]
+  public void HandleAngle_ReturnsAngleBetweenTwoVector3Values()
+  {
+    var result = InvokeFloat("HandleAngle", "1,0,0_0,0,1");
+
+    Assert.That(result, Is.EqualTo(90f).Within(0.0001f));
+  }
+
+  [Test]
+  public void HandleAngle_WithoutSecondVector_ReturnsDefault()
+  {
+    var result = Invoke("HandleAngle", "1,0,0", "default");
+
+    Assert.That(result, Is.EqualTo("default"));
+  }
+
+  [Test]
   public void HandleIter_BuildsReduceExpressionForSingleIterator()
   {
     var result = Invoke("HandleIter", "add_0_3_amount_i=-2", "");

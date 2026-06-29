@@ -16,6 +16,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="UnityEngine">
+      <HintPath>..\..\Libs\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\..\Libs\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="assembly_utils">
+      <HintPath>..\..\Libs\assembly_utils.dll</HintPath>
+    </Reference>
+    <Reference Include="assembly_valheim">
+      <HintPath>..\..\Libs\assembly_valheim.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ExpandWorldPrefabs\ExpandWorldPrefabs.csproj" />
   </ItemGroup>
 </Project>

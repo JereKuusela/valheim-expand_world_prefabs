@@ -41,7 +41,6 @@ public class Hack
     {
       if (NeedsScalarScaleRestore(__instance, backedScalarScale, out var hasVec))
       {
-        Log.Warning($"Restoring scalar scale for {__instance.m_uid} to {backedScalarScale}, hasVec={hasVec}");
         __instance.Set(ZDOVars.s_scaleScalarHash, backedScalarScale);
         __instance.RemoveVec3(ZDOVars.s_scaleHash);
         ReassignOwnerAfterScaleRestore(__instance);

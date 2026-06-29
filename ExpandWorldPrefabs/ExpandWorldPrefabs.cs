@@ -14,7 +14,7 @@ public class EWP : BaseUnityPlugin
 {
   public const string GUID = "expand_world_prefabs";
   public const string NAME = "Expand World Prefabs";
-  public const string VERSION = "1.53.3";
+  public const string VERSION = "1.53.5";
 #nullable disable
   public static Harmony Harmony;
   public static ConfigEntry<bool> EnableScaleRestoreHack;

@@ -46,7 +46,7 @@ public class DataValue
   public static ILongValue Long(string values)
   {
     var split = SplitWithValues(values);
-    if (split.Length == 1 && long.TryParse(split[0], out var result))
+    if (split.Length == 1 && Parse.TryLong(split[0], out var result))
       return new SimpleLongValue(result);
     return new LongValue(split);
   }

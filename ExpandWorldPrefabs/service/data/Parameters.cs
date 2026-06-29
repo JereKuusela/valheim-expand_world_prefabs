@@ -165,6 +165,7 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
      "tan" => Parse.TryFloat(value, out var f) ? Mathf.Tan(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "asin" => Parse.TryFloat(value, out var f) ? Mathf.Asin(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "acos" => Parse.TryFloat(value, out var f) ? Mathf.Acos(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
+     "angle" => HandleAngle(value, defaultValue),
      "atan" => Atan(value, defaultValue),
      "pow" => Parse.TryKvp(value, out var kvp, Separator) && Parse.TryFloat(kvp.Key, out var f1) && Parse.TryFloat(kvp.Value, out var f2) ? Mathf.Pow(f1, f2).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "log" => Loga(value, defaultValue),
@@ -232,13 +233,13 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
   {
     var values = value.Split(Separator);
     if (values.Length == 0) return defaultValue;
-    return values.Select(v => Parse.Float(v, float.MaxValue)).Min().ToString(CultureInfo.InvariantCulture);
+    return values.Min(v => Parse.Float(v, float.MaxValue)).ToString(CultureInfo.InvariantCulture);
   }
   private string HandleMax(string value, string defaultValue)
   {
     var values = value.Split(Separator);
     if (values.Length == 0) return defaultValue;
-    return values.Select(v => Parse.Float(v, float.MinValue)).Max().ToString(CultureInfo.InvariantCulture);
+    return values.Max(v => Parse.Float(v, float.MinValue)).ToString(CultureInfo.InvariantCulture);
   }
 
   private string HandleIter(string value, string defaultValue)
@@ -370,6 +371,17 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     if (kvp.Value == "") return Mathf.Atan(f1).ToString(CultureInfo.InvariantCulture);
     if (!Parse.TryFloat(kvp.Value, out var f2)) return defaultValue;
     return Mathf.Atan2(f1, f2).ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleAngle(string value, string defaultValue)
+  {
+    value = value.Replace(" ", ",");
+    var kvp = Parse.Kvp(value, Separator);
+    if (kvp.Value == "") return defaultValue;
+
+    var from = Calculator.EvaluateVector3(kvp.Key);
+    var to = Calculator.EvaluateVector3(kvp.Value);
+    return Vector3.Angle(from, to).ToString(CultureInfo.InvariantCulture);
   }
 
   private string Loga(string value, string defaultValue)

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Data;
+using Service;
 using UnityEngine;
 
 namespace ExpandWorld.Prefab;
@@ -116,7 +117,7 @@ public class Manager
     // Original object was regenerated to apply data.
     if (remove || regenerate)
       DelayedRemove.Add(info.RemoveDelay?.Get(parameters) ?? 0f, zdo.m_uid, remove && info.TriggerRules);
-    else if (inject)
+    else
     {
       if (!info.TriggerRules)
         HandleChanged.IgnoreZdo = zdo.m_uid;
@@ -133,7 +134,7 @@ public class Manager
       var owner = info.Owner?.Get(parameters);
       if (owner.HasValue)
         zdo.SetOwner(owner.Value);
-      if (data != null || removeItems != null || addItems != null || owner.HasValue)
+      if (data != null || removeItems != null || addItems != null)
         zdo.DataRevision += 100;
       HandleChanged.IgnoreZdo = ZDOID.None;
     }
