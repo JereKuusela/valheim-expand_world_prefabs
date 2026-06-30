@@ -540,6 +540,7 @@ Number related functions:
 
 - `<abs_X>`: Returns absolute value of the number X.
 - `<add_X_Y>`: Returns sum of X and Y.
+  - Supports any number of parameters.
 - `<asin_X>`: Returns arcsine of X.
 - `<acos_X>`: Returns arccosine of X.
 - `<atan_X>`: Returns arctangent of X.
@@ -549,6 +550,7 @@ Number related functions:
 - `<ceil_X>`: Returns smallest integer greater than or equal to X.
 - `<cos_X>`: Returns cosine of X.
 - `<div_X_Y>`: Returns quotient of X and Y.
+  - Supports any number of parameters.
 - `<eq_X_Y>`: Returns "true" if X equals Y, "false" otherwise.
 - `<even_X>`: Returns "true" if X is even, "false" if odd.
 - `<exp_X>`: Returns e raised to the power of X.
@@ -569,13 +571,14 @@ Number related functions:
 - `<max_X_Y>`: Returns maximum of X and Y.
 - `<min_X_Y>`: Returns minimum of X and Y.
 - `<mod_X_Y>`: Returns remainder of X divided by Y.
+- `<mul_X_Y>`: Returns product of X and Y.
+  - Supports any number of parameters.
 - `<ne_X_Y>`: Returns "true" if X is not equal to Y, "false" otherwise.
 - `<odd_X>`: Returns "true" if X is odd, "false" if even.
 - `<iter2_OP_MINI_MAXI_MINJ_MAXJ_TEMPLATE=default>`: Expands TEMPLATE over indexes `i` and `j`, then reduces results with OP.
   - `i` loops from MINI to MAXI and `j` loops from MINJ to MAXJ.
   - Example: `<iter2_add_0_7_0_3_amount_i_j=-9999999999999>`.
   - `i` and `j` are replaced only when used as standalone tokens.
-- `<mul_X_Y>`: Returns product of X and Y.
 - `<pow_X_Y>`: Returns X raised to the power of Y.
 - `<randf_X_Y>`: Returns random decimal number between X and Y.
 - `<randi_X_Y>`: Returns random integer number between X and Y.
@@ -589,7 +592,42 @@ Number related functions:
   - If X is greater than the amount of numbers, it returns the largest value.
 - `<sqrt_X>`: Returns square root of X.
 - `<sub_X_Y>`: Returns difference of X and Y.
+  - Supports any number of parameters.
 - `<tan_X>`: Returns tangent of X.
+- `<rad2deg_X>`: Converts radians X to degrees.
+- `<deg2rad_X>`: Converts degrees X to radians.
+- `<vec2deg_X_Z>`: Returns `atan2(Z, X)` from a 2D vector.
+- `<vec2rad_X_Z>`: Returns `atan2(Z, X)` with an additional degrees-to-radians factor.
+
+Vector related functions (vectors use x,z,y order):
+
+- `<add_A_B>`: Returns sum of vectors A and B.
+  - Scalars add to each component.
+  - Supports any number of parameters.
+- `<angle_A_B>`: Returns angle in degrees between vectors A and B.
+- `<distance_A_B>`: Returns distance between vectors A and B.
+- `<div_A_B>`: Returns quotient of vectors A and B.
+  - Scalars divide each component.
+  - Supports any number of parameters.
+- `<dot_A_B>`: Returns dot product of vectors A and B.
+- `<cross_A_B>`: Returns cross product vector of A and B.
+- `<normalize_V>`: Returns normalized vector V.
+- `<magnitude_V>`: Returns magnitude of vector V.
+- `<mul_A_B>`: Returns product of vectors A and B.
+  - Scalars multiply each component.
+  - Supports any number of parameters.
+- `<sqrmagnitude_V>`: Returns squared magnitude of vector V.
+- `<sub_A_B>`: Returns difference of vectors A and B.
+  - Scalars subtract from each component.
+  - Supports any number of parameters.
+- `<project_V_N>`: Returns projection of vector V onto vector N.
+- `<reflect_D_N>`: Returns reflection vector of direction D and normal N.
+- `<lerp_A_B_T>`: Returns interpolation between vectors A and B with factor T.
+- `<rad2vec_X>`: Converts radians X to a direction vector.
+- `<deg2vec_X>`: Converts degrees X to a direction vector.
+- `<vecx_V>`: Returns X axis component of vector V.
+- `<vecy_V>`: Returns Y axis component of vector V.
+- `<vecz_V>`: Returns Z axis component of vector V.
 
 Long number related functions (usually only needed when calculating with game ticks):
 

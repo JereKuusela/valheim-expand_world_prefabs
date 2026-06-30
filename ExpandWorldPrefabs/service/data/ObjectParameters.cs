@@ -38,6 +38,7 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       "j" => ZoneSystem.GetZone(zdo.m_position).y.ToString(),
       "a" => Helper.Format(zdo.m_rotation.y),
       "rad" => Helper.Format(zdo.m_rotation.y * Mathf.Deg2Rad),
+      "deg" => Helper.Format(zdo.m_rotation.y),
       "rot" => Helper.FormatRot(zdo.m_rotation),
       "pid" => PeerManager.GetPid(zdo),
       "cid" => PeerManager.GetCid(zdo)?.ToString() ?? "",

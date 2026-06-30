@@ -1,5 +1,6 @@
 using Data;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace ExpandWorldPrefabs.Tests;
 
@@ -87,5 +88,23 @@ public class CalculatorTests
   {
     var result = Calculator.EvaluateLong("2^-1");
     Assert.That(result, Is.Null);
+  }
+
+  [Test]
+  public void EvaluateVector3_ParsesComponentExpressionsInXzyOrder()
+  {
+    var result = Calculator.EvaluateVector3("1+1,2*3,10/2");
+    Assert.That(result.x, Is.EqualTo(2f).Within(0.0001f));
+    Assert.That(result.y, Is.EqualTo(5f).Within(0.0001f));
+    Assert.That(result.z, Is.EqualTo(6f).Within(0.0001f));
+  }
+
+  [Test]
+  public void EvaluateVector3_MissingComponentsDefaultToZero()
+  {
+    var result = Calculator.EvaluateVector3("4");
+    Assert.That(result.x, Is.EqualTo(4f).Within(0.0001f));
+    Assert.That(result.y, Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(result.z, Is.EqualTo(0f).Within(0.0001f));
   }
 }

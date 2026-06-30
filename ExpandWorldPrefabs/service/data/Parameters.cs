@@ -165,7 +165,25 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
      "tan" => Parse.TryFloat(value, out var f) ? Mathf.Tan(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "asin" => Parse.TryFloat(value, out var f) ? Mathf.Asin(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "acos" => Parse.TryFloat(value, out var f) ? Mathf.Acos(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
+     "rad2deg" => Rad2Deg(value) ?? defaultValue,
+     "deg2rad" => Deg2Rad(value) ?? defaultValue,
+     "rad2vec" => Rad2Vec(value) ?? defaultValue,
+     "deg2vec" => Deg2Vec(value) ?? defaultValue,
+     "vec2deg" => Vec2Deg(value) ?? defaultValue,
+     "vec2rad" => Vec2Rad(value) ?? defaultValue,
      "angle" => HandleAngle(value, defaultValue),
+     "distance" => HandleDistance(value, defaultValue),
+     "dot" => HandleDot(value, defaultValue),
+     "cross" => HandleCross(value, defaultValue),
+     "normalize" => HandleNormalize(value, defaultValue),
+     "magnitude" => HandleMagnitude(value, defaultValue),
+     "sqrmagnitude" => HandleSqrMagnitude(value, defaultValue),
+     "project" => HandleProject(value, defaultValue),
+     "reflect" => HandleReflect(value, defaultValue),
+     "lerp" => HandleLerp(value, defaultValue),
+     "vecx" => HandleVecX(value, defaultValue),
+     "vecy" => HandleVecY(value, defaultValue),
+     "vecz" => HandleVecZ(value, defaultValue),
      "atan" => Atan(value, defaultValue),
      "pow" => Parse.TryKvp(value, out var kvp, Separator) && Parse.TryFloat(kvp.Key, out var f1) && Parse.TryFloat(kvp.Value, out var f2) ? Mathf.Pow(f1, f2).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "log" => Loga(value, defaultValue),
@@ -228,6 +246,45 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
      "realtime" => HandleRealtime(value),
      _ => null,
    };
+
+  internal static string? Rad2Deg(string value)
+  {
+    if (!Parse.TryFloat(value, out var radians)) return null;
+    return (radians * Mathf.Rad2Deg).ToString(CultureInfo.InvariantCulture);
+  }
+
+  internal static string? Deg2Rad(string value)
+  {
+    if (!Parse.TryFloat(value, out var degrees)) return null;
+    return (degrees * Mathf.Deg2Rad).ToString(CultureInfo.InvariantCulture);
+  }
+
+  internal static string? Rad2Vec(string value)
+  {
+    if (!Parse.TryFloat(value, out var radians)) return null;
+    return new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)).ToString();
+  }
+
+  internal static string? Deg2Vec(string value)
+  {
+    if (!Parse.TryFloat(value, out var degrees)) return null;
+    var radians = degrees * Mathf.Deg2Rad;
+    return new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)).ToString();
+  }
+
+  internal static string? Vec2Deg(string value)
+  {
+    if (!Parse.TryKvp(value, out var kvp, Separator)) return null;
+    if (!Parse.TryFloat(kvp.Key, out var x) || !Parse.TryFloat(kvp.Value, out var z)) return null;
+    return Mathf.Atan2(z, x).ToString(CultureInfo.InvariantCulture);
+  }
+
+  internal static string? Vec2Rad(string value)
+  {
+    if (!Parse.TryKvp(value, out var kvp, Separator)) return null;
+    if (!Parse.TryFloat(kvp.Key, out var x) || !Parse.TryFloat(kvp.Value, out var z)) return null;
+    return (Mathf.Atan2(z, x) * Mathf.Deg2Rad).ToString(CultureInfo.InvariantCulture);
+  }
 
   private string HandleMin(string value, string defaultValue)
   {
@@ -375,13 +432,164 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
 
   private string HandleAngle(string value, string defaultValue)
   {
-    value = value.Replace(" ", ",");
-    var kvp = Parse.Kvp(value, Separator);
-    if (kvp.Value == "") return defaultValue;
-
-    var from = Calculator.EvaluateVector3(kvp.Key);
-    var to = Calculator.EvaluateVector3(kvp.Value);
+    if (!TryGetTwoVectors(value, out var from, out var to)) return defaultValue;
     return Vector3.Angle(from, to).ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleDistance(string value, string defaultValue)
+  {
+    if (!TryGetTwoVectors(value, out var from, out var to)) return defaultValue;
+    return Vector3.Distance(from, to).ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleDot(string value, string defaultValue)
+  {
+    if (!TryGetTwoVectors(value, out var from, out var to)) return defaultValue;
+    return Vector3.Dot(from, to).ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleCross(string value, string defaultValue)
+  {
+    if (!TryGetTwoVectors(value, out var from, out var to)) return defaultValue;
+    return DataEntry.PrintVectorXZY(Vector3.Cross(from, to));
+  }
+
+  private string HandleNormalize(string value, string defaultValue)
+  {
+    if (!TryEvaluateVector3(value, out var vector)) return defaultValue;
+    return DataEntry.PrintVectorXZY(vector.normalized);
+  }
+
+  private string HandleMagnitude(string value, string defaultValue)
+  {
+    if (!TryEvaluateVector3(value, out var vector)) return defaultValue;
+    return vector.magnitude.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleSqrMagnitude(string value, string defaultValue)
+  {
+    if (!TryEvaluateVector3(value, out var vector)) return defaultValue;
+    return vector.sqrMagnitude.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleProject(string value, string defaultValue)
+  {
+    if (!TryGetTwoVectors(value, out var vector, out var onNormal)) return defaultValue;
+    return DataEntry.PrintVectorXZY(Vector3.Project(vector, onNormal));
+  }
+
+  private string HandleReflect(string value, string defaultValue)
+  {
+    if (!TryGetTwoVectors(value, out var inDirection, out var inNormal)) return defaultValue;
+    return DataEntry.PrintVectorXZY(Vector3.Reflect(inDirection, inNormal));
+  }
+
+  private string HandleLerp(string value, string defaultValue)
+  {
+    var parts = value.Split(Separator);
+    if (parts.Length != 3) return defaultValue;
+    if (!TryEvaluateVector3(parts[0], out var from)) return defaultValue;
+    if (!TryEvaluateVector3(parts[1], out var to)) return defaultValue;
+    var t = Calculator.EvaluateFloat(parts[2]);
+    if (t == null) return defaultValue;
+    return DataEntry.PrintVectorXZY(Vector3.LerpUnclamped(from, to, t.Value));
+  }
+
+  private string HandleVecX(string value, string defaultValue)
+  {
+    if (!TryEvaluateVector3(value, out var vector)) return defaultValue;
+    return vector.x.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleVecY(string value, string defaultValue)
+  {
+    if (!TryEvaluateVector3(value, out var vector)) return defaultValue;
+    return vector.y.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private string HandleVecZ(string value, string defaultValue)
+  {
+    if (!TryEvaluateVector3(value, out var vector)) return defaultValue;
+    return vector.z.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private bool TryGetTwoVectors(string value, out Vector3 first, out Vector3 second)
+  {
+    var kvp = Parse.Kvp(value, Separator);
+    if (kvp.Value == "")
+    {
+      first = Vector3.zero;
+      second = Vector3.zero;
+      return false;
+    }
+
+    if (!TryEvaluateVector3(kvp.Key, out first))
+    {
+      second = Vector3.zero;
+      return false;
+    }
+    return TryEvaluateVector3(kvp.Value, out second);
+  }
+
+  private static bool TryEvaluateVector3(string value, out Vector3 vector)
+  {
+    vector = Vector3.zero;
+    if (value == "") return false;
+
+    var values = Parse.Split(value.Replace(" ", ","));
+    if (values.Length == 0 || values.Length > 3) return false;
+
+    var x = Calculator.EvaluateFloat(values[0]);
+    if (x == null) return false;
+    vector.x = x.Value;
+
+    if (values.Length > 1)
+    {
+      var z = Calculator.EvaluateFloat(values[1]);
+      if (z == null) return false;
+      vector.z = z.Value;
+    }
+
+    if (values.Length > 2)
+    {
+      var y = Calculator.EvaluateFloat(values[2]);
+      if (y == null) return false;
+      vector.y = y.Value;
+    }
+
+    return true;
+  }
+
+  private static bool TryEvaluateVector3Strict(string value, out Vector3 vector)
+  {
+    vector = Vector3.zero;
+    if (value == "") return false;
+    var values = Parse.Split(value.Replace(" ", ","));
+    if (values.Length < 2 || values.Length > 3) return false;
+    return TryEvaluateVector3(value, out vector);
+  }
+
+  private static bool ShouldUseVectorMath(string[] values)
+  {
+    foreach (var value in values)
+    {
+      if (TryEvaluateVector3Strict(value, out _)) return true;
+    }
+    return false;
+  }
+
+  private static bool TryGetVectorMathOperand(string value, out Vector3 operand)
+  {
+    if (TryEvaluateVector3Strict(value, out operand)) return true;
+
+    var scalar = Calculator.EvaluateFloat(value);
+    if (scalar == null)
+    {
+      operand = Vector3.zero;
+      return false;
+    }
+    operand = new Vector3(scalar.Value, scalar.Value, scalar.Value);
+    return true;
   }
 
   private string Loga(string value, string defaultValue)
@@ -398,6 +606,17 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     var values = value.Split(Separator);
     if (values.Length == 0) return defaultValue;
 
+    if (ShouldUseVectorMath(values))
+    {
+      var vectorResult = Vector3.zero;
+      foreach (var val in values)
+      {
+        if (!TryGetVectorMathOperand(val, out var operand)) return defaultValue;
+        vectorResult += operand;
+      }
+      return DataEntry.PrintVectorXZY(vectorResult);
+    }
+
     float result = 0f;
     foreach (var val in values)
     {
@@ -410,6 +629,17 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
   {
     var values = value.Split(Separator);
     if (values.Length == 0) return defaultValue;
+
+    if (ShouldUseVectorMath(values))
+    {
+      if (!TryGetVectorMathOperand(values[0], out var vectorResult)) return defaultValue;
+      for (int i = 1; i < values.Length; i++)
+      {
+        if (!TryGetVectorMathOperand(values[i], out var operand)) return defaultValue;
+        vectorResult -= operand;
+      }
+      return DataEntry.PrintVectorXZY(vectorResult);
+    }
 
     float result = Parse.Float(values[0], 0f);
     for (int i = 1; i < values.Length; i++)
@@ -424,6 +654,24 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     var values = value.Split(Separator);
     if (values.Length == 0) return defaultValue;
 
+    if (ShouldUseVectorMath(values))
+    {
+      if (!TryGetVectorMathOperand(values[0], out var vectorResult)) return defaultValue;
+      for (int i = 1; i < values.Length; i++)
+      {
+        if (TryEvaluateVector3Strict(values[i], out var vector))
+        {
+          vectorResult = Vector3.Scale(vectorResult, vector);
+          continue;
+        }
+
+        var scalar = Calculator.EvaluateFloat(values[i]);
+        if (scalar == null) return defaultValue;
+        vectorResult *= scalar.Value;
+      }
+      return DataEntry.PrintVectorXZY(vectorResult);
+    }
+
     float result = 1f;
     foreach (var val in values)
     {
@@ -436,6 +684,25 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
   {
     var values = value.Split(Separator);
     if (values.Length == 0) return defaultValue;
+
+    if (ShouldUseVectorMath(values))
+    {
+      if (!TryGetVectorMathOperand(values[0], out var vectorResult)) return defaultValue;
+      for (int i = 1; i < values.Length; i++)
+      {
+        if (TryEvaluateVector3Strict(values[i], out var vector))
+        {
+          if (vector.x == 0f || vector.y == 0f || vector.z == 0f) return defaultValue;
+          vectorResult = new Vector3(vectorResult.x / vector.x, vectorResult.y / vector.y, vectorResult.z / vector.z);
+          continue;
+        }
+
+        var scalar = Calculator.EvaluateFloat(values[i]);
+        if (scalar == null || scalar.Value == 0f) return defaultValue;
+        vectorResult /= scalar.Value;
+      }
+      return DataEntry.PrintVectorXZY(vectorResult);
+    }
 
     float result = Parse.Float(values[0], 0f);
     for (int i = 1; i < values.Length; i++)

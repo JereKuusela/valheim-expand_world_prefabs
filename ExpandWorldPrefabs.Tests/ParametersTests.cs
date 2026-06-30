@@ -1,6 +1,7 @@
 using Data;
 using NUnit.Framework;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 
@@ -52,6 +53,14 @@ public class ParametersTests
     return long.Parse(result, CultureInfo.InvariantCulture);
   }
 
+  private static float[] ParseUnityVector(string value)
+  {
+    var trimmed = value.Trim('(', ')');
+    var parts = trimmed.Split(',');
+    Assert.That(parts.Length, Is.EqualTo(3), "Expected a Vector3-formatted string.");
+    return parts.Select(p => float.Parse(p.Trim(), CultureInfo.InvariantCulture)).ToArray();
+  }
+
   private static string Replace(string input, bool preventInjections = false)
   {
     var instance = CreateUninitializedParameters();
@@ -66,6 +75,14 @@ public class ParametersTests
   }
 
   [Test]
+  public void HandleAdd_WithVectorValues_AddsComponentWise()
+  {
+    var result = Invoke("HandleAdd", "1,2,3_4,5,6");
+
+    Assert.That(result, Is.EqualTo("5 7 9"));
+  }
+
+  [Test]
   public void HandleSub_SubtractsFromFirstValue()
   {
     var result = InvokeFloat("HandleSub", "10_2_1.5");
@@ -73,10 +90,26 @@ public class ParametersTests
   }
 
   [Test]
+  public void HandleSub_WithVectorAndScalar_SubtractsScalarFromEachComponent()
+  {
+    var result = Invoke("HandleSub", "5,7,9_1");
+
+    Assert.That(result, Is.EqualTo("4 6 8"));
+  }
+
+  [Test]
   public void HandleMul_MultipliesValues()
   {
     var result = InvokeFloat("HandleMul", "2_3_4");
     Assert.That(result, Is.EqualTo(24f).Within(0.0001f));
+  }
+
+  [Test]
+  public void HandleMul_WithVectorAndScalar_MultipliesEachComponent()
+  {
+    var result = Invoke("HandleMul", "1,2,3_2");
+
+    Assert.That(result, Is.EqualTo("2 4 6"));
   }
 
   [Test]
@@ -91,6 +124,22 @@ public class ParametersTests
   {
     var result = InvokeFloat("HandleDiv", "20_2_2");
     Assert.That(result, Is.EqualTo(5f).Within(0.0001f));
+  }
+
+  [Test]
+  public void HandleDiv_WithVectorDivisor_DividesComponentWise()
+  {
+    var result = Invoke("HandleDiv", "8,12,16_2,3,4");
+
+    Assert.That(result, Is.EqualTo("4 4 4"));
+  }
+
+  [Test]
+  public void HandleDiv_WithVectorZeroDivisor_ReturnsDefault()
+  {
+    var result = Invoke("HandleDiv", "8,12,16_2,0,4", "default");
+
+    Assert.That(result, Is.EqualTo("default"));
   }
 
   [Test]
@@ -234,6 +283,70 @@ public class ParametersTests
   }
 
   [Test]
+  public void Rad2Deg_ConvertsRadiansToDegrees()
+  {
+    var converted = Parameters.Rad2Deg("3.1415927");
+    Assert.That(converted, Is.Not.Null);
+    var result = float.Parse(converted!, CultureInfo.InvariantCulture);
+
+    Assert.That(result, Is.EqualTo(180f).Within(0.001f));
+  }
+
+  [Test]
+  public void Deg2Rad_ConvertsDegreesToRadians()
+  {
+    var converted = Parameters.Deg2Rad("180");
+    Assert.That(converted, Is.Not.Null);
+    var result = float.Parse(converted!, CultureInfo.InvariantCulture);
+
+    Assert.That(result, Is.EqualTo(3.1415927f).Within(0.001f));
+  }
+
+  [Test]
+  public void Vec2Deg_ReturnsAtan2Result()
+  {
+    var converted = Parameters.Vec2Deg("0_1");
+    Assert.That(converted, Is.Not.Null);
+    var result = float.Parse(converted!, CultureInfo.InvariantCulture);
+
+    Assert.That(result, Is.EqualTo(1.5707964f).Within(0.001f));
+  }
+
+  [Test]
+  public void Vec2Rad_AppliesAdditionalDeg2RadFactor()
+  {
+    var converted = Parameters.Vec2Rad("0_1");
+    Assert.That(converted, Is.Not.Null);
+    var result = float.Parse(converted!, CultureInfo.InvariantCulture);
+
+    Assert.That(result, Is.EqualTo(0.0274156f).Within(0.001f));
+  }
+
+  [Test]
+  public void Rad2Vec_ReturnsExpectedDirectionVector()
+  {
+    var result = Parameters.Rad2Vec("0");
+    Assert.That(result, Is.Not.Null);
+    var vec = ParseUnityVector(result!);
+
+    Assert.That(vec[0], Is.EqualTo(1f).Within(0.0001f));
+    Assert.That(vec[1], Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vec[2], Is.EqualTo(0f).Within(0.0001f));
+  }
+
+  [Test]
+  public void Deg2Vec_ReturnsExpectedDirectionVector()
+  {
+    var result = Parameters.Deg2Vec("90");
+    Assert.That(result, Is.Not.Null);
+    var vec = ParseUnityVector(result!);
+
+    Assert.That(vec[0], Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vec[1], Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vec[2], Is.EqualTo(1f).Within(0.0001f));
+  }
+
+  [Test]
   public void HandleAngle_ReturnsAngleBetweenTwoVector3Values()
   {
     var result = InvokeFloat("HandleAngle", "1,0,0_0,0,1");
@@ -245,6 +358,126 @@ public class ParametersTests
   public void HandleAngle_WithoutSecondVector_ReturnsDefault()
   {
     var result = Invoke("HandleAngle", "1,0,0", "default");
+
+    Assert.That(result, Is.EqualTo("default"));
+  }
+
+  [Test]
+  public void HandleDistance_ReturnsDistanceBetweenTwoVector3Values()
+  {
+    var result = InvokeFloat("HandleDistance", "0,0,0_3,4,0");
+
+    Assert.That(result, Is.EqualTo(5f).Within(0.0001f));
+  }
+
+  [Test]
+  public void HandleDistance_WithoutSecondVector_ReturnsDefault()
+  {
+    var result = Invoke("HandleDistance", "0,0,0", "default");
+
+    Assert.That(result, Is.EqualTo("default"));
+  }
+
+  [Test]
+  public void HandleDot_ReturnsDotProductBetweenTwoVector3Values()
+  {
+    var result = InvokeFloat("HandleDot", "1,2,3_4,5,6");
+
+    Assert.That(result, Is.EqualTo(32f).Within(0.0001f));
+  }
+
+  [Test]
+  public void HandleCross_ReturnsCrossProductBetweenTwoVector3Values()
+  {
+    var result = Invoke("HandleCross", "1,0,0_0,0,1");
+
+    Assert.That(result, Is.EqualTo("0 1 0"));
+  }
+
+  [Test]
+  public void HandleNormalize_ReturnsNormalizedVector3Value()
+  {
+    var result = Invoke("HandleNormalize", "3,4,0");
+
+    Assert.That(result, Is.EqualTo("0.6 0.8 0"));
+  }
+
+  [Test]
+  public void HandleMagnitude_ReturnsMagnitudeOfVector3Value()
+  {
+    var result = InvokeFloat("HandleMagnitude", "3,4,0");
+
+    Assert.That(result, Is.EqualTo(5f).Within(0.0001f));
+  }
+
+  [Test]
+  public void HandleSqrMagnitude_ReturnsSquaredMagnitudeOfVector3Value()
+  {
+    var result = InvokeFloat("HandleSqrMagnitude", "3,4,0");
+
+    Assert.That(result, Is.EqualTo(25f).Within(0.0001f));
+  }
+
+  [Test]
+  public void HandleProject_ReturnsProjectedVector3Value()
+  {
+    var result = Invoke("HandleProject", "3,4,0_1,0,0");
+
+    Assert.That(result, Is.EqualTo("3 0 0"));
+  }
+
+  [Test]
+  public void HandleReflect_ReturnsReflectedVector3Value()
+  {
+    var result = Invoke("HandleReflect", "1,-1,0_0,1,0");
+
+    Assert.That(result, Is.EqualTo("1 1 0"));
+  }
+
+  [Test]
+  public void HandleLerp_ReturnsInterpolatedVector3Value()
+  {
+    var result = Invoke("HandleLerp", "0,0,0_10,0,0_0.25");
+
+    Assert.That(result, Is.EqualTo("2.5 0 0"));
+  }
+
+  [Test]
+  public void HandleLerp_WithInvalidT_ReturnsDefault()
+  {
+    var result = Invoke("HandleLerp", "0,0,0_10,0,0_not-a-number", "default");
+
+    Assert.That(result, Is.EqualTo("default"));
+  }
+
+  [Test]
+  public void HandleVecX_ReturnsXComponentFromVector3Value()
+  {
+    var result = InvokeFloat("HandleVecX", "1,2,3");
+
+    Assert.That(result, Is.EqualTo(1f).Within(0.0001f));
+  }
+
+  [Test]
+  public void HandleVecY_ReturnsYComponentFromVector3Value()
+  {
+    var result = InvokeFloat("HandleVecY", "1,2,3");
+
+    Assert.That(result, Is.EqualTo(3f).Within(0.0001f));
+  }
+
+  [Test]
+  public void HandleVecZ_ReturnsZComponentFromVector3Value()
+  {
+    var result = InvokeFloat("HandleVecZ", "1,2,3");
+
+    Assert.That(result, Is.EqualTo(2f).Within(0.0001f));
+  }
+
+  [Test]
+  public void HandleVecY_WithInvalidVector_ReturnsDefault()
+  {
+    var result = Invoke("HandleVecY", "not-a-vector", "default");
 
     Assert.That(result, Is.EqualTo("default"));
   }
