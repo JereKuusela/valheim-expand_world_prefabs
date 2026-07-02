@@ -106,6 +106,11 @@ public class Manager
     var data = DataHelper.Get(info.Data, parameters);
     var inject = info.InjectData ?? data?.InjectDataByDefault ?? false;
     var regenerate = info.Regenerate && !inject;
+    var attach = info.Attach?.Get(parameters);
+    if (attach.HasValue && !Hack.CanSync(zdo))
+      regenerate = true;
+    if (Hack.IsRealPlayer(zdo))
+      regenerate = false;
     HandleSpawns(info, zdo, parameters, remove, regenerate, data);
     Poke(info, zdo, parameters);
     Terrain(info, zdo, parameters);
@@ -134,7 +139,10 @@ public class Manager
       var owner = info.Owner?.Get(parameters);
       if (owner.HasValue)
         zdo.SetOwner(owner.Value);
-      if (data != null || removeItems != null || addItems != null)
+      if (attach.HasValue)
+        Hack.Attach(zdo, attach.Value);
+
+      if (data != null || removeItems != null || addItems != null || attach.HasValue)
         zdo.DataRevision += 100;
       HandleChanged.IgnoreZdo = ZDOID.None;
     }
@@ -185,6 +193,9 @@ public class Manager
       ZdoEntry entry = new(zdo);
       if (data != null)
         entry.Load(data, pars);
+      var attach = info.Attach?.Get(pars);
+      if (attach.HasValue)
+        Hack.Attach(entry, attach.Value);
       var newZdo = DelayedSpawn.CreateObject(entry, false);
       if (newZdo != null)
       {

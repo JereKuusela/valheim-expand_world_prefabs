@@ -160,6 +160,8 @@ public class Data
 
   [DefaultValue(null)]
   public string? owner;
+  [DefaultValue(null)]
+  public string? attach;
   [DefaultValue("")]
   public string addItems = "";
   [DefaultValue("")]
@@ -305,6 +307,7 @@ public class Info
   public DataEntry? AddItems;
   public DataEntry? RemoveItems;
   public ILongValue? Owner;
+  public IZdoIdValue? Attach;
   public IBoolValue? Cancel;
   public IStringValue? Execute;
   public IBoolValue? Admin;
@@ -342,6 +345,8 @@ public class SpawnData
   [DefaultValue(null)]
   public string? owner;
   [DefaultValue(null)]
+  public string? attach;
+  [DefaultValue(null)]
   public string? triggerRules;
 }
 
@@ -359,6 +364,7 @@ public class Spawn
   public readonly IFloatValue? Chance;
   public readonly IFloatValue? Weight;
   public readonly ILongValue? Owner;
+  public readonly IZdoIdValue? Attach;
   public readonly IBoolValue? TriggerRules;
 
   public Spawn(SpawnData data, float? delay, bool? triggerRules)
@@ -375,6 +381,7 @@ public class Spawn
     Chance = data.chance == null ? null : DataValue.Float(data.chance);
     Weight = data.weight == null ? null : DataValue.Float(data.weight);
     Owner = data.owner == null ? null : DataValue.Long(data.owner);
+    Attach = data.attach == null ? null : DataValue.ZdoId(data.attach);
     TriggerRules = data.triggerRules == null ? triggerRules == null ? null : new SimpleBoolValue(triggerRules.Value) : DataValue.Bool(data.triggerRules);
   }
 
@@ -440,9 +447,10 @@ public class Poke(PokeData data)
   public IFloatValue? RepeatChance = data.repeatChance == null ? null : DataValue.Float(data.repeatChance);
   public IFloatValue? Chance = data.chance == null ? null : DataValue.Float(data.chance);
   public IBoolValue? Self = data.self == null ? null : DataValue.Bool(data.self);
+  public IBoolValue? Attach = data.attach == null ? null : DataValue.Bool(data.attach);
   public IZdoIdValue? Target = data.target == null ? null : DataValue.ZdoId(data.target);
   private readonly IBoolValue? Evaluate = data.evaluate == null ? null : DataValue.Bool(data.evaluate);
-  public bool HasPrefab = data.prefab != null && data.prefab != "";
+  public bool HasPrefab = !string.IsNullOrWhiteSpace(data.prefab);
 
   public string[] GetArgs(Parameters pars)
   {
@@ -481,6 +489,7 @@ public class Poke(PokeData data)
 public class Object
 {
   private readonly IPrefabValue PrefabsValue;
+  private readonly bool HasPrefabFilter;
   private readonly IFloatValue? MinDistanceValue;
   private readonly IFloatValue MaxDistanceValue;
   private readonly IFloatValue? MinHeightValue;
@@ -492,6 +501,7 @@ public class Object
   public Object(ObjectData data)
   {
 
+    HasPrefabFilter = !string.IsNullOrWhiteSpace(data.prefab);
     PrefabsValue = DataValue.Prefab(data.prefab);
     if (data.minDistance != null)
       MinDistanceValue = DataValue.Float(data.minDistance);
@@ -515,6 +525,7 @@ public class Object
   public Object(string line)
   {
     var split = Parse.ToList(line);
+    HasPrefabFilter = split.Count > 0 && !string.IsNullOrWhiteSpace(split[0]);
     PrefabsValue = DataValue.Prefab(split[0]);
     MaxDistanceValue = new SimpleFloatValue(100f);
 
@@ -563,7 +574,7 @@ public class Object
 
   public bool IsValid(ZDO zdo, Parameters pars)
   {
-    if (PrefabsValue.Match(pars, zdo.GetPrefab()) == false) return false;
+    if (HasPrefabFilter && PrefabsValue.Match(pars, zdo.GetPrefab()) != true) return false;
     var d = Utils.DistanceXZ(CachedPosition, zdo.GetPosition());
     if (MinDistance != null && d < MinDistance) return false;
     if (d > MaxDistance) return false;
@@ -590,6 +601,8 @@ public class PokeData : ObjectData
   public string? chance;
   [DefaultValue(null)]
   public string? self;
+  [DefaultValue(null)]
+  public string? attach;
   [DefaultValue(null)]
   public string? target;
   [DefaultValue(null)]

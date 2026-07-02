@@ -186,6 +186,7 @@ public class Loading
         RemoveItems = removeItems,
         Cancel = data.cancel == null ? null : DataValue.Bool(data.cancel),
         Owner = data.owner == null ? null : DataValue.Long(data.owner),
+        Attach = data.attach == null ? null : DataValue.ZdoId(data.attach),
         MinTerrainHeight = minTerrainHeight,
         MaxTerrainHeight = maxTerrainHeight,
         Execute = data.exec == null ? null : DataValue.String(data.exec),

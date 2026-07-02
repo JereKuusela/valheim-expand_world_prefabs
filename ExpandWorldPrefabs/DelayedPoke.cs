@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Data;
 using UnityEngine;
 namespace ExpandWorld.Prefab;
@@ -54,24 +55,33 @@ public class DelayedPoke
   private static void Add(Poke poke, ZDOID zdo, Vector3 pos, Quaternion rot, Parameters pars, float delay)
   {
     var self = poke.Self?.GetBool(pars);
+    var attach = poke.Attach?.GetBool(pars) == true;
     var target = poke.Target?.Get(pars);
     if (poke.HasPrefab)
     {
-      var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, rot, pars, self == true ? null : zdo);
-      pars.Amount = zdos.Length;
-      var args = poke.GetArgs(pars);
-      Add(delay, zdos, args);
-    }
-    else if (self == true || target != null)
-    {
-      var args = poke.GetArgs(pars);
-      if (self == true)
-        Add(delay, zdo, args);
-      if (target != null)
+      var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, rot, pars, self == true ? null : zdo).ToList();
+      if (attach)
       {
-        if (target.Value != zdo)
-          Add(delay, target.Value, args);
+        var attached = new HashSet<ZDOID>(Hack.GetAttached(zdo));
+        zdos.RemoveAll(id => !attached.Contains(id));
       }
+      if (zdos.Count == 0) return;
+      pars.Amount = zdos.Count;
+      var args = poke.GetArgs(pars);
+      Add(delay, [.. zdos], args);
+    }
+    else if (self == true || target != null || attach)
+    {
+      HashSet<ZDOID> targets = [];
+      if (self == true)
+        targets.Add(zdo);
+      if (target != null && (self == true || target.Value != zdo))
+        targets.Add(target.Value);
+      if (attach)
+        targets.UnionWith(Hack.GetAttached(zdo));
+      if (targets.Count == 0) return;
+      var args = poke.GetArgs(pars);
+      Add(delay, [.. targets], args);
     }
   }
   public static void AddGlobal(Poke poke, Vector3 pos, Quaternion rot, Parameters pars)

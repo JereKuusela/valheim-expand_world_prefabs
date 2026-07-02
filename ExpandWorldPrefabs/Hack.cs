@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System;
 using HarmonyLib;
-using Service;
 using UnityEngine;
+using Data;
+using Service;
+using System.Linq;
 
 namespace ExpandWorld.Prefab;
 
@@ -15,11 +17,23 @@ public class Hack
   private static readonly int SyncScaleHash = "ZSyncTransform.m_syncScale".GetStableHashCode();
   public static bool IsHack(ZDO zdo) => zdo.GetBool(SyncScaleHash);
 
-  public static void Patch(Harmony harmony)
+  public static void Patch(Harmony harmony, bool scaleHack, bool syncHack)
   {
-    var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize));
-    var postfix = AccessTools.Method(typeof(Hack), nameof(Deserialize));
-    harmony.Patch(original, postfix: new HarmonyMethod(postfix));
+    if (scaleHack)
+    {
+      var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize));
+      var postfix = AccessTools.Method(typeof(Hack), nameof(Deserialize));
+      harmony.Patch(original, postfix: new HarmonyMethod(postfix));
+    }
+    if (syncHack)
+    {
+      var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.SetOwner));
+      var prefix = AccessTools.Method(typeof(Hack), nameof(SetOwner));
+      harmony.Patch(original, prefix: new HarmonyMethod(prefix));
+      original = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.HandleDestroyedZDO), [typeof(ZDOID)]);
+      var postfix = AccessTools.Method(typeof(Hack), nameof(HandleDestroyed));
+      harmony.Patch(original, postfix: new HarmonyMethod(postfix));
+    }
   }
 
   static void Deserialize(ZDO __instance)
@@ -99,65 +113,160 @@ public class Hack
     zdo.DataRevision += 100;
     DelayedOwner.Add(0.1f, zdo, previousOwner);
   }
-  /*
-  private static readonly HashSet<ZDOID> Tracking = [];
-  private static readonly HashSet<ZDOID> Tracked = [];
-  
-  [HarmonyPatch(typeof(ZDO), nameof(ZDO.SetOwner)), HarmonyPrefix]
-  static bool SetOwner(ZDO __instance, long uid)
+  public static bool IsSynced(ZDO zdo) => zdo.GetConnectionType() == ZDOExtraData.ConnectionType.SyncTransform;
+  // Clients can only have one player, so NPCs should stay unowned.
+  public static bool IsPlayer(ZDO zdo) => zdo.GetPrefab() == PlayerHash;
+  public static bool IsRealPlayer(ZDO zdo) => zdo.GetPrefab() == PlayerHash && !zdo.Persistent;
+
+  public static readonly long HackOwner = 1;
+
+  // Cache to more quickly release attached objects if parent is destroyed.
+  // This also happens over time thtough SetOwner.
+  private static readonly HashSet<ZDOID> Parents = [];
+  private static readonly long PlayerHash = "Player".GetStableHashCode();
+  static void SetOwner(ZDO __instance, ref long uid)
   {
-    if (uid == 0)
-      return true;
-    if (!IsHack(__instance))
-      return true;
-    if (Tracked.Contains(__instance.m_uid))
-      return true;
-    if (Tracking.Contains(__instance.m_uid))
+    if (!IsSynced(__instance))
     {
-      Tracking.Remove(__instance.m_uid);
-      Tracked.Add(__instance.m_uid);
-      return true;
+      if (IsPlayer(__instance))
+        uid = HackOwner;
+      return;
     }
-    var peer = ZDOMan.instance.GetPeer(uid);
-    if (peer == null)
-      return true;
-    // Just delaing the assignment doesn't seem to be enough while client is loading the area.
-    if (peer.ShouldSend(__instance))
+    var parent = __instance.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform);
+    var exists = ZDOMan.instance.GetZDO(parent) != null;
+    if (exists)
+    {
+      uid = HackOwner;
+      Parents.Add(parent);
+    }
+    else
+    {
+      Unattach(__instance);
+      Parents.Remove(parent);
+      // Clients can only have one player, so NPCs should stay unowned.
+      if (IsPlayer(__instance))
+        uid = HackOwner;
+    }
+  }
+
+
+  static void HandleDestroyed(ZDOID uid)
+  {
+    if (!Parents.Contains(uid)) return;
+    var attached = GetAttached(uid);
+    foreach (var id in attached)
+    {
+      var zdo = ZDOMan.instance.GetZDO(id);
+      if (zdo == null) continue;
+      Unattach(zdo);
+    }
+  }
+
+  public static List<ZDOID> GetAttached(ZDOID uid) =>
+    [.. ZDOExtraData.s_connections.Where(pair => pair.Value != null && pair.Value.m_type == ZDOExtraData.ConnectionType.SyncTransform && pair.Value.m_target == uid).Select(pair => pair.Key)];
+
+
+
+  private static readonly int HasFields = "HasFields".GetStableHashCode();
+  private static readonly int HasFieldsZSyncTransform = "HasFieldsZSyncTransform".GetStableHashCode();
+  private static readonly int ZSyncTransformCharacterParentSync = "ZSyncTransform.m_characterParentSync".GetStableHashCode();
+  public static void Attach(ZdoEntry zdoEntry, ZDOID target)
+  {
+    zdoEntry.ConnectionType = ZDOExtraData.ConnectionType.SyncTransform;
+    zdoEntry.TargetConnectionId = target;
+    zdoEntry.Ints ??= [];
+    zdoEntry.Ints[HasFields] = 1;
+    zdoEntry.Ints[HasFieldsZSyncTransform] = 1;
+    zdoEntry.Ints[ZSyncTransformCharacterParentSync] = 1;
+  }
+  public static void Attach(ZDO zdo, ZDOID target)
+  {
+    // Actual players can't be attached or they lose control.
+    if (IsRealPlayer(zdo))
+      return;
+    if (target == ZDOID.None)
+    {
+      Unattach(zdo);
+      return;
+    }
+    zdo.SetConnection(ZDOExtraData.ConnectionType.SyncTransform, target);
+    zdo.Set(HasFields, 1);
+    zdo.Set(HasFieldsZSyncTransform, 1);
+    zdo.Set(ZSyncTransformCharacterParentSync, 1);
+    zdo.SetOwnerInternal(HackOwner);
+    zdo.OwnerRevision += 1;
+    Parents.Add(target);
+  }
+
+  // None type is not serialized, so have to use something else for clients to receive it.
+  private static readonly ZDOExtraData.ConnectionType InvalidType = unchecked((ZDOExtraData.ConnectionType)0x20);
+  private static void Unattach(ZDO zdo)
+  {
+    SyncAttachedWorldTransform(zdo);
+    zdo.SetConnection(InvalidType, ZDOID.None);
+    zdo.DataRevision += 100;
+    if (!IsPlayer(zdo))
+    {
+      zdo.SetOwnerInternal(DelayedOwner.FindNearestOwner(zdo));
+      zdo.OwnerRevision += 1;
+    }
+  }
+
+  private static void SyncAttachedWorldTransform(ZDO zdo)
+  {
+    var connectionZdoId = zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform);
+    if (connectionZdoId.IsNone())
+      return;
+
+    var parentZdo = ZDOMan.instance.GetZDO(connectionZdoId);
+    if (parentZdo == null)
+      return;
+
+    var parentPos = parentZdo.GetPosition();
+    var parentRot = parentZdo.GetRotation();
+
+    var attachJoint = zdo.GetString(ZDOVars.s_attachJointHash, "");
+    var relPos = zdo.GetVec3(ZDOVars.s_relPosHash, Vector3.zero);
+    var relRot = zdo.GetQuaternion(ZDOVars.s_relRotHash, Quaternion.identity);
+
+    if (attachJoint.Length > 0 && TryGetJointWorldPosition(parentZdo, parentPos, parentRot, attachJoint, out var worldPos))
+    {
+      zdo.m_position = worldPos;
+    }
+    else
+    {
+      // One-shot world position restore before detaching.
+      var relVel = zdo.GetVec3(ZDOVars.s_velHash, Vector3.zero);
+      relPos += relVel * Time.deltaTime;
+      worldPos = parentPos + parentRot * relPos;
+    }
+
+    var worldRot = parentRot * relRot;
+    zdo.m_position = worldPos;
+    zdo.SetSector(ZoneSystem.GetZone(worldPos));
+    zdo.m_rotation = worldRot.eulerAngles;
+  }
+
+  private static bool TryGetJointWorldPosition(ZDO parentZdo, Vector3 parentPos, Quaternion parentRot, string attachJoint, out Vector3 worldPos)
+  {
+    var parentPrefab = ZNetScene.instance.GetPrefab(parentZdo.GetPrefab());
+    if (!parentPrefab)
+    {
+      worldPos = Vector3.zero;
       return false;
-    Tracking.Add(__instance.m_uid);
-    // But also just relying on sent status didn't always seem to work when teleporting to the object.
-    DelayedOwner.Add(0.1f, __instance, uid);
-    return false;
-  }
-
-  [HarmonyPatch(typeof(ZDOMan), nameof(ZDOMan.ReleaseZDOS)), HarmonyPostfix]
-  static void ReleaseZDOS(ZDOMan __instance)
-  {
-    List<ZDOID> toRemove = [];
-    foreach (var id in Tracked)
-    {
-      var zdo = __instance.GetZDO(id);
-      if (zdo == null)
-      {
-        toRemove.Add(id);
-        continue;
-      }
-      if (!zdo.Owned)
-      {
-        toRemove.Add(id);
-        continue;
-      }
-      if (!__instance.IsInPeerActiveArea(zdo.GetSector(), zdo.GetOwner()))
-      {
-        zdo.SetOwner(0L);
-        zdo.DataRevision += 100;
-        toRemove.Add(id);
-        continue;
-      }
     }
 
-    foreach (var id in toRemove)
-      Tracked.Remove(id);
+    var joint = Utils.FindChild(parentPrefab.transform, attachJoint, Utils.IterativeSearchType.DepthFirst);
+    if (!joint)
+    {
+      worldPos = Vector3.zero;
+      return false;
+    }
+
+    var jointLocalPos = parentPrefab.transform.InverseTransformPoint(joint.position);
+    worldPos = parentPos + parentRot * jointLocalPos;
+    return true;
   }
-  */
+
+  public static bool CanSync(ZDO zdo) => zdo.GetInt(ZSyncTransformCharacterParentSync) == 1;
 }

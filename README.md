@@ -320,6 +320,7 @@ Poking allows to trigger actions on other objects (or even on the original objec
   - self: When set to true, the object itself can be poked.
     - If prefab is set, then other filters must apply as usual.
     - If prefab is not set, then the object itself is always poked.
+  - attach: When set to true, objects attached to the triggering object are poked too.
   - target: Specific ZDO object. This can't be used with prefab.
   - pars: Parameters for the `poke` type.
     - Format is `par0, par1, par2, ...`.

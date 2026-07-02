@@ -51,7 +51,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     return zdo;
   }
 
-
+  private static readonly int PlayerHash = "Player".GetStableHashCode();
   private static ZDO? SpawnZDO(int prefab, Vector3 position, Vector3 rotation)
   {
     if (prefab == 0) return null;
@@ -66,7 +66,11 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     var view = prefabObj.GetComponent<ZNetView>();
     zdo.m_prefab = prefab;
     zdo.m_rotation = rotation;
-    zdo.Persistent = view.m_persistent;
+    // Usually players are non persistent but this way NPCs can be spawned without having to manually set persistent in the data.
+    if (prefab == PlayerHash)
+      zdo.Persistent = true;
+    else
+      zdo.Persistent = view.m_persistent;
     zdo.Distant = view.m_distant;
     zdo.Type = view.m_type;
     return zdo;
@@ -249,7 +253,6 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
 
   private void HandleConnection(ZDO ownZdo)
   {
-    if (OriginalId == null) return;
     if (ConnectionType == null) return;
     var ownId = ownZdo.m_uid;
     if (TargetConnectionId != null)
@@ -267,6 +270,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     else
     {
       // Otherwise all zdos must be scanned.
+      if (OriginalId == null) return;
       var other = ZDOExtraData.s_connections.FirstOrDefault(kvp => kvp.Value.m_target == OriginalId);
       if (other.Value == null) return;
       var otherZdo = ZDOMan.instance.GetZDO(other.Key);

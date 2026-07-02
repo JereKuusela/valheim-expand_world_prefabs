@@ -53,6 +53,9 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
     var owner = spawn.Owner?.Get(pars);
     if (owner.HasValue)
       zdoEntry.Owner = owner.Value;
+    var attach = spawn.Attach?.Get(pars);
+    if (attach.HasValue && attach.Value != ZDOID.None)
+      Hack.Attach(zdoEntry, attach.Value);
     Add(delay, zdoEntry, spawn.TriggerRules?.GetBool(pars) ?? false);
   }
   private static void Add(float delay, ZdoEntry zdoEntry, bool triggerRules)

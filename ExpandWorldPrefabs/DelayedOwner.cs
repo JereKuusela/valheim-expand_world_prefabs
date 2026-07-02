@@ -11,27 +11,31 @@ namespace ExpandWorld.Prefab;
 public class DelayedOwner(float delay, ZDOID zdo, long owner)
 {
   private static readonly List<DelayedOwner> Owners = [];
-
+  public static long FindNearestOwner(ZDO zdo)
+  {
+    // Some client should always be the owner so that creatures are initialized correctly (for example max health from stars).
+    // Things work slightly better when the server doesn't have ownership (for example max health from stars).
+    var closestClient = ZDOMan.instance.m_peers.OrderBy(p => Utils.DistanceXZ(p.m_peer.m_refPos, zdo.m_position)).FirstOrDefault(p => p.m_peer.m_uid != zdo.GetOwner());
+    return closestClient?.m_peer.m_uid ?? 0;
+  }
   public static void Check(ZDO zdo, long owner)
   {
+    bool isSynced = Hack.IsSynced(zdo);
+    if (isSynced)
+      owner = Hack.HackOwner;
     if (owner == 0)
-    {
-      // Some client should always be the owner so that creatures are initialized correctly (for example max health from stars).
-      // Things work slightly better when the server doesn't have ownership (for example max health from stars).
-      var closestClient = ZDOMan.instance.m_peers.OrderBy(p => Utils.DistanceXZ(p.m_peer.m_refPos, zdo.m_position)).FirstOrDefault(p => p.m_peer.m_uid != zdo.GetOwner());
-      owner = closestClient?.m_peer.m_uid ?? 0;
-    }
+      owner = FindNearestOwner(zdo);
     var prefab = ZNetScene.instance.GetPrefab(zdo.m_prefab);
 
     bool isItem = prefab.GetComponent<ItemDrop>();
     bool isShip = prefab.GetComponent<Ship>();
-    bool isHack = Hack.IsHack(zdo);
-    bool delay = isItem || isHack || isShip;
+    bool isHackOwner = Hack.IsHack(zdo) || Hack.IsPlayer(zdo);
+    bool delay = !isSynced && (isItem || isHackOwner || isShip);
     // This is normally set on Awake which won't trigger for server spawned.
     // Without this, "remove old loot" is instantly triggered.
     if (isItem)
       zdo.Set(ZDOVars.s_spawnTime, ZNet.instance.GetTime().Ticks);
-    if (isHack)
+    if (isHackOwner)
       Hack.SetScaleBackup(zdo);
 
     if (delay)
