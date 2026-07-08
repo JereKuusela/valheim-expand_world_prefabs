@@ -47,9 +47,12 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       "pchar" => PeerManager.GetPChar(zdo),
       "pvisible" => PeerManager.GetPVisible(zdo),
       "owner" => zdo.GetOwner().ToString(),
+      "connected" => GetConnected(),
       "biome" => WorldGenerator.instance.GetBiome(zdo.m_position).ToString(),
       _ => null,
     };
+
+  private string GetConnected() => (zdo.GetConnection()?.m_target ?? ZDOID.None).ToString();
 
 
   protected override string? GetValueParameter(string key, string value, string defaultValue) =>
@@ -62,15 +65,15 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
      "long" => GetLong(value, defaultValue).ToString(CultureInfo.InvariantCulture),
      "bool" => GetBool(value, defaultValue) ? "true" : "false",
      "hash" => GetHash(value, defaultValue),
-     "vec" => DataEntry.PrintVectorXZY(GetVec(value, defaultValue)),
-     "quat" => DataEntry.PrintAngleYXZ(GetQuaternion(value, defaultValue)),
+     "vec" => Helper.FormatPos(GetVec(value, defaultValue)),
+     "quat" => Helper.FormatRot(GetQuaternion(value, defaultValue).eulerAngles),
      "byte" => GetBytes(value, defaultValue),
      "zdo" => zdo.GetZDOID(value).ToString(),
      "amount" => GetAmount(value, defaultValue),
      "quality" => GetQuality(value, defaultValue),
      "durability" => GetDurability(value, defaultValue),
      "item" => GetItem(value, defaultValue),
-     "pos" => DataEntry.PrintVectorXZY(GetPos(value)),
+     "pos" => Helper.FormatPos(GetPos(value)),
      "pdata" => PeerManager.GetPlayerData(zdo, value),
      _ => null,
    };

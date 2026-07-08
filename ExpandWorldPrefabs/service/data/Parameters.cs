@@ -262,14 +262,14 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
   internal static string? Rad2Vec(string value)
   {
     if (!Parse.TryFloat(value, out var radians)) return null;
-    return new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)).ToString();
+    return Helper.FormatPos(new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)));
   }
 
   internal static string? Deg2Vec(string value)
   {
     if (!Parse.TryFloat(value, out var degrees)) return null;
     var radians = degrees * Mathf.Deg2Rad;
-    return new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)).ToString();
+    return Helper.FormatPos(new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)));
   }
 
   internal static string? Vec2Deg(string value)
@@ -451,13 +451,13 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
   private string HandleCross(string value, string defaultValue)
   {
     if (!TryGetTwoVectors(value, out var from, out var to)) return defaultValue;
-    return DataEntry.PrintVectorXZY(Vector3.Cross(from, to));
+    return Helper.FormatPos(Vector3.Cross(from, to));
   }
 
   private string HandleNormalize(string value, string defaultValue)
   {
     if (!TryEvaluateVector3(value, out var vector)) return defaultValue;
-    return DataEntry.PrintVectorXZY(vector.normalized);
+    return Helper.FormatPos(vector.normalized);
   }
 
   private string HandleMagnitude(string value, string defaultValue)
@@ -475,13 +475,13 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
   private string HandleProject(string value, string defaultValue)
   {
     if (!TryGetTwoVectors(value, out var vector, out var onNormal)) return defaultValue;
-    return DataEntry.PrintVectorXZY(Vector3.Project(vector, onNormal));
+    return Helper.FormatPos(Vector3.Project(vector, onNormal));
   }
 
   private string HandleReflect(string value, string defaultValue)
   {
     if (!TryGetTwoVectors(value, out var inDirection, out var inNormal)) return defaultValue;
-    return DataEntry.PrintVectorXZY(Vector3.Reflect(inDirection, inNormal));
+    return Helper.FormatPos(Vector3.Reflect(inDirection, inNormal));
   }
 
   private string HandleLerp(string value, string defaultValue)
@@ -492,7 +492,7 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     if (!TryEvaluateVector3(parts[1], out var to)) return defaultValue;
     var t = Calculator.EvaluateFloat(parts[2]);
     if (t == null) return defaultValue;
-    return DataEntry.PrintVectorXZY(Vector3.LerpUnclamped(from, to, t.Value));
+    return Helper.FormatPos(Vector3.LerpUnclamped(from, to, t.Value));
   }
 
   private string HandleVecX(string value, string defaultValue)
@@ -564,23 +564,31 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
   {
     vector = Vector3.zero;
     if (value == "") return false;
-    var values = Parse.Split(value.Replace(" ", ","));
+    var values = Parse.Split(value);
     if (values.Length < 2 || values.Length > 3) return false;
     return TryEvaluateVector3(value, out vector);
   }
 
-  private static bool ShouldUseVectorMath(string[] values)
+  private static bool TryGetStrictVectorOperands(string[] values, out Vector3?[] vectors)
   {
-    foreach (var value in values)
+    vectors = new Vector3?[values.Length];
+    var hasVector = false;
+    for (var i = 0; i < values.Length; ++i)
     {
-      if (TryEvaluateVector3Strict(value, out _)) return true;
+      if (!TryEvaluateVector3Strict(values[i], out var vector)) continue;
+      vectors[i] = vector;
+      hasVector = true;
     }
-    return false;
+    return hasVector;
   }
 
-  private static bool TryGetVectorMathOperand(string value, out Vector3 operand)
+  private static bool TryGetVectorMathOperand(string value, Vector3? parsedVector, out Vector3 operand)
   {
-    if (TryEvaluateVector3Strict(value, out operand)) return true;
+    if (parsedVector.HasValue)
+    {
+      operand = parsedVector.Value;
+      return true;
+    }
 
     var scalar = Calculator.EvaluateFloat(value);
     if (scalar == null)
@@ -606,15 +614,15 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     var values = value.Split(Separator);
     if (values.Length == 0) return defaultValue;
 
-    if (ShouldUseVectorMath(values))
+    if (TryGetStrictVectorOperands(values, out var strictVectors))
     {
       var vectorResult = Vector3.zero;
-      foreach (var val in values)
+      for (var i = 0; i < values.Length; ++i)
       {
-        if (!TryGetVectorMathOperand(val, out var operand)) return defaultValue;
+        if (!TryGetVectorMathOperand(values[i], strictVectors[i], out var operand)) return defaultValue;
         vectorResult += operand;
       }
-      return DataEntry.PrintVectorXZY(vectorResult);
+      return Helper.FormatPos(vectorResult);
     }
 
     float result = 0f;
@@ -630,15 +638,15 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     var values = value.Split(Separator);
     if (values.Length == 0) return defaultValue;
 
-    if (ShouldUseVectorMath(values))
+    if (TryGetStrictVectorOperands(values, out var strictVectors))
     {
-      if (!TryGetVectorMathOperand(values[0], out var vectorResult)) return defaultValue;
+      if (!TryGetVectorMathOperand(values[0], strictVectors[0], out var vectorResult)) return defaultValue;
       for (int i = 1; i < values.Length; i++)
       {
-        if (!TryGetVectorMathOperand(values[i], out var operand)) return defaultValue;
+        if (!TryGetVectorMathOperand(values[i], strictVectors[i], out var operand)) return defaultValue;
         vectorResult -= operand;
       }
-      return DataEntry.PrintVectorXZY(vectorResult);
+      return Helper.FormatPos(vectorResult);
     }
 
     float result = Parse.Float(values[0], 0f);
@@ -654,13 +662,14 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     var values = value.Split(Separator);
     if (values.Length == 0) return defaultValue;
 
-    if (ShouldUseVectorMath(values))
+    if (TryGetStrictVectorOperands(values, out var strictVectors))
     {
-      if (!TryGetVectorMathOperand(values[0], out var vectorResult)) return defaultValue;
+      if (!TryGetVectorMathOperand(values[0], strictVectors[0], out var vectorResult)) return defaultValue;
       for (int i = 1; i < values.Length; i++)
       {
-        if (TryEvaluateVector3Strict(values[i], out var vector))
+        if (strictVectors[i].HasValue)
         {
+          var vector = strictVectors[i]!.Value;
           vectorResult = Vector3.Scale(vectorResult, vector);
           continue;
         }
@@ -669,7 +678,7 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
         if (scalar == null) return defaultValue;
         vectorResult *= scalar.Value;
       }
-      return DataEntry.PrintVectorXZY(vectorResult);
+      return Helper.FormatPos(vectorResult);
     }
 
     float result = 1f;
@@ -685,13 +694,14 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     var values = value.Split(Separator);
     if (values.Length == 0) return defaultValue;
 
-    if (ShouldUseVectorMath(values))
+    if (TryGetStrictVectorOperands(values, out var strictVectors))
     {
-      if (!TryGetVectorMathOperand(values[0], out var vectorResult)) return defaultValue;
+      if (!TryGetVectorMathOperand(values[0], strictVectors[0], out var vectorResult)) return defaultValue;
       for (int i = 1; i < values.Length; i++)
       {
-        if (TryEvaluateVector3Strict(values[i], out var vector))
+        if (strictVectors[i].HasValue)
         {
+          var vector = strictVectors[i]!.Value;
           if (vector.x == 0f || vector.y == 0f || vector.z == 0f) return defaultValue;
           vectorResult = new Vector3(vectorResult.x / vector.x, vectorResult.y / vector.y, vectorResult.z / vector.z);
           continue;
@@ -701,7 +711,7 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
         if (scalar == null || scalar.Value == 0f) return defaultValue;
         vectorResult /= scalar.Value;
       }
-      return DataEntry.PrintVectorXZY(vectorResult);
+      return Helper.FormatPos(vectorResult);
     }
 
     float result = Parse.Float(values[0], 0f);

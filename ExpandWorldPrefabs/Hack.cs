@@ -153,8 +153,8 @@ public class Hack
   static void HandleDestroyed(ZDOID uid)
   {
     if (!Parents.Contains(uid)) return;
-    var attached = GetAttached(uid);
-    foreach (var id in attached)
+    var connected = GetConnnected(uid);
+    foreach (var id in connected)
     {
       var zdo = ZDOMan.instance.GetZDO(id);
       if (zdo == null) continue;
@@ -162,8 +162,8 @@ public class Hack
     }
   }
 
-  public static List<ZDOID> GetAttached(ZDOID uid) =>
-    [.. ZDOExtraData.s_connections.Where(pair => pair.Value != null && pair.Value.m_type == ZDOExtraData.ConnectionType.SyncTransform && pair.Value.m_target == uid).Select(pair => pair.Key)];
+  public static List<ZDOID> GetConnnected(ZDOID uid) =>
+    [.. ZDOExtraData.s_connections.Where(pair => pair.Value != null && pair.Value.m_target == uid).Select(pair => pair.Key)];
 
 
 
@@ -178,6 +178,15 @@ public class Hack
     zdoEntry.Ints[HasFields] = 1;
     zdoEntry.Ints[HasFieldsZSyncTransform] = 1;
     zdoEntry.Ints[ZSyncTransformCharacterParentSync] = 1;
+  }
+  public static void Connect(ZdoEntry zdoEntry, ZDOID target)
+  {
+    zdoEntry.ConnectionType = InvalidType;
+    zdoEntry.TargetConnectionId = target;
+  }
+  public static void Connect(ZDO zdo, ZDOID target)
+  {
+    zdo.SetConnection(InvalidType, target);
   }
   public static void Attach(ZDO zdo, ZDOID target)
   {
@@ -202,22 +211,21 @@ public class Hack
   private static readonly ZDOExtraData.ConnectionType InvalidType = unchecked((ZDOExtraData.ConnectionType)0x20);
   private static void Unattach(ZDO zdo)
   {
-    SyncAttachedWorldTransform(zdo);
+    var connectionZdoId = zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform);
+    if (connectionZdoId.IsNone())
+      return;
+    SyncAttachedWorldTransform(zdo, connectionZdoId);
     zdo.SetConnection(InvalidType, ZDOID.None);
     zdo.DataRevision += 100;
-    if (!IsPlayer(zdo))
+    if (!IsPlayer(zdo) && zdo.GetOwner() == HackOwner)
     {
       zdo.SetOwnerInternal(DelayedOwner.FindNearestOwner(zdo));
       zdo.OwnerRevision += 1;
     }
   }
 
-  private static void SyncAttachedWorldTransform(ZDO zdo)
+  private static void SyncAttachedWorldTransform(ZDO zdo, ZDOID connectionZdoId)
   {
-    var connectionZdoId = zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform);
-    if (connectionZdoId.IsNone())
-      return;
-
     var parentZdo = ZDOMan.instance.GetZDO(connectionZdoId);
     if (parentZdo == null)
       return;

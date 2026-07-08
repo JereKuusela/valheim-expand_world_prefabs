@@ -162,6 +162,8 @@ public class Data
   public string? owner;
   [DefaultValue(null)]
   public string? attach;
+  [DefaultValue(null)]
+  public string? connect;
   [DefaultValue("")]
   public string addItems = "";
   [DefaultValue("")]
@@ -308,6 +310,7 @@ public class Info
   public DataEntry? RemoveItems;
   public ILongValue? Owner;
   public IZdoIdValue? Attach;
+  public IZdoIdValue? Connect;
   public IBoolValue? Cancel;
   public IStringValue? Execute;
   public IBoolValue? Admin;
@@ -347,6 +350,8 @@ public class SpawnData
   [DefaultValue(null)]
   public string? attach;
   [DefaultValue(null)]
+  public string? connect;
+  [DefaultValue(null)]
   public string? triggerRules;
 }
 
@@ -365,6 +370,7 @@ public class Spawn
   public readonly IFloatValue? Weight;
   public readonly ILongValue? Owner;
   public readonly IZdoIdValue? Attach;
+  public readonly IZdoIdValue? Connect;
   public readonly IBoolValue? TriggerRules;
 
   public Spawn(SpawnData data, float? delay, bool? triggerRules)
@@ -382,6 +388,7 @@ public class Spawn
     Weight = data.weight == null ? null : DataValue.Float(data.weight);
     Owner = data.owner == null ? null : DataValue.Long(data.owner);
     Attach = data.attach == null ? null : DataValue.ZdoId(data.attach);
+    Connect = data.connect == null ? null : DataValue.ZdoId(data.connect);
     TriggerRules = data.triggerRules == null ? triggerRules == null ? null : new SimpleBoolValue(triggerRules.Value) : DataValue.Bool(data.triggerRules);
   }
 
@@ -447,7 +454,7 @@ public class Poke(PokeData data)
   public IFloatValue? RepeatChance = data.repeatChance == null ? null : DataValue.Float(data.repeatChance);
   public IFloatValue? Chance = data.chance == null ? null : DataValue.Float(data.chance);
   public IBoolValue? Self = data.self == null ? null : DataValue.Bool(data.self);
-  public IBoolValue? Attach = data.attach == null ? null : DataValue.Bool(data.attach);
+  public IBoolValue? Connected = data.connected == null ? null : DataValue.Bool(data.connected);
   public IZdoIdValue? Target = data.target == null ? null : DataValue.ZdoId(data.target);
   private readonly IBoolValue? Evaluate = data.evaluate == null ? null : DataValue.Bool(data.evaluate);
   public bool HasPrefab = !string.IsNullOrWhiteSpace(data.prefab);
@@ -494,6 +501,7 @@ public class Object
   private readonly IFloatValue MaxDistanceValue;
   private readonly IFloatValue? MinHeightValue;
   private readonly IFloatValue? MaxHeightValue;
+  private readonly IVector3Value? PositionValue;
   private readonly IVector3Value? OffsetValue;
   private readonly Filters? filters;
   private readonly IIntValue WeightValue = new SimpleIntValue(1);
@@ -513,6 +521,8 @@ public class Object
       MinHeightValue = DataValue.Float(data.minHeight);
     if (data.maxHeight != null)
       MaxHeightValue = DataValue.Float(data.maxHeight);
+    if (data.position != null)
+      PositionValue = DataValue.Vector3(data.position);
     if (data.offset != null)
       OffsetValue = DataValue.Vector3(data.offset);
     if (data.weight != null)
@@ -554,6 +564,7 @@ public class Object
   public float MaxDistance;
   private float? MinHeight;
   private float? MaxHeight;
+  private Vector3? Position;
   private Vector3? Offset;
   public Vector3 CachedPosition;
   public int Weight;
@@ -565,11 +576,15 @@ public class Object
     MinHeight = MinHeightValue?.Get(pars);
     MaxHeight = MaxHeightValue?.Get(pars);
     Weight = WeightValue.Get(pars) ?? 1;
+    Position = PositionValue?.Get(pars);
     Offset = OffsetValue?.Get(pars);
-    if (Offset.HasValue)
-      CachedPosition = pos + rot * Offset.Value;
+    if (Position.HasValue)
+      CachedPosition = Position.Value;
     else
       CachedPosition = pos;
+
+    if (Offset.HasValue)
+      CachedPosition += rot * Offset.Value;
   }
 
   public bool IsValid(ZDO zdo, Parameters pars)
@@ -602,7 +617,7 @@ public class PokeData : ObjectData
   [DefaultValue(null)]
   public string? self;
   [DefaultValue(null)]
-  public string? attach;
+  public string? connected;
   [DefaultValue(null)]
   public string? target;
   [DefaultValue(null)]
@@ -626,6 +641,8 @@ public class ObjectData
   public string? maxHeight;
   [DefaultValue(null)]
   public string? minHeight;
+  [DefaultValue(null)]
+  public string? position;
   [DefaultValue(null)]
   public string? offset;
   [DefaultValue(null)]

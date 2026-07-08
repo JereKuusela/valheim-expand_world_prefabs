@@ -610,18 +610,6 @@ public class DataEntry
   private Vector3 GetVec(ZDO zdo, int key) => ZdoHelper.TryGetVec(zdo, key) ?? Vector3.zero;
   private Quaternion GetQuaternion(ZDO zdo, int key) => ZdoHelper.TryGetQuaternion(zdo, key) ?? Quaternion.identity;
 
-  public static string PrintVectorXZY(Vector3 vector)
-  {
-    return vector.x.ToString("0.##", CultureInfo.InvariantCulture) + " " + vector.z.ToString("0.##", CultureInfo.InvariantCulture) + " " + vector.y.ToString("0.##", CultureInfo.InvariantCulture);
-  }
-  public static string PrintAngleYXZ(Quaternion quaternion)
-  {
-    return PrintVectorYXZ(quaternion.eulerAngles);
-  }
-  private static string PrintVectorYXZ(Vector3 vector)
-  {
-    return vector.y.ToString("0.##", CultureInfo.InvariantCulture) + " " + vector.x.ToString("0.##", CultureInfo.InvariantCulture) + " " + vector.z.ToString("0.##", CultureInfo.InvariantCulture);
-  }
 
   private static T ToByteEnum<T>(List<string> list) where T : struct, Enum
   {

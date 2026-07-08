@@ -283,6 +283,14 @@ See object filtering [examples](examples_object_filtering.md).
   - If the item doesn't exist then nothing happens.
   - For removing a single item, shorthand `itemid, amount` can be used.
 - triggerRules (default: `false`): If true, spawns or remove from this entry can trigger other entries.
+- connect (P): Connects this object to another object.
+  - This can be done by passing `<zdo>` as poke parameter.
+  - Connections allow direct poking.
+- attach: (P): Attaches this object to another object.
+  - This can be done by passing `<zdo>` as poke parameter.
+  - Attaching is SyncTransform connection, so it can also be used for direct poking.
+  - Attaching makes the object follow the other object (requires ZSyncTransform component).
+  - Attaching disablesthe object by forcing it non-owned. This is required to keep the attachment working.
 
 ### Spawns
 
@@ -302,7 +310,8 @@ See object filtering [examples](examples_object_filtering.md).
   - repeatInterval (default: `0`): Interval in seconds between repeats.
   - repeatChance (default: `1`): Chance to spawn for each attempt (including the original).
   - owner: Overrides the default initial owner assignment. For example with `<owner>` parameter.
-- swap (P): Swaps the original object with another object.
+  - connect (P): Connects the spawned object to another object. See Actions for more info.
+  - attach (P): Attaches the spawned object to another object. See Actions for more info.
   - Format and keywords are same as for `spawn`.
   - The initial data is copied from the original object.
   - Swap is done by removing the original object and spawning the swapped object.
@@ -320,8 +329,9 @@ Poking allows to trigger actions on other objects (or even on the original objec
   - self: When set to true, the object itself can be poked.
     - If prefab is set, then other filters must apply as usual.
     - If prefab is not set, then the object itself is always poked.
-  - attach: When set to true, objects attached to the triggering object are poked too.
   - target: Specific ZDO object. This can't be used with prefab.
+  - connected: When set to true, includes objects that are connected to the original object.
+    - For other way, use `target: <connected>`.
   - pars: Parameters for the `poke` type.
     - Format is `par0, par1, par2, ...`.
     - Structure is strictly defined. Parameter values with commas won't cause additional parameters.
@@ -342,8 +352,11 @@ Poking allows to trigger actions on other objects (or even on the original objec
   - limit: Maximum amount of poked objects. If not set, all matching objects are poked.
   - minDistance: Minimum distance from the poker.
   - maxDistance: Maximum distance from the poker. Default is 100 meters.
+    - If you need to poke something far away, try to use `target`, `position` or `offset` instead.
+    - Global triggers don't have any object, so the distance is from the world center (0,0,0).
   - minHeight: Minimum height difference from the poker.
   - maxHeight: Maximum height difference from the poker.
+  - position: Absolute position in x,z,y to override the original object position.
   - offset: Position offset in x,z,y from the original object position and rotation.
   - Data filters like `filter`, `filters`, `bannedFilter` and `bannedFilters` can be used to filter the affected objects.
 
@@ -508,6 +521,7 @@ Following parameters are available to be used in the yaml file:
 - `<cid>`: Character id of the client that controls the object.
 - `<pvisible>`: Whether the player has public visibility enabled (true or false).
 - `<owner>`: Id of the owner client (long number).
+- `<connected>`: Id of the connected object (object id).
 - `<none>` Empty or lack of value when using filters.
 
 Object attributes can be queried with the field system. For example `<float_WearNTear.m_health>` to get piece maximum health or `<float_ItemDrop.m_itemData.m_shared.m_maxDurability>` to get item maximum durability.

@@ -55,30 +55,30 @@ public class DelayedPoke
   private static void Add(Poke poke, ZDOID zdo, Vector3 pos, Quaternion rot, Parameters pars, float delay)
   {
     var self = poke.Self?.GetBool(pars);
-    var attach = poke.Attach?.GetBool(pars) == true;
+    var connected = poke.Connected?.GetBool(pars) == true;
     var target = poke.Target?.Get(pars);
     if (poke.HasPrefab)
     {
       var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, rot, pars, self == true ? null : zdo).ToList();
-      if (attach)
+      if (connected)
       {
-        var attached = new HashSet<ZDOID>(Hack.GetAttached(zdo));
-        zdos.RemoveAll(id => !attached.Contains(id));
+        var connectedZdos = new HashSet<ZDOID>(Hack.GetConnnected(zdo));
+        zdos.RemoveAll(id => !connectedZdos.Contains(id));
       }
       if (zdos.Count == 0) return;
       pars.Amount = zdos.Count;
       var args = poke.GetArgs(pars);
       Add(delay, [.. zdos], args);
     }
-    else if (self == true || target != null || attach)
+    else if (self == true || target != null || connected)
     {
       HashSet<ZDOID> targets = [];
       if (self == true)
         targets.Add(zdo);
       if (target != null && (self == true || target.Value != zdo))
         targets.Add(target.Value);
-      if (attach)
-        targets.UnionWith(Hack.GetAttached(zdo));
+      if (connected)
+        targets.UnionWith(Hack.GetConnnected(zdo));
       if (targets.Count == 0) return;
       var args = poke.GetArgs(pars);
       Add(delay, [.. targets], args);

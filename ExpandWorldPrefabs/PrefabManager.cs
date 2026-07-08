@@ -141,6 +141,9 @@ public class Manager
         zdo.SetOwner(owner.Value);
       if (attach.HasValue)
         Hack.Attach(zdo, attach.Value);
+      var connect = info.Connect?.Get(parameters);
+      if (connect.HasValue)
+        Hack.Connect(zdo, connect.Value);
 
       if (data != null || removeItems != null || addItems != null || attach.HasValue)
         zdo.DataRevision += 100;
@@ -196,6 +199,9 @@ public class Manager
       var attach = info.Attach?.Get(pars);
       if (attach.HasValue)
         Hack.Attach(entry, attach.Value);
+      var connect = info.Connect?.Get(pars);
+      if (connect.HasValue)
+        Hack.Connect(entry, connect.Value);
       var newZdo = DelayedSpawn.CreateObject(entry, false);
       if (newZdo != null)
       {
