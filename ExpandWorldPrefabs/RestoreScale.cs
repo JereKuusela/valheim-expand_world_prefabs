@@ -1,10 +1,6 @@
-
-using System.Collections.Generic;
 using System;
 using HarmonyLib;
 using UnityEngine;
-using Data;
-using System.Linq;
 
 namespace ExpandWorld.Prefab;
 
@@ -19,7 +15,7 @@ public class RestoreScale
   public static void Patch(Harmony harmony)
   {
     var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize));
-    var postfix = AccessTools.Method(typeof(SupportAttach), nameof(Deserialize));
+    var postfix = AccessTools.Method(typeof(RestoreScale), nameof(Deserialize));
     harmony.Patch(original, postfix: new HarmonyMethod(postfix));
   }
 
