@@ -2,7 +2,6 @@
 using System.Reflection;
 using BepInEx;
 using BepInEx.Bootstrap;
-using BepInEx.Configuration;
 using Data;
 using HarmonyLib;
 using Service;
@@ -14,23 +13,21 @@ public class EWP : BaseUnityPlugin
 {
   public const string GUID = "expand_world_prefabs";
   public const string NAME = "Expand World Prefabs";
-  public const string VERSION = "1.53.9";
+  public const string VERSION = "1.53.10";
 #nullable disable
   public static Harmony Harmony;
-  public static ConfigEntry<bool> EnableScaleRestoreHack;
 #nullable enable
   public static Assembly? ExpandEvents;
   public void Awake()
   {
-    var configReload = Config.Bind("General", "Automatic file reload", true, "Settings are automatically reloaded on file changes. Requires restart to take effect.");
-    EnableScaleRestoreHack = Config.Bind("General", "Enable scale restore hack", true, "Applies workaround patch that restores scale values after ZDO deserialization.");
+    Settings.Init(Config);
     Harmony = new(GUID);
     Harmony.PatchAll();
     Log.Init(Logger);
     Yaml.Init();
     try
     {
-      if (configReload.Value)
+      if (Settings.AutomaticReload)
       {
         DataLoading.SetupWatcher();
         Loading.SetupWatcher();

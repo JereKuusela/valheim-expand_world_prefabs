@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 namespace ExpandWorld.Prefab;
 
 // Game has annoying feature that pre-existing objects have their body set to sleep.
@@ -20,23 +19,23 @@ public class DelayedOwner(float delay, ZDOID zdo, long owner)
   }
   public static void Check(ZDO zdo, long owner)
   {
-    bool isSynced = Hack.IsSynced(zdo);
-    if (isSynced)
-      owner = Hack.HackOwner;
+    bool shouldNotBeOwned = SupportAttach.IsSynced(zdo) || SupportAttach.IsPlayer(zdo);
+    if (shouldNotBeOwned)
+      owner = SupportAttach.HackOwner;
     if (owner == 0)
       owner = FindNearestOwner(zdo);
     var prefab = ZNetScene.instance.GetPrefab(zdo.m_prefab);
 
     bool isItem = prefab.GetComponent<ItemDrop>();
     bool isShip = prefab.GetComponent<Ship>();
-    bool isHackOwner = Hack.IsHack(zdo) || Hack.IsPlayer(zdo);
-    bool delay = !isSynced && (isItem || isHackOwner || isShip);
+    bool shouldBackupScale = RestoreScale.ShouldRestoreScale(zdo);
+    bool delay = !shouldNotBeOwned && (isItem || shouldBackupScale || isShip);
     // This is normally set on Awake which won't trigger for server spawned.
     // Without this, "remove old loot" is instantly triggered.
     if (isItem)
       zdo.Set(ZDOVars.s_spawnTime, ZNet.instance.GetTime().Ticks);
-    if (isHackOwner)
-      Hack.SetScaleBackup(zdo);
+    if (shouldBackupScale)
+      RestoreScale.SetScaleBackup(zdo);
 
     if (delay)
       Add(0.1f, zdo, owner);

@@ -107,9 +107,9 @@ public class Manager
     var inject = info.InjectData ?? data?.InjectDataByDefault ?? false;
     var regenerate = info.Regenerate && !inject;
     var attach = info.Attach?.Get(parameters);
-    if (attach.HasValue && !Hack.CanSync(zdo))
+    if (attach.HasValue && !SupportAttach.CanSync(zdo))
       regenerate = true;
-    if (Hack.IsRealPlayer(zdo))
+    if (SupportAttach.IsRealPlayer(zdo))
       regenerate = false;
     HandleSpawns(info, zdo, parameters, remove, regenerate, data);
     Poke(info, zdo, parameters);
@@ -140,10 +140,10 @@ public class Manager
       if (owner.HasValue)
         zdo.SetOwner(owner.Value);
       if (attach.HasValue)
-        Hack.Attach(zdo, attach.Value);
+        SupportAttach.Attach(zdo, attach.Value);
       var connect = info.Connect?.Get(parameters);
       if (connect.HasValue)
-        Hack.Connect(zdo, connect.Value);
+        SupportAttach.Connect(zdo, connect.Value);
 
       if (data != null || removeItems != null || addItems != null || attach.HasValue)
         zdo.DataRevision += 100;
@@ -198,10 +198,10 @@ public class Manager
         entry.Load(data, pars);
       var attach = info.Attach?.Get(pars);
       if (attach.HasValue)
-        Hack.Attach(entry, attach.Value);
+        SupportAttach.Attach(entry, attach.Value);
       var connect = info.Connect?.Get(pars);
       if (connect.HasValue)
-        Hack.Connect(entry, connect.Value);
+        SupportAttach.Connect(entry, connect.Value);
       var newZdo = DelayedSpawn.CreateObject(entry, false);
       if (newZdo != null)
       {

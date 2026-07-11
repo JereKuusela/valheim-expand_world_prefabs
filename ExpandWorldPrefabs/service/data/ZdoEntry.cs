@@ -67,7 +67,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     zdo.m_prefab = prefab;
     zdo.m_rotation = rotation;
     // Usually players are non persistent but this way NPCs can be spawned without having to manually set persistent in the data.
-    if (prefab == PlayerHash)
+    if (prefab == PlayerHash && ExpandWorld.Prefab.Settings.PersistPlayers)
       zdo.Persistent = true;
     else
       zdo.Persistent = view.m_persistent;

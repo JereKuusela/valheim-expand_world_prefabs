@@ -4,118 +4,27 @@ using System;
 using HarmonyLib;
 using UnityEngine;
 using Data;
-using Service;
 using System.Linq;
 
 namespace ExpandWorld.Prefab;
 
 
-public class Hack
+public class SupportAttach
 {
-  private static readonly int ScaleBackupVecHash = "scaleBackup".GetStableHashCode();
-  private static readonly int ScaleBackupScalarHash = "scaleScalarBackup".GetStableHashCode();
-  private static readonly int SyncScaleHash = "ZSyncTransform.m_syncScale".GetStableHashCode();
-  public static bool IsHack(ZDO zdo) => zdo.GetBool(SyncScaleHash);
-
-  public static void Patch(Harmony harmony, bool scaleHack, bool syncHack)
+  public static void Patch(Harmony harmony)
   {
-    if (scaleHack)
-    {
-      var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize));
-      var postfix = AccessTools.Method(typeof(Hack), nameof(Deserialize));
-      harmony.Patch(original, postfix: new HarmonyMethod(postfix));
-    }
-    if (syncHack)
-    {
-      var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.SetOwner));
-      var prefix = AccessTools.Method(typeof(Hack), nameof(SetOwner));
-      harmony.Patch(original, prefix: new HarmonyMethod(prefix));
-      original = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.HandleDestroyedZDO), [typeof(ZDOID)]);
-      var postfix = AccessTools.Method(typeof(Hack), nameof(HandleDestroyed));
-      harmony.Patch(original, postfix: new HarmonyMethod(postfix));
-    }
+    var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.SetOwner));
+    var prefix = AccessTools.Method(typeof(SupportAttach), nameof(SetOwner));
+    harmony.Patch(original, prefix: new HarmonyMethod(prefix));
+    original = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.HandleDestroyedZDO), [typeof(ZDOID)]);
+    var postfix = AccessTools.Method(typeof(SupportAttach), nameof(HandleDestroyed));
+    harmony.Patch(original, postfix: new HarmonyMethod(postfix));
   }
 
-  static void Deserialize(ZDO __instance)
-  {
-    if (!IsHack(__instance))
-      return;
-    if (TryGetScaleBackup(__instance, out Vector3 backedVecScale))
-    {
-      if (NeedsVectorScaleRestore(__instance, backedVecScale, out var hasScalar))
-      {
-        __instance.Set(ZDOVars.s_scaleHash, backedVecScale);
-        __instance.RemoveFloat(ZDOVars.s_scaleScalarHash);
-        ReassignOwnerAfterScaleRestore(__instance);
-      }
-      return;
-    }
-
-    if (TryGetScaleBackup(__instance, out float backedScalarScale))
-    {
-      if (NeedsScalarScaleRestore(__instance, backedScalarScale, out var hasVec))
-      {
-        __instance.Set(ZDOVars.s_scaleScalarHash, backedScalarScale);
-        __instance.RemoveVec3(ZDOVars.s_scaleHash);
-        ReassignOwnerAfterScaleRestore(__instance);
-      }
-      return;
-    }
-    SetScaleBackup(__instance);
-  }
-
-  private static bool NeedsVectorScaleRestore(ZDO zdo, Vector3 backedVecScale, out bool hasScalar)
-  {
-    var currentVecScale = Vector3.zero;
-    var hasVec = ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vecs) && vecs.TryGetValue(ZDOVars.s_scaleHash, out currentVecScale);
-    hasScalar = ZDOExtraData.s_floats.TryGetValue(zdo.m_uid, out var floats) && floats.ContainsKey(ZDOVars.s_scaleScalarHash);
-    return !hasVec || currentVecScale != backedVecScale || hasScalar;
-  }
-
-  private static bool NeedsScalarScaleRestore(ZDO zdo, float backedScalarScale, out bool hasVec)
-  {
-    var currentScalarScale = 0f;
-    var hasScalar = ZDOExtraData.s_floats.TryGetValue(zdo.m_uid, out var floats) && floats.TryGetValue(ZDOVars.s_scaleScalarHash, out currentScalarScale);
-    hasVec = ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vecs) && vecs.ContainsKey(ZDOVars.s_scaleHash);
-    return !hasScalar || Math.Abs(currentScalarScale - backedScalarScale) > 0.0001f || hasVec;
-  }
-
-
-
-  public static void SetScaleBackup(ZDO zdo)
-  {
-    if (ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vecs) && vecs.TryGetValue(ZDOVars.s_scaleHash, out var vecScale))
-      zdo.Set(ScaleBackupVecHash, vecScale);
-    else if (ZDOExtraData.s_floats.TryGetValue(zdo.m_uid, out var floats) && floats.TryGetValue(ZDOVars.s_scaleScalarHash, out var scalarScale))
-      zdo.Set(ScaleBackupScalarHash, scalarScale);
-  }
-
-  public static bool TryGetScaleBackup(ZDO zdo, out Vector3 scale)
-  {
-    if (ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vecs) && vecs.TryGetValue(ScaleBackupVecHash, out scale))
-      return true;
-    scale = Vector3.zero;
-    return false;
-  }
-
-  public static bool TryGetScaleBackup(ZDO zdo, out float scale)
-  {
-    if (ZDOExtraData.s_floats.TryGetValue(zdo.m_uid, out var floats) && floats.TryGetValue(ScaleBackupScalarHash, out scale))
-      return true;
-    scale = 0f;
-    return false;
-  }
-
-  private static void ReassignOwnerAfterScaleRestore(ZDO zdo)
-  {
-    var previousOwner = zdo.GetOwner();
-    zdo.SetOwner(0L);
-    zdo.DataRevision += 100;
-    DelayedOwner.Add(0.1f, zdo, previousOwner);
-  }
   public static bool IsSynced(ZDO zdo) => zdo.GetConnectionType() == ZDOExtraData.ConnectionType.SyncTransform;
   // Clients can only have one player, so NPCs should stay unowned.
   public static bool IsPlayer(ZDO zdo) => zdo.GetPrefab() == PlayerHash;
+  public static bool IsNpc(ZDO zdo) => zdo.GetPrefab() == PlayerHash && zdo.Persistent;
   public static bool IsRealPlayer(ZDO zdo) => zdo.GetPrefab() == PlayerHash && !zdo.Persistent;
 
   public static readonly long HackOwner = 1;
@@ -128,7 +37,7 @@ public class Hack
   {
     if (!IsSynced(__instance))
     {
-      if (IsPlayer(__instance))
+      if (IsNpc(__instance))
         uid = HackOwner;
       return;
     }
@@ -144,7 +53,7 @@ public class Hack
       Unattach(__instance);
       Parents.Remove(parent);
       // Clients can only have one player, so NPCs should stay unowned.
-      if (IsPlayer(__instance))
+      if (IsNpc(__instance))
         uid = HackOwner;
     }
   }
@@ -217,7 +126,7 @@ public class Hack
     SyncAttachedWorldTransform(zdo, connectionZdoId);
     zdo.SetConnection(InvalidType, ZDOID.None);
     zdo.DataRevision += 100;
-    if (!IsPlayer(zdo) && zdo.GetOwner() == HackOwner)
+    if (!IsNpc(zdo) && zdo.GetOwner() == HackOwner)
     {
       zdo.SetOwnerInternal(DelayedOwner.FindNearestOwner(zdo));
       zdo.OwnerRevision += 1;
