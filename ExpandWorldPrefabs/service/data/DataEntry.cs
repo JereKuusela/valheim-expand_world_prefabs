@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using Service;
 using UnityEngine;
@@ -15,7 +14,6 @@ public class DataEntry
   }
   public DataEntry(string[] tkv)
   {
-    InjectDataByDefault = true;
     Load(tkv);
   }
   public DataEntry(DataData data)
@@ -30,7 +28,9 @@ public class DataEntry
   {
     Load(pkg);
   }
-  public bool InjectDataByDefault = false;
+  private static readonly int HasFieldsHash = ZdoHelper.Hash("HasFields");
+
+  public bool CanBeInjected = true;
   // Nulls add more code but should be more performant.
   public Dictionary<int, IStringValue>? Strings;
   public Dictionary<int, IFloatValue>? Floats;
@@ -81,6 +81,7 @@ public class DataEntry
     Persistent = null;
     Distant = null;
     Priority = null;
+    CanBeInjected = CheckCanBeInjected();
   }
   public void Load(DataEntry data)
   {
@@ -169,10 +170,12 @@ public class DataEntry
       Position = data.Position;
     if (data.Rotation != null)
       Rotation = data.Rotation;
+    CanBeInjected = data.CanBeInjected;
   }
   // Reusing the same object keeps references working.
   public DataEntry Reset(DataData data)
   {
+    CanBeInjected = true;
     Floats = null;
     Vecs = null;
     Quats = null;
@@ -344,6 +347,7 @@ public class DataEntry
       ContainerSize = Parse.Vector2Int(data.containerSize!);
     if (!string.IsNullOrWhiteSpace(data.itemAmount))
       ItemAmount = DataValue.Int(data.itemAmount!);
+    CanBeInjected = componentsToAdd.Count == 0;
     if (componentsToAdd.Count > 0)
     {
       Components ??= [];
@@ -410,6 +414,7 @@ public class DataEntry
     var value = tkv[2];
     if (key.Contains("."))
     {
+      CanBeInjected = false;
       var component = key.Split('.')[0];
       Ints ??= [];
       Ints[ZdoHelper.Hash("HasFields")] = DataValue.Simple(1);
@@ -523,6 +528,7 @@ public class DataEntry
       Distant = new SimpleBoolValue(pkg.ReadBool());
     if ((num & 2048) != 0)
       Priority = (ZDO.ObjectType)pkg.ReadByte();
+    CanBeInjected = CheckCanBeInjected();
   }
   public bool Match(Parameters pars, ZDO zdo)
   {
@@ -625,6 +631,8 @@ public class DataEntry
     }
     return (T)(object)value;
   }
+
+  private bool CheckCanBeInjected() => Ints != null && Ints.ContainsKey(HasFieldsHash);
 
   public void RollItems(Parameters pars, ZDO zdo)
   {

@@ -104,7 +104,7 @@ public class Manager
 
     var remove = info.Remove?.GetBool(parameters) == true;
     var data = DataHelper.Get(info.Data, parameters);
-    var inject = info.InjectData ?? data?.InjectDataByDefault ?? false;
+    var inject = info.InjectData ?? data?.CanBeInjected ?? false;
     var regenerate = info.Regenerate && !inject;
     var attach = info.Attach?.Get(parameters);
     if (attach.HasValue && !SupportAttach.CanSync(zdo))
