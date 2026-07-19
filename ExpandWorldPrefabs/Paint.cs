@@ -1,10 +1,11 @@
+using Data;
 using UnityEngine;
 
 namespace ExpandWorld.Prefab;
 
 public static class Paint
 {
-  private static readonly int TerrainCompilerHash = "_TerrainCompiler".GetStableHashCode();
+  private static readonly int TerrainCompilerHash = ZdoHelper.Hash("_TerrainCompiler");
   public static Color GetPaint(Vector3 pos, Heightmap.Biome biome)
   {
     WorldGenerator.instance.GetBiomeHeight(biome, pos.x, pos.z, out Color paint);

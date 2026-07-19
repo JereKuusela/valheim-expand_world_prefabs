@@ -31,7 +31,7 @@ public class SupportAttach
   // Cache to more quickly release attached objects if parent is destroyed.
   // This also happens over time thtough SetOwner.
   private static readonly HashSet<ZDOID> Parents = [];
-  private static readonly long PlayerHash = "Player".GetStableHashCode();
+  private static readonly int PlayerHash = ZdoHelper.Hash("Player");
   static void SetOwner(ZDO __instance, ref long uid)
   {
     if (!IsSynced(__instance))
@@ -75,9 +75,9 @@ public class SupportAttach
 
 
 
-  private static readonly int HasFields = "HasFields".GetStableHashCode();
-  private static readonly int HasFieldsZSyncTransform = "HasFieldsZSyncTransform".GetStableHashCode();
-  private static readonly int ZSyncTransformCharacterParentSync = "ZSyncTransform.m_characterParentSync".GetStableHashCode();
+  private static readonly int HasFields = ZdoHelper.Hash("HasFields");
+  private static readonly int HasFieldsZSyncTransform = ZdoHelper.Hash("HasFieldsZSyncTransform");
+  private static readonly int ZSyncTransformCharacterParentSync = ZdoHelper.Hash("ZSyncTransform.m_characterParentSync");
   public static void Attach(ZdoEntry zdoEntry, ZDOID target)
   {
     zdoEntry.ConnectionType = ZDOExtraData.ConnectionType.SyncTransform;

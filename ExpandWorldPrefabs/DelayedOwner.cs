@@ -34,8 +34,6 @@ public class DelayedOwner(float delay, ZDOID zdo, long owner)
     // Without this, "remove old loot" is instantly triggered.
     if (isItem)
       zdo.Set(ZDOVars.s_spawnTime, ZNet.instance.GetTime().Ticks);
-    if (shouldBackupScale)
-      RestoreScale.SetScaleBackup(zdo);
 
     if (delay)
       Add(0.1f, zdo, owner);

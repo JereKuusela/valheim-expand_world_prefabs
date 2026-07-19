@@ -52,7 +52,7 @@ public class PeerManager
     Manager.Handle(ActionType.State, ["leave"], zdo);
   }
 
-  private static readonly int PlayerHash = "Player".GetStableHashCode();
+  private static readonly int PlayerHash = ZdoHelper.Hash("Player");
   public static void HandlePlayerCreatedState(ZDO zdo)
   {
     if (zdo.m_prefab != PlayerHash) return;

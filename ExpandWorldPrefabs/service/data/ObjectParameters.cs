@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using ExpandWorld.Prefab;
@@ -49,6 +50,7 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
       "owner" => zdo.GetOwner().ToString(),
       "connected" => GetConnected(),
       "biome" => WorldGenerator.instance.GetBiome(zdo.m_position).ToString(),
+      "joints" => GetJoints(),
       _ => null,
     };
 
@@ -186,6 +188,26 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
     }
     return count;
   }
+
+  private string GetJoints()
+  {
+    var prefab = ZNetScene.instance.GetPrefab(zdo.m_prefab);
+    if (prefab == null) return "";
+    Queue<Transform> queue = new();
+    queue.Enqueue(prefab.transform);
+    List<string> jointNames = [];
+    while (queue.Count > 0)
+    {
+      var current = queue.Dequeue();
+      foreach (Transform child in current)
+      {
+        queue.Enqueue(child);
+        jointNames.Add(child.name);
+      }
+    }
+    return string.Join(", ", jointNames);
+  }
+
   private string GetName(ItemDrop.ItemData? item) => item?.m_dropPrefab?.name ?? item?.m_shared.m_name ?? "";
   private string? GetNameAt(int x, int y)
   {

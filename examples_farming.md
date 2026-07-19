@@ -54,8 +54,6 @@ This mod can be used to enhance farming by increasing yield or adding new rare d
   type: create
   chance: 0.5
   data: int, Pickable.m_amount, 2
-# Inject must be false to refresh the field.
-  injectData: false
   objects:
   - prefab: windmill
     maxDistance: 50

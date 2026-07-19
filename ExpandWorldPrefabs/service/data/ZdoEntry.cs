@@ -37,6 +37,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     var zdo = SpawnZDO(Prefab, Position, Rotation);
     if (zdo == null) return null;
     Write(zdo);
+    RestoreScale.Check(zdo);
     DelayedOwner.Check(zdo, Owner);
     return zdo;
   }
@@ -47,11 +48,12 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
   {
     var zdo = SpawnZDO(prefab, position, rotation);
     if (zdo == null) return null;
+    RestoreScale.Check(zdo);
     DelayedOwner.Check(zdo, owner);
     return zdo;
   }
 
-  private static readonly int PlayerHash = "Player".GetStableHashCode();
+  private static readonly int PlayerHash = ZdoHelper.Hash("Player");
   private static ZDO? SpawnZDO(int prefab, Vector3 position, Vector3 rotation)
   {
     if (prefab == 0) return null;

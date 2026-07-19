@@ -1,3 +1,23 @@
+- v1.54
+  - BREAKING CHANGE: Removes basic arithmetic support from data entries. Use parameters instead.
+  - Adds support for changing scale of objects with ZSyncTransform component.
+  - Adds experimental support for persisting EWP spawned players (this has caused some issues, not fully figured out yet).
+  - Adds new field `position` to pokes to override the poke origin position with absolute coordinates.
+  - Adds new field `connect` to create a virtual connection between two objects (can be used to poke other objects very efficiently).
+  - Adds new field `connected` to pokes to allow poking virtually connected child objects.
+  - Adds new field `attach` to create a physical connection between two objects (child object follows the parent object).
+  - Adds new parameters `connected` that returns the id of the parent object.
+  - Adds new angle parameters `rad`, `rad2deg`, `deg2rad`, `deg2vec`, `vec2deg`.
+  - Adds vector support for math parameters like `add`, `sub`, `mul` and `div`.
+  - Adds new vector parameters `angle`, `distance`, `dot`, `cross`, `normalize`, `magnitude`, `sqrmagnitude`, `project`, `reflect`, `lerp`, `vecx`, `vecy` and `vecz`.
+  - Adds new iteration parameters `iter` and `iter2`.
+  - Adds support for quaternion format (x, y, z, w) in data entries for quaternion fields.
+  - Changes field `injectData` to be determined automatically based on the data changes.
+  - Fixes vector and quaternion outputs being wrong in some cases (now always comma separated).
+  - Fixes invalid `prefab` in pokes causing all objects to be poked (now doesn't poke anything).
+  - Fixes field `owner` not working without using field `data`.
+  - Fixes RPC ChatMessage not working.
+
 - v1.53
   - BREAKING CHANGE: Removes basic arithmetic support from commands. Use parameters instead.
   - Fixes state `leave` not working.

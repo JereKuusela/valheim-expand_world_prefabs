@@ -1,4 +1,5 @@
 using System;
+using Data;
 using HarmonyLib;
 using UnityEngine;
 
@@ -7,11 +8,37 @@ namespace ExpandWorld.Prefab;
 
 public class RestoreScale
 {
-  private static readonly int ScaleBackupVecHash = "scaleBackup".GetStableHashCode();
-  private static readonly int ScaleBackupScalarHash = "scaleScalarBackup".GetStableHashCode();
-  private static readonly int SyncScaleHash = "ZSyncTransform.m_syncScale".GetStableHashCode();
+  private static readonly int ScaleBackupVecHash = ZdoHelper.Hash("scaleBackup");
+  private static readonly int ScaleBackupScalarHash = ZdoHelper.Hash("scaleScalarBackup");
+  private static readonly int HasFieldsHash = ZdoHelper.Hash("HasFields");
+  private static readonly int HasFieldsZSyncTransformHash = ZdoHelper.Hash("HasFieldsZSyncTransform");
+  private static readonly int SyncScaleHash = ZdoHelper.Hash("ZSyncTransform.m_syncScale");
   public static bool ShouldRestoreScale(ZDO zdo) => zdo.GetBool(SyncScaleHash);
 
+  // Quality of life: Automatically applies m_syncScale for scaled objects that need it.
+  public static void Check(ZDO zdo)
+  {
+    if (!Settings.RestoreScale) return;
+    if (SupportsInitialScaleSync(zdo)) return;
+
+    if (ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vecs) && vecs.TryGetValue(ZDOVars.s_scaleHash, out var vecScale))
+    {
+      SetSyncScale(zdo);
+      zdo.Set(ScaleBackupVecHash, vecScale);
+    }
+    else if (ZDOExtraData.s_floats.TryGetValue(zdo.m_uid, out var floats) && floats.TryGetValue(ZDOVars.s_scaleScalarHash, out var scalarScale))
+    {
+      SetSyncScale(zdo);
+      zdo.Set(ScaleBackupScalarHash, scalarScale);
+    }
+  }
+  private static void SetSyncScale(ZDO zdo)
+  {
+    zdo.Set(HasFieldsHash, true);
+    zdo.Set(HasFieldsZSyncTransformHash, true);
+    zdo.Set(SyncScaleHash, true);
+
+  }
   public static void Patch(Harmony harmony)
   {
     var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize));
@@ -25,7 +52,7 @@ public class RestoreScale
       return;
     if (TryGetScaleBackup(__instance, out Vector3 backedVecScale))
     {
-      if (NeedsVectorScaleRestore(__instance, backedVecScale, out var hasScalar))
+      if (NeedsVectorScaleRestore(__instance, backedVecScale))
       {
         __instance.Set(ZDOVars.s_scaleHash, backedVecScale);
         __instance.RemoveFloat(ZDOVars.s_scaleScalarHash);
@@ -36,7 +63,7 @@ public class RestoreScale
 
     if (TryGetScaleBackup(__instance, out float backedScalarScale))
     {
-      if (NeedsScalarScaleRestore(__instance, backedScalarScale, out var hasVec))
+      if (NeedsScalarScaleRestore(__instance, backedScalarScale))
       {
         __instance.Set(ZDOVars.s_scaleScalarHash, backedScalarScale);
         __instance.RemoveVec3(ZDOVars.s_scaleHash);
@@ -44,28 +71,29 @@ public class RestoreScale
       }
       return;
     }
+    // Fail safe if backup info missing. This should never happen, but just in case.
     SetScaleBackup(__instance);
   }
 
-  private static bool NeedsVectorScaleRestore(ZDO zdo, Vector3 backedVecScale, out bool hasScalar)
+  private static bool NeedsVectorScaleRestore(ZDO zdo, Vector3 backedVecScale)
   {
     var currentVecScale = Vector3.zero;
     var hasVec = ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vecs) && vecs.TryGetValue(ZDOVars.s_scaleHash, out currentVecScale);
-    hasScalar = ZDOExtraData.s_floats.TryGetValue(zdo.m_uid, out var floats) && floats.ContainsKey(ZDOVars.s_scaleScalarHash);
+    var hasScalar = ZDOExtraData.s_floats.TryGetValue(zdo.m_uid, out var floats) && floats.ContainsKey(ZDOVars.s_scaleScalarHash);
     return !hasVec || currentVecScale != backedVecScale || hasScalar;
   }
 
-  private static bool NeedsScalarScaleRestore(ZDO zdo, float backedScalarScale, out bool hasVec)
+  private static bool NeedsScalarScaleRestore(ZDO zdo, float backedScalarScale)
   {
     var currentScalarScale = 0f;
     var hasScalar = ZDOExtraData.s_floats.TryGetValue(zdo.m_uid, out var floats) && floats.TryGetValue(ZDOVars.s_scaleScalarHash, out currentScalarScale);
-    hasVec = ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vecs) && vecs.ContainsKey(ZDOVars.s_scaleHash);
+    var hasVec = ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vecs) && vecs.ContainsKey(ZDOVars.s_scaleHash);
     return !hasScalar || Math.Abs(currentScalarScale - backedScalarScale) > 0.0001f || hasVec;
   }
 
 
 
-  public static void SetScaleBackup(ZDO zdo)
+  private static void SetScaleBackup(ZDO zdo)
   {
     if (ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vecs) && vecs.TryGetValue(ZDOVars.s_scaleHash, out var vecScale))
       zdo.Set(ScaleBackupVecHash, vecScale);
@@ -87,6 +115,12 @@ public class RestoreScale
       return true;
     scale = 0f;
     return false;
+  }
+
+  private static bool SupportsInitialScaleSync(ZDO zdo)
+  {
+    var prefab = ZNetScene.instance.GetPrefab(zdo.m_prefab);
+    return prefab && prefab.GetComponent<ZNetView>().m_syncInitialScale;
   }
 
   private static void ReassignOwnerAfterScaleRestore(ZDO zdo)
