@@ -294,16 +294,10 @@ public class Loading
   }
 }
 
+[HarmonyPatch(typeof(ZoneSystem), nameof(ZoneSystem.Start)), HarmonyPriority(Priority.VeryLow)]
 public class InitializeContent
 {
-  public static void Patch(Harmony harmony)
-  {
-    var original = AccessTools.Method(typeof(ZoneSystem), nameof(ZoneSystem.Start));
-    var postfix = AccessTools.Method(typeof(InitializeContent), nameof(Postfix));
-    harmony.Patch(original, postfix: new HarmonyMethod(postfix) { priority = Priority.VeryLow });
-  }
-
-  private static void Postfix()
+  static void Postfix()
   {
     if (Helper.IsServer())
     {
