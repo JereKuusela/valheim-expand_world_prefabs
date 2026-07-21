@@ -28,7 +28,7 @@ public class DataStorage
     Log.Info($"Reloaded saved data ({Database.Count} entries).");
   }
   private static readonly Stopwatch LastSaveStopwatch = Stopwatch.StartNew();
-  private static readonly string SavedDataFile = Path.Combine(Yaml.BaseDirectory, "ewp_data.yaml");
+  private static string SavedDataFile => Path.Combine(Yaml.BaseDirectory, "ewp_data.yaml");
   private static bool UnsavedChanges = false;
   public static void SaveSavedData()
   {
@@ -120,6 +120,41 @@ public class DataStorage
     OnSet?.Invoke(key, value);
   }
 
+  private static bool ValueMatches(string dbValue, string conditionValue)
+  {
+    if (conditionValue == "")
+      return true;
+    if (!conditionValue.Contains(';'))
+      return dbValue == conditionValue;
+
+    var split = conditionValue.Split(';');
+    if (split.Length < 2)
+      return false;
+
+    var min = Parse.LongNull(split[0]);
+    var max = Parse.LongNull(split[1]);
+    if (min == null || max == null)
+      return false;
+    if (min.Value > max.Value)
+      return false;
+
+    var step = 1L;
+    if (split.Length >= 3 && split[2] != "")
+    {
+      var parsedStep = Parse.LongNull(split[2]);
+      if (parsedStep == null || parsedStep.Value <= 0)
+        return false;
+      step = parsedStep.Value;
+    }
+
+    var value = Parse.LongNull(dbValue);
+    if (value == null)
+      return false;
+    if (value.Value < min.Value || value.Value > max.Value)
+      return false;
+    return (value.Value - min.Value) % step == 0;
+  }
+
   public static bool HasAnyKey(List<string> keys, Parameters pars)
   {
     foreach (var dataKey in keys)
@@ -127,8 +162,6 @@ public class DataStorage
       var kvp = Parse.Kvp(dataKey.Contains("<") ? pars.Replace(dataKey) : dataKey, ' ');
       var key = kvp.Key.ToLowerInvariant();
       if (key == "") continue;
-      // Tricky, how to deal with strings/numbers since value can be both?
-      var value = kvp.Value == "" ? null : DataValue.Int(kvp.Value);
       var wildIndex = key.IndexOf('*');
       if (wildIndex >= 0)
       {
@@ -136,12 +169,12 @@ public class DataStorage
         if (keysMatched.Count == 0) return false;
         foreach (var k in keysMatched)
         {
-          if (Database.TryGetValue(k, out var v) && (value == null || v == kvp.Value)) return true;
+          if (Database.TryGetValue(k, out var v) && ValueMatches(v, kvp.Value)) return true;
         }
       }
       else
       {
-        if (Database.TryGetValue(key, out var v) && (value == null || v == kvp.Value)) return true;
+        if (Database.TryGetValue(key, out var v) && ValueMatches(v, kvp.Value)) return true;
       }
     }
     return false;
@@ -158,12 +191,12 @@ public class DataStorage
         if (keysMatched.Count == 0) return false;
         foreach (var k in keysMatched)
         {
-          if (!Database.TryGetValue(k, out var value) || (kvp.Value != "" && value != kvp.Value)) return false;
+          if (!Database.TryGetValue(k, out var value) || !ValueMatches(value, kvp.Value)) return false;
         }
       }
       else
       {
-        if (!Database.TryGetValue(kvp.Key.ToLowerInvariant(), out var value) || (kvp.Value != "" && value != kvp.Value)) return false;
+        if (!Database.TryGetValue(kvp.Key.ToLowerInvariant(), out var value) || !ValueMatches(value, kvp.Value)) return false;
       }
     }
     return true;

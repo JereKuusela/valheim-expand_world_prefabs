@@ -54,9 +54,9 @@ public class DataLoading
     var prev = Data;
     Data = [];
     ValueGroups.Clear();
-    var files = Directory.GetFiles(GamePath, "*.yaml")
-      .Concat(Directory.GetFiles(ProfilePath, "*.yaml"))
-      .Concat(Directory.GetFiles(Yaml.BaseDirectory, Pattern))
+    var files = Directory.GetFiles(GamePath, "*.yaml", SearchOption.AllDirectories)
+      .Concat(Directory.GetFiles(ProfilePath, "*.yaml", SearchOption.AllDirectories))
+      .Concat(Directory.GetFiles(Yaml.BaseDirectory, Pattern, SearchOption.AllDirectories))
       .Select(Path.GetFullPath).Distinct().ToList();
     var data = Yaml.Read<DataData>(files, false);
     foreach (var d in data)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ExpandWorld.Prefab;
 using Service;
 using UnityEngine;
 
@@ -66,6 +67,48 @@ public class DataEntry
     Vecs = ZDOExtraData.s_vec3.ContainsKey(id) ? ZDOExtraData.s_vec3[id].ToDictionary(kvp => kvp.Key, kvp => DataValue.Simple(kvp.Value)) : null;
     Quats = ZDOExtraData.s_quats.ContainsKey(id) ? ZDOExtraData.s_quats[id].ToDictionary(kvp => kvp.Key, kvp => DataValue.Simple(kvp.Value)) : null;
     ByteArrays = ZDOExtraData.s_byteArrays.ContainsKey(id) ? ZDOExtraData.s_byteArrays[id].ToDictionary(kvp => kvp.Key, kvp => DataValue.Simple(kvp.Value)) : null;
+    if (ServerSideData.TryGetFloats(id, out var serverFloats))
+    {
+      Floats ??= [];
+      foreach (var pair in serverFloats)
+        Floats[pair.Key] = DataValue.Simple(pair.Value);
+    }
+    if (ServerSideData.TryGetInts(id, out var serverInts))
+    {
+      Ints ??= [];
+      foreach (var pair in serverInts)
+        Ints[pair.Key] = DataValue.Simple(pair.Value);
+    }
+    if (ServerSideData.TryGetLongs(id, out var serverLongs))
+    {
+      Longs ??= [];
+      foreach (var pair in serverLongs)
+        Longs[pair.Key] = DataValue.Simple(pair.Value);
+    }
+    if (ServerSideData.TryGetStrings(id, out var serverStrings))
+    {
+      Strings ??= [];
+      foreach (var pair in serverStrings)
+        Strings[pair.Key] = DataValue.Simple(pair.Value);
+    }
+    if (ServerSideData.TryGetVecs(id, out var serverVecs))
+    {
+      Vecs ??= [];
+      foreach (var pair in serverVecs)
+        Vecs[pair.Key] = DataValue.Simple(pair.Value);
+    }
+    if (ServerSideData.TryGetQuaternions(id, out var serverQuats))
+    {
+      Quats ??= [];
+      foreach (var pair in serverQuats)
+        Quats[pair.Key] = DataValue.Simple(pair.Value);
+    }
+    if (ServerSideData.TryGetBytes(id, out var serverBytes))
+    {
+      ByteArrays ??= [];
+      foreach (var pair in serverBytes)
+        ByteArrays[pair.Key] = DataValue.Simple(pair.Value);
+    }
     if (ZDOExtraData.s_connectionsHashData.TryGetValue(id, out var conn))
     {
       ConnectionType = conn.m_type;

@@ -14,12 +14,19 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
 {
   // Nulls add more code but should be more performant.
   public Dictionary<int, string>? Strings;
+  public Dictionary<int, string>? ServerStrings;
   public Dictionary<int, float>? Floats;
+  public Dictionary<int, float>? ServerFloats;
   public Dictionary<int, int>? Ints;
+  public Dictionary<int, int>? ServerInts;
   public Dictionary<int, long>? Longs;
+  public Dictionary<int, long>? ServerLongs;
   public Dictionary<int, Vector3>? Vecs;
+  public Dictionary<int, Vector3>? ServerVecs;
   public Dictionary<int, Quaternion>? Quats;
+  public Dictionary<int, Quaternion>? ServerQuats;
   public Dictionary<int, byte[]>? ByteArrays;
+  public Dictionary<int, byte[]>? ServerByteArrays;
   public ZDOExtraData.ConnectionType? ConnectionType;
   public int ConnectionHash = 0;
   public ZDOID? OriginalId;
@@ -84,102 +91,92 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     data.RollItems(pars, zdo);
     if (data.Floats?.Count > 0)
     {
-      Floats ??= [];
       foreach (var pair in data.Floats)
       {
         var value = pair.Value.Get(pars);
         if (value.HasValue)
-          Floats[pair.Key] = value.Value;
+          AddFloat(pair.Key, value.Value);
       }
     }
     if (data.Ints?.Count > 0)
     {
-      Ints ??= [];
       foreach (var pair in data.Ints)
       {
         var value = pair.Value.Get(pars);
         if (value.HasValue)
-          Ints[pair.Key] = value.Value;
+          AddInt(pair.Key, value.Value);
       }
     }
     if (data.Longs?.Count > 0)
     {
-      Longs ??= [];
       foreach (var pair in data.Longs)
       {
         var value = pair.Value.Get(pars);
         if (value.HasValue)
-          Longs[pair.Key] = value.Value;
+          AddLong(pair.Key, value.Value);
       }
     }
     if (data.Strings?.Count > 0)
     {
-      Strings ??= [];
       foreach (var pair in data.Strings)
       {
         var value = pair.Value.Get(pars);
         if (value != null)
-          Strings[pair.Key] = value;
+          AddString(pair.Key, value);
       }
     }
     if (data.Vecs?.Count > 0)
     {
-      Vecs ??= [];
       foreach (var pair in data.Vecs)
       {
         var value = pair.Value.Get(pars);
         if (value.HasValue)
-          Vecs[pair.Key] = value.Value;
+          AddVec(pair.Key, value.Value);
       }
     }
     if (data.Quats?.Count > 0)
     {
-      Quats ??= [];
       foreach (var pair in data.Quats)
       {
         var value = pair.Value.Get(pars);
         if (value.HasValue)
-          Quats[pair.Key] = value.Value;
+          AddQuat(pair.Key, value.Value);
       }
     }
     if (data.ByteArrays?.Count > 0)
     {
-      ByteArrays ??= [];
       foreach (var pair in data.ByteArrays)
       {
         var value = pair.Value.Get(pars);
         if (value != null)
-          ByteArrays[pair.Key] = value;
+          AddByteArray(pair.Key, value);
       }
     }
     if (data.Bools?.Count > 0)
     {
-      Ints ??= [];
       foreach (var pair in data.Bools)
       {
         var value = pair.Value.GetInt(pars);
         if (value.HasValue)
-          Ints[pair.Key] = value.Value;
+          AddInt(pair.Key, value.Value);
       }
     }
     if (data.Hashes?.Count > 0)
     {
-      Ints ??= [];
       foreach (var pair in data.Hashes)
       {
         var value = pair.Value.Get(pars);
         if (value.HasValue)
-          Ints[pair.Key] = value.Value;
+          AddInt(pair.Key, value.Value);
       }
     }
     if (data.Components != null)
     {
-      Ints ??= [];
       foreach (var pair in data.Components)
       {
         var value = pair.Value.Get(pars);
         if (value.HasValue)
-          Ints[pair.Key] = value.Value;
+          AddInt(pair.Key, value.Value);
       }
     }
     ConnectionHash = data.ConnectionHash;
@@ -251,6 +248,129 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
       zdo.Type = Type.Value;
     HandleConnection(zdo);
     HandleHashConnection(zdo);
+    WriteServer(zdo);
+  }
+
+  public void WriteServer(ZDO zdo)
+  {
+    if (ServerFloats != null)
+      foreach (var pair in ServerFloats)
+        ServerSideData.SetFloat(zdo, pair.Key, pair.Value);
+    if (ServerInts != null)
+      foreach (var pair in ServerInts)
+        ServerSideData.SetInt(zdo, pair.Key, pair.Value);
+    if (ServerLongs != null)
+      foreach (var pair in ServerLongs)
+        ServerSideData.SetLong(zdo, pair.Key, pair.Value);
+    if (ServerStrings != null)
+      foreach (var pair in ServerStrings)
+        ServerSideData.SetString(zdo, pair.Key, pair.Value);
+    if (ServerVecs != null)
+      foreach (var pair in ServerVecs)
+        ServerSideData.SetVec(zdo, pair.Key, pair.Value);
+    if (ServerQuats != null)
+      foreach (var pair in ServerQuats)
+        ServerSideData.SetQuaternion(zdo, pair.Key, pair.Value);
+    if (ServerByteArrays != null)
+      foreach (var pair in ServerByteArrays)
+        ServerSideData.SetBytes(zdo, pair.Key, pair.Value);
+  }
+
+  public bool HasSyncedChanges()
+  {
+    if (Floats?.Count > 0) return true;
+    if (Ints?.Count > 0) return true;
+    if (Longs?.Count > 0) return true;
+    if (Strings?.Count > 0) return true;
+    if (Vecs?.Count > 0) return true;
+    if (Quats?.Count > 0) return true;
+    if (ByteArrays?.Count > 0) return true;
+    if (ConnectionType.HasValue) return true;
+    if (ConnectionHash != 0) return true;
+    if (OriginalId.HasValue) return true;
+    if (TargetConnectionId.HasValue) return true;
+    if (Persistent.HasValue) return true;
+    if (Distant.HasValue) return true;
+    if (Type.HasValue) return true;
+    return false;
+  }
+
+  private void AddString(int key, string value)
+  {
+    if (ServerSideData.ShouldUse(key))
+    {
+      ServerStrings ??= [];
+      ServerStrings[key] = value;
+      return;
+    }
+    Strings ??= [];
+    Strings[key] = value;
+  }
+  private void AddFloat(int key, float value)
+  {
+    if (ServerSideData.ShouldUse(key))
+    {
+      ServerFloats ??= [];
+      ServerFloats[key] = value;
+      return;
+    }
+    Floats ??= [];
+    Floats[key] = value;
+  }
+  private void AddInt(int key, int value)
+  {
+    if (ServerSideData.ShouldUse(key))
+    {
+      ServerInts ??= [];
+      ServerInts[key] = value;
+      return;
+    }
+    Ints ??= [];
+    Ints[key] = value;
+  }
+  private void AddLong(int key, long value)
+  {
+    if (ServerSideData.ShouldUse(key))
+    {
+      ServerLongs ??= [];
+      ServerLongs[key] = value;
+      return;
+    }
+    Longs ??= [];
+    Longs[key] = value;
+  }
+  private void AddVec(int key, Vector3 value)
+  {
+    if (ServerSideData.ShouldUse(key))
+    {
+      ServerVecs ??= [];
+      ServerVecs[key] = value;
+      return;
+    }
+    Vecs ??= [];
+    Vecs[key] = value;
+  }
+  private void AddQuat(int key, Quaternion value)
+  {
+    if (ServerSideData.ShouldUse(key))
+    {
+      ServerQuats ??= [];
+      ServerQuats[key] = value;
+      return;
+    }
+    Quats ??= [];
+    Quats[key] = value;
+  }
+  private void AddByteArray(int key, byte[] value)
+  {
+    if (ServerSideData.ShouldUse(key))
+    {
+      ServerByteArrays ??= [];
+      ServerByteArrays[key] = value;
+      return;
+    }
+    ByteArrays ??= [];
+    ByteArrays[key] = value;
   }
 
   private void HandleConnection(ZDO ownZdo)

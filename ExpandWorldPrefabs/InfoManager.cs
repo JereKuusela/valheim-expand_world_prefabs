@@ -96,8 +96,10 @@ public class InfoManager
     var canPatch = !Helper.IsClient();
     var shouldRestoreScale = canPatch && Settings.RestoreScale;
     var shouldSupportAttach = canPatch && Settings.SupportAttach;
+    var shouldServerSideData = canPatch && Settings.ServerSideData;
     RestoreScale.Patch(EWP.Harmony, shouldRestoreScale);
     SupportAttach.Patch(EWP.Harmony, shouldSupportAttach);
+    ServerSideData.Patch(EWP.Harmony, shouldServerSideData);
 
     var requiredStates = GetRequiredStates();
     var shouldHandleCreated = canPatch && (CreateDatas.Exists || requiredStates.Contains("join") || requiredStates.Contains("respawn"));

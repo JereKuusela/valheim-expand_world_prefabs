@@ -128,11 +128,16 @@ public class Manager
         HandleChanged.IgnoreZdo = zdo.m_uid;
       var removeItems = info.RemoveItems;
       var addItems = info.AddItems;
+      var hasSyncedDataChanges = false;
       if (data != null)
       {
         ZdoEntry entry = new(zdo);
         entry.Load(data, parameters);
-        entry.Write(zdo);
+        hasSyncedDataChanges = entry.HasSyncedChanges();
+        if (hasSyncedDataChanges)
+          entry.Write(zdo);
+        else
+          entry.WriteServer(zdo);
       }
       removeItems?.RemoveItems(parameters, zdo);
       addItems?.AddItems(parameters, zdo);
@@ -145,7 +150,7 @@ public class Manager
       if (connect.HasValue)
         SupportAttach.Connect(zdo, connect.Value);
 
-      if (data != null || removeItems != null || addItems != null || attach.HasValue)
+      if (hasSyncedDataChanges || removeItems != null || addItems != null || attach.HasValue || connect.HasValue || owner.HasValue)
         zdo.DataRevision += 100;
       HandleChanged.IgnoreZdo = ZDOID.None;
     }

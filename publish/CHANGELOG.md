@@ -1,4 +1,7 @@
 - v1.55
+  - Adds support for server side only data. Keys starting with `ewp_` are stored as server-only instead of normal ZDO fields.
+  - Adds range support for `keys` and `bannedKeys`.
+  - Fixes subfolders not working for data files.
   - Optimizes script file reloading to only patch/unpatch game code when needed, instead of always patching/unpatching on every reload.
 
 - v1.54

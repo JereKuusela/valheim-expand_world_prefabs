@@ -130,6 +130,46 @@ Infinity Hammer mod has a menu that shows objects by component, which allows eas
 
 Infinity Hammer mod also supports scaling these objects when enabled from its settings.
 
+## Server side data
+
+This can be disabled by setting "Server side data" to false in the settings.
+
+Data keys that start with `ewp_` are stored as server-only instead of normal ZDO fields. This reduces network traffic and can even completely skip server force sending data to clients (which can briefly freeze creatures).
+
+On world save, the server side data is packed into a `_ewp_serverdata` byte array. The byte array is read back on load and removed from normal ZDO byte array fields, so clients do not receive these values.
+
+This is intended for internal rule state. Client-visible behavior should still use normal fields.
+
+```yaml
+# Stores internal server-only value.
+- prefab: Player
+  type: say, !create
+  spawn:
+  - prefab: Wolf
+    data: int, ewp_stuff, 1
+
+- prefab: Player
+  type: say, !update
+  poke:
+  - prefab: Wolf
+    maxDistance: 50
+    pars: update
+
+# Reads and updates value.
+- prefab: Wolf
+  type: poke, update
+  data: int, ewp_stuff, <add_<int_ewp_stuff>_1>
+  filter: int, ewp_stuff, 1;4
+  command: say Update from <int_ewp_stuff> to <add_<int_ewp_stuff>_1>
+
+# Removed on fifth update.
+- prefab: Wolf
+  type: poke, update
+  remove: true
+  fallback: true
+  command: say Final update!
+```
+
 ## Persisting spawned players
 
 This can be enabled by setting "Persist spawned players (experimental)" to true in the settings. It is disabled by default because some issues have been resolved (possibly conflict with another mod).
