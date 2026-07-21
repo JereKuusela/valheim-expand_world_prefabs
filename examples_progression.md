@@ -62,7 +62,6 @@ This can be used to keep lower level areas challenging and give more loot.
 ```yaml
 - prefab: Greydwarf
   type: create
-  data: two_star
   globalKeys: defeated_bonemass
   data: int, level, 3
 ```
