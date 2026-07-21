@@ -130,8 +130,12 @@ All valid entries will be executed in unspecified order. Weight system can be us
   - The values are converted to lower case because the game always uses lower case.
 - keys (P): List of saved custom data that must be set.
   - The values are converted to lower case to match global keys behavior.
+  - Format is `key1 value1, key2 value2, ...`.
+  - Value can be a range `min;max;step` for integers (step defaults 1 if not given).
 - bannedKeys (P): List of saved custom data that must not be set.
   - The values are converted to lower case to match global keys behavior.
+  - Format is `key1 value1, key2 value2, ...`.
+  - Value can be a range `min;max;step` for integers (step defaults 1 if not given).
 - locations: List of location ids. At least one must be nearby.
 - locationDistance (default: `0` meters): Search distance for nearby locations.
   - If 0, uses the location exterior radius.
