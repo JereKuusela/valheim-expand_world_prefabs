@@ -64,14 +64,7 @@ This can be used to keep lower level areas challenging and give more loot.
   type: create
   data: two_star
   globalKeys: defeated_bonemass
-```
-
-`expand_data.yaml`: Changes level to 3 (2 stars).
-
-```yaml
-- name: two_star
-  ints:
-  - level, 3
+  data: int, level, 3
 ```
 
 ## Set a custom key when defeating a special enemy
