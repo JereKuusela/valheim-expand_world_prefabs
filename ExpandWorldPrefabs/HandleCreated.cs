@@ -7,8 +7,18 @@ namespace ExpandWorld.Prefab;
 
 public class HandleCreated
 {
-  public static void Patch(Harmony harmony)
+  private static bool IsPatched = false;
+  public static void Patch(Harmony harmony, bool shouldPatch)
   {
+    if (shouldPatch && !IsPatched)
+      DoPatch(harmony);
+    if (!shouldPatch && IsPatched)
+      DoUnpatch(harmony);
+  }
+
+  private static void DoPatch(Harmony harmony)
+  {
+    IsPatched = true;
     var method = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.CreateNewZDO), [typeof(Vector3), typeof(int)]);
     var patch = AccessTools.Method(typeof(HandleCreated), nameof(HandleOwnCreated));
     harmony.Patch(method, postfix: new HarmonyMethod(patch));
@@ -16,6 +26,18 @@ public class HandleCreated
     patch = AccessTools.Method(typeof(HandleCreated), nameof(RPC_ZDOData));
     harmony.Patch(method, transpiler: new HarmonyMethod(patch));
   }
+
+  private static void DoUnpatch(Harmony harmony)
+  {
+    IsPatched = false;
+    var method = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.CreateNewZDO), [typeof(Vector3), typeof(int)]);
+    var patch = AccessTools.Method(typeof(HandleCreated), nameof(HandleOwnCreated));
+    harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.RPC_ZDOData));
+    patch = AccessTools.Method(typeof(HandleCreated), nameof(RPC_ZDOData));
+    harmony.Unpatch(method, patch);
+  }
+
   // Single player requires manual delay so that the initial data is loaded.
   // This is also used for server to keep the ZDO removing logic consistent.
   private static readonly List<ZDOID> CreatedZDOs = [];

@@ -7,16 +7,39 @@ using Steamworks;
 using UnityEngine;
 
 namespace Service;
+
 public class ServerClient
 {
-  public static void Patch(Harmony harmony)
+  private static bool IsPatched = false;
+
+  public static void Patch(Harmony harmony, bool shouldPatch)
   {
+    if (shouldPatch && !IsPatched)
+      DoPatch(harmony);
+    if (!shouldPatch && IsPatched)
+      DoUnpatch(harmony);
+  }
+
+  private static void DoPatch(Harmony harmony)
+  {
+    IsPatched = true;
     var method = AccessTools.Method(typeof(ZNet), nameof(ZNet.TryGetPlayerByPlatformUserID));
     var patch = AccessTools.Method(typeof(ServerClient), nameof(RecognizeServerClient));
     harmony.Patch(method, postfix: new HarmonyMethod(patch));
     method = AccessTools.Method(typeof(ZNet), nameof(ZNet.SendPlayerList));
     patch = AccessTools.Method(typeof(ServerClient), nameof(AddServerClient));
     harmony.Patch(method, transpiler: new HarmonyMethod(patch));
+  }
+
+  private static void DoUnpatch(Harmony harmony)
+  {
+    IsPatched = false;
+    var method = AccessTools.Method(typeof(ZNet), nameof(ZNet.TryGetPlayerByPlatformUserID));
+    var patch = AccessTools.Method(typeof(ServerClient), nameof(RecognizeServerClient));
+    harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZNet), nameof(ZNet.SendPlayerList));
+    patch = AccessTools.Method(typeof(ServerClient), nameof(AddServerClient));
+    harmony.Unpatch(method, patch);
   }
   // Server client is only sent to clients, so this is needed for the server to recognize it.
   static bool RecognizeServerClient(bool result, PlatformUserID platformUserID, ref ZNet.PlayerInfo playerInfo)

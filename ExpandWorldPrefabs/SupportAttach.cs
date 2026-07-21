@@ -10,14 +10,36 @@ namespace ExpandWorld.Prefab;
 
 public class SupportAttach
 {
-  public static void Patch(Harmony harmony)
+  private static bool IsPatched = false;
+
+  public static void Patch(Harmony harmony, bool shouldPatch)
   {
+    if (shouldPatch && !IsPatched)
+      DoPatch(harmony);
+    if (!shouldPatch && IsPatched)
+      DoUnpatch(harmony);
+  }
+
+  private static void DoPatch(Harmony harmony)
+  {
+    IsPatched = true;
     var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.SetOwner));
     var prefix = AccessTools.Method(typeof(SupportAttach), nameof(SetOwner));
     harmony.Patch(original, prefix: new HarmonyMethod(prefix));
     original = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.HandleDestroyedZDO), [typeof(ZDOID)]);
     var postfix = AccessTools.Method(typeof(SupportAttach), nameof(HandleDestroyed));
     harmony.Patch(original, postfix: new HarmonyMethod(postfix));
+  }
+
+  private static void DoUnpatch(Harmony harmony)
+  {
+    IsPatched = false;
+    var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.SetOwner));
+    var prefix = AccessTools.Method(typeof(SupportAttach), nameof(SetOwner));
+    harmony.Unpatch(original, prefix);
+    original = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.HandleDestroyedZDO), [typeof(ZDOID)]);
+    var postfix = AccessTools.Method(typeof(SupportAttach), nameof(HandleDestroyed));
+    harmony.Unpatch(original, postfix);
   }
 
   public static bool IsSynced(ZDO zdo) => zdo.GetConnectionType() == ZDOExtraData.ConnectionType.SyncTransform;

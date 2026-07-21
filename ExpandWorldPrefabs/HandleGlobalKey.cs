@@ -6,8 +6,18 @@ namespace ExpandWorld.Prefab;
 
 public class HandleGlobalKey
 {
-  public static void Patch(Harmony harmony)
+  private static bool IsPatched = false;
+  public static void Patch(Harmony harmony, bool shouldPatch)
   {
+    if (shouldPatch && !IsPatched)
+      DoPatch(harmony);
+    if (!shouldPatch && IsPatched)
+      DoUnpatch(harmony);
+  }
+
+  private static void DoPatch(Harmony harmony)
+  {
+    IsPatched = true;
     var method = AccessTools.Method(typeof(ZoneSystem), nameof(ZoneSystem.RPC_SetGlobalKey));
     var patch = AccessTools.Method(typeof(HandleGlobalKey), nameof(RPC_SetGlobalKey));
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
@@ -17,6 +27,20 @@ public class HandleGlobalKey
     method = AccessTools.Method(typeof(ZoneSystem), nameof(ZoneSystem.ClearGlobalKeys));
     patch = AccessTools.Method(typeof(HandleGlobalKey), nameof(ClearGlobalKeys));
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
+  }
+
+  private static void DoUnpatch(Harmony harmony)
+  {
+    IsPatched = false;
+    var method = AccessTools.Method(typeof(ZoneSystem), nameof(ZoneSystem.RPC_SetGlobalKey));
+    var patch = AccessTools.Method(typeof(HandleGlobalKey), nameof(RPC_SetGlobalKey));
+    harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZoneSystem), nameof(ZoneSystem.RPC_RemoveGlobalKey));
+    patch = AccessTools.Method(typeof(HandleGlobalKey), nameof(RPC_RemoveGlobalKey));
+    harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZoneSystem), nameof(ZoneSystem.ClearGlobalKeys));
+    patch = AccessTools.Method(typeof(HandleGlobalKey), nameof(ClearGlobalKeys));
+    harmony.Unpatch(method, patch);
   }
 
   private static void RPC_SetGlobalKey(string name)

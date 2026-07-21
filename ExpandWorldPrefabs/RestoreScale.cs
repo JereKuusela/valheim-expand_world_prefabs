@@ -8,6 +8,7 @@ namespace ExpandWorld.Prefab;
 
 public class RestoreScale
 {
+  private static bool IsPatched = false;
   private static readonly int ScaleBackupVecHash = ZdoHelper.Hash("scaleBackup");
   private static readonly int ScaleBackupScalarHash = ZdoHelper.Hash("scaleScalarBackup");
   private static readonly int HasFieldsHash = ZdoHelper.Hash("HasFields");
@@ -39,11 +40,28 @@ public class RestoreScale
     zdo.Set(SyncScaleHash, true);
 
   }
-  public static void Patch(Harmony harmony)
+  public static void Patch(Harmony harmony, bool shouldPatch)
   {
+    if (shouldPatch && !IsPatched)
+      DoPatch(harmony);
+    if (!shouldPatch && IsPatched)
+      DoUnpatch(harmony);
+  }
+
+  private static void DoPatch(Harmony harmony)
+  {
+    IsPatched = true;
     var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize));
     var postfix = AccessTools.Method(typeof(RestoreScale), nameof(Deserialize));
     harmony.Patch(original, postfix: new HarmonyMethod(postfix));
+  }
+
+  private static void DoUnpatch(Harmony harmony)
+  {
+    IsPatched = false;
+    var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize));
+    var postfix = AccessTools.Method(typeof(RestoreScale), nameof(Deserialize));
+    harmony.Unpatch(original, postfix);
   }
 
   static void Deserialize(ZDO __instance)

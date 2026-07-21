@@ -22,6 +22,15 @@ public class Settings
     ConfigRestoreScale = config.Bind("General", "Restore scale", true, "When enabled, EWP automatically restores custom scale for objects with ZSyncTransform.m_syncScale.");
     ConfigSupportAttach = config.Bind("General", "Object attaching", true, "When enabled, EWP keeps ownership of attached objects to prevent clients from separating them.");
     ConfigPersistPlayers = config.Bind("General", "Persist spawned players (experimental)", false, "When enabled, EWP spawned players will be saved to the save file.");
+
+    ConfigRestoreScale.SettingChanged += (_, _) => RefreshPatches();
+    ConfigSupportAttach.SettingChanged += (_, _) => RefreshPatches();
+  }
+
+  private static void RefreshPatches()
+  {
+    if (EWP.Harmony == null) return;
+    InfoManager.Patch();
   }
 
 

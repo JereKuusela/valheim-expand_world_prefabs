@@ -10,15 +10,38 @@ public class HandleRPC
 {
   private delegate bool RPCHandler(ZDO zdo, ZRoutedRpc.RoutedRPCData data);
   private static readonly Dictionary<int, RPCHandler> Handlers = [];
+  private static bool IsPatched = false;
 
-  public static void Patch(Harmony harmony)
+  public static void Patch(Harmony harmony, bool shouldPatch)
   {
+    if (shouldPatch && !IsPatched)
+      DoPatch(harmony);
+    if (!shouldPatch && IsPatched)
+      DoUnpatch(harmony);
+    if (!shouldPatch)
+      Handlers.Clear();
+  }
+
+  private static void DoPatch(Harmony harmony)
+  {
+    IsPatched = true;
     var method = AccessTools.Method(typeof(ZRoutedRpc), nameof(ZRoutedRpc.HandleRoutedRPC));
     var patch = AccessTools.Method(typeof(HandleRPC), nameof(Handle));
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
     method = AccessTools.Method(typeof(ZRoutedRpc), nameof(ZRoutedRpc.RouteRPC));
     patch = AccessTools.Method(typeof(HandleRPC), nameof(RouteRPC));
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
+  }
+
+  private static void DoUnpatch(Harmony harmony)
+  {
+    IsPatched = false;
+    var method = AccessTools.Method(typeof(ZRoutedRpc), nameof(ZRoutedRpc.HandleRoutedRPC));
+    var patch = AccessTools.Method(typeof(HandleRPC), nameof(Handle));
+    harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZRoutedRpc), nameof(ZRoutedRpc.RouteRPC));
+    patch = AccessTools.Method(typeof(HandleRPC), nameof(RouteRPC));
+    harmony.Unpatch(method, patch);
   }
 
   public static void SetRequiredStates(HashSet<string> requiredStates)

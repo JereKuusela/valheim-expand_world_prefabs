@@ -6,26 +6,63 @@ namespace ExpandWorld.Prefab;
 
 public class HandleTime
 {
-  public static void Patch(Harmony harmony, bool trackTicks, bool trackMinutes, bool trackHours, bool trackDays)
+  private static bool IsTimePatched = false;
+  private static bool IsRealTimePatched = false;
+
+  public static void Patch(Harmony harmony, bool shouldPatch, bool trackTicks, bool trackMinutes, bool trackHours, bool trackDays)
   {
     TrackTicks = trackTicks;
     TrackMinutes = trackMinutes;
     TrackHours = trackHours;
     TrackDays = trackDays;
+    if (shouldPatch && !IsTimePatched)
+      DoPatchTime(harmony);
+    if (!shouldPatch && IsTimePatched)
+      DoUnpatchTime(harmony);
+  }
+
+  private static void DoPatchTime(Harmony harmony)
+  {
+    IsTimePatched = true;
     var method = AccessTools.Method(typeof(ZNet), nameof(ZNet.UpdateNetTime));
     var patch = AccessTools.Method(typeof(HandleTime), nameof(UpdateNetTime));
     harmony.Patch(method, postfix: new HarmonyMethod(patch));
   }
 
-  public static void PatchRealTime(Harmony harmony, bool trackSeconds, bool trackMinutes, bool trackHours, bool trackDays)
+  private static void DoUnpatchTime(Harmony harmony)
+  {
+    IsTimePatched = false;
+    var method = AccessTools.Method(typeof(ZNet), nameof(ZNet.UpdateNetTime));
+    var patch = AccessTools.Method(typeof(HandleTime), nameof(UpdateNetTime));
+    harmony.Unpatch(method, patch);
+  }
+
+  public static void PatchRealTime(Harmony harmony, bool shouldPatch, bool trackSeconds, bool trackMinutes, bool trackHours, bool trackDays)
   {
     TrackRealSeconds = trackSeconds;
     TrackRealMinutes = trackMinutes;
     TrackRealHours = trackHours;
     TrackRealDays = trackDays;
+    if (shouldPatch && !IsRealTimePatched)
+      DoPatchRealTime(harmony);
+    if (!shouldPatch && IsRealTimePatched)
+      DoUnpatchRealTime(harmony);
+  }
+
+  private static void DoPatchRealTime(Harmony harmony)
+  {
+    IsRealTimePatched = true;
     var method = AccessTools.Method(typeof(ZNet), nameof(ZNet.UpdateNetTime));
     var patch = AccessTools.Method(typeof(HandleTime), nameof(UpdateRealTime));
     harmony.Patch(method, postfix: new HarmonyMethod(patch));
+  }
+
+  private static void DoUnpatchRealTime(Harmony harmony)
+  {
+    IsRealTimePatched = false;
+    var method = AccessTools.Method(typeof(ZNet), nameof(ZNet.UpdateNetTime));
+    var patch = AccessTools.Method(typeof(HandleTime), nameof(UpdateRealTime));
+    harmony.Unpatch(method, patch);
   }
   private static bool TrackTicks = false;
   private static bool TrackMinutes = false;

@@ -1,18 +1,50 @@
 using System.Collections.Generic;
 using Data;
 using HarmonyLib;
-using Service;
 using Splatform;
 
 namespace ExpandWorld.Prefab;
 
-[HarmonyPatch]
 public class PeerManager
 {
+  private static bool IsPatched = false;
   private static readonly Dictionary<long, ZNetPeer> PeersByOwner = [];
   private static readonly Dictionary<ZNetPeer, PlatformUserID> PeerIds = [];
 
   private static readonly HashSet<ZNetPeer> HandledPeers = [];
+
+  public static void Patch(Harmony harmony, bool shouldPatch)
+  {
+    if (shouldPatch && !IsPatched)
+      DoPatch(harmony);
+    if (!shouldPatch && IsPatched)
+      DoUnpatch(harmony);
+  }
+
+  private static void DoPatch(Harmony harmony)
+  {
+    IsPatched = true;
+    var method = AccessTools.Method(typeof(ZNet), nameof(ZNet.Disconnect));
+    var patch = AccessTools.Method(typeof(PeerManager), nameof(DisconnectPrefix));
+    harmony.Patch(method, prefix: new HarmonyMethod(patch));
+    method = AccessTools.Method(typeof(ZNet), nameof(ZNet.ClearPlayerData));
+    patch = AccessTools.Method(typeof(PeerManager), nameof(ClearPlayerDataPostfix));
+    harmony.Patch(method, postfix: new HarmonyMethod(patch));
+  }
+
+  private static void DoUnpatch(Harmony harmony)
+  {
+    IsPatched = false;
+    var method = AccessTools.Method(typeof(ZNet), nameof(ZNet.Disconnect));
+    var patch = AccessTools.Method(typeof(PeerManager), nameof(DisconnectPrefix));
+    harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZNet), nameof(ZNet.ClearPlayerData));
+    patch = AccessTools.Method(typeof(PeerManager), nameof(ClearPlayerDataPostfix));
+    harmony.Unpatch(method, patch);
+    PeersByOwner.Clear();
+    PeerIds.Clear();
+    HandledPeers.Clear();
+  }
 
   public static ZNetPeer? GetPeer(ZDO zdo) => GetPeer(zdo.GetOwner());
   public static ZNetPeer? GetPeer(long owner)
@@ -40,8 +72,6 @@ public class PeerManager
       PeersByOwner.Remove(cachedOwner);
   }
 
-  [HarmonyPatch(typeof(ZNet), nameof(ZNet.Disconnect))]
-  [HarmonyPrefix]
   private static void DisconnectPrefix(ZNetPeer peer)
   {
     RemoveCachedPeer(peer.m_uid, peer);
@@ -168,8 +198,6 @@ public class PeerManager
     else
       return new PlatformUserID(peer.m_socket.GetHostName());
   }
-  [HarmonyPatch(typeof(ZNet), nameof(ZNet.ClearPlayerData))]
-  [HarmonyPostfix]
   private static void ClearPlayerDataPostfix(ZNetPeer peer)
   {
     RemoveCachedPeer(peer.m_uid, peer);

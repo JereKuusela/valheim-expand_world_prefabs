@@ -93,49 +93,96 @@ public class InfoManager
   }
   public static void Patch()
   {
-    EWP.Harmony.UnpatchSelf();
-    if (Helper.IsClient())
-      return;
-    EWP.Harmony.PatchAll();
-    if (Settings.RestoreScale)
-      RestoreScale.Patch(EWP.Harmony);
-    if (Settings.SupportAttach)
-      SupportAttach.Patch(EWP.Harmony);
+    var canPatch = !Helper.IsClient();
+    var shouldRestoreScale = canPatch && Settings.RestoreScale;
+    var shouldSupportAttach = canPatch && Settings.SupportAttach;
+    RestoreScale.Patch(EWP.Harmony, shouldRestoreScale);
+    SupportAttach.Patch(EWP.Harmony, shouldSupportAttach);
+
     var requiredStates = GetRequiredStates();
-    if (CreateDatas.Exists || requiredStates.Contains("join") || requiredStates.Contains("respawn"))
-      HandleCreated.Patch(EWP.Harmony);
-    if (RemoveDatas.Exists)
-      HandleDestroyed.Patch(EWP.Harmony);
-    if (StateDatas.Exists || SayDatas.Exists)
-    {
-      HandleRPC.Patch(EWP.Harmony);
+    var shouldHandleCreated = canPatch && (CreateDatas.Exists || requiredStates.Contains("join") || requiredStates.Contains("respawn"));
+    var shouldHandleDestroyed = canPatch && RemoveDatas.Exists;
+    var shouldHandleRpc = canPatch && (StateDatas.Exists || SayDatas.Exists);
+    var shouldHandleSay = canPatch && SayDatas.Exists;
+    var shouldHandleGlobalKey = canPatch && GlobalKeyDatas.Exists;
+    var shouldHandleEvent = canPatch && EventDatas.Exists;
+    var shouldTrackChanges = canPatch && ChangeDatas.Exists;
+    var shouldTrackTime = canPatch && TimeDatas.Exists;
+    var shouldTrackRealTime = canPatch && RealTimeDatas.Exists;
+    var shouldHandlePeerState = canPatch && (requiredStates.Contains("join") || requiredStates.Contains("respawn") || requiredStates.Contains("leave"));
+    var shouldHandleSwapConnections = canPatch && RequiresConnectionSwapTracking();
+
+    HandleCreated.Patch(EWP.Harmony, shouldHandleCreated);
+    HandleDestroyed.Patch(EWP.Harmony, shouldHandleDestroyed);
+    HandleRPC.Patch(EWP.Harmony, shouldHandleRpc);
+    if (shouldHandleRpc)
       HandleRPC.SetRequiredStates(requiredStates);
-    }
-    if (SayDatas.Exists)
-      ServerClient.Patch(EWP.Harmony);
-    if (GlobalKeyDatas.Exists)
-      HandleGlobalKey.Patch(EWP.Harmony);
-    if (EventDatas.Exists)
-      HandleEvent.Patch(EWP.Harmony);
-    if (ChangeDatas.Exists)
-      HandleChanged.Patch(EWP.Harmony, ChangeDatas);
-    if (TimeDatas.Exists)
+
+    ServerClient.Patch(EWP.Harmony, shouldHandleSay);
+    HandleGlobalKey.Patch(EWP.Harmony, shouldHandleGlobalKey);
+    HandleEvent.Patch(EWP.Harmony, shouldHandleEvent);
+    HandleChanged.Patch(EWP.Harmony, ChangeDatas, shouldTrackChanges);
+
+    if (shouldTrackTime)
     {
       var checkTicks = TimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "tick");
       var checkMinutes = TimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "minute");
       var checkHours = TimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "hour");
       var checkDays = TimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "day");
-      HandleTime.Patch(EWP.Harmony, checkTicks, checkMinutes, checkHours, checkDays);
+      HandleTime.Patch(EWP.Harmony, shouldTrackTime, checkTicks, checkMinutes, checkHours, checkDays);
     }
-    if (RealTimeDatas.Exists)
+    else
+      HandleTime.Patch(EWP.Harmony, false, false, false, false, false);
+
+    if (shouldTrackRealTime)
     {
       var checkSeconds = RealTimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "second");
       var checkMinutes = RealTimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "minute");
       var checkHours = RealTimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "hour");
       var checkDays = RealTimeDatas.Separate.Any(v => v.Args.Length > 0 && v.Args[0] == "day");
-      HandleTime.PatchRealTime(EWP.Harmony, checkSeconds, checkMinutes, checkHours, checkDays);
+      HandleTime.PatchRealTime(EWP.Harmony, shouldTrackRealTime, checkSeconds, checkMinutes, checkHours, checkDays);
     }
+    else
+      HandleTime.PatchRealTime(EWP.Harmony, false, false, false, false, false);
+
+    PeerManager.Patch(EWP.Harmony, shouldHandlePeerState);
+    PrefabConnector.Patch(EWP.Harmony, shouldHandleSwapConnections);
+
     DataStorage.OnSet = KeyDatas.Exists ? OnKeySet : null;
+  }
+
+  private static bool RequiresConnectionSwapTracking()
+  {
+    return HasSwapRules(CreateDatas) || HasSwapRules(StateDatas) || HasSwapRules(SayDatas) || HasSwapRules(PokeDatas) || HasSwapRules(ChangeDatas);
+  }
+
+  private static bool HasSwapRules(PrefabInfo prefabInfo)
+  {
+    foreach (var infos in prefabInfo.Weighted.Values)
+    {
+      foreach (var info in infos)
+      {
+        if (info.Swaps != null || info.WeightedSwaps != null)
+          return true;
+      }
+    }
+    foreach (var infos in prefabInfo.Fallback.Values)
+    {
+      foreach (var info in infos)
+      {
+        if (info.Swaps != null || info.WeightedSwaps != null)
+          return true;
+      }
+    }
+    foreach (var infos in prefabInfo.Separate.Values)
+    {
+      foreach (var info in infos)
+      {
+        if (info.Swaps != null || info.WeightedSwaps != null)
+          return true;
+      }
+    }
+    return false;
   }
 
   private static HashSet<string> GetRequiredStates()

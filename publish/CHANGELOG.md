@@ -1,3 +1,6 @@
+- v1.55
+  - Optimizes script file reloading to only patch/unpatch game code when needed, instead of always patching/unpatching on every reload.
+
 - v1.54
   - BREAKING CHANGE: Removes basic arithmetic support from data entries. Use parameters instead.
   - Adds support for changing scale of objects with ZSyncTransform component.
@@ -32,15 +35,3 @@
   - Adds new fields `groups` and `bannedGroups` to filter based on player groups (requires Server Devcommands mod).
   - Adds API for developers to register own parameter handlers and to use custom triggers.
   - Obsoletes parameter `<pchar>` as it returned wrong information anyways.
-
-- v1.51
-  - Skipped accidentally.
-
-- v1.50
-  - Adds formatting support to parameter `<time>`.
-  - Adds new parameter `<realtime>` to get the real-world time (can be formatted).
-  - Adds new trigger type `realtime` to trigger actions based on real-world time changes.
-  - Adds new parameter `<pvisible>` to get whether the player has public visibility enabled.
-  - Adds new command `ewp_reload` to manually reload the `ewp_data.yaml` file (if the file has been manually modified).
-  - Fixes spawned item drops possibly disappearing (no spawn time was set so clean up for old loot was instantly triggered).
-  - Removes file watcher from `ewp_data.yaml` to reduce performance issues.

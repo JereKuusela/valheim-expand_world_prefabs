@@ -3,11 +3,40 @@ using HarmonyLib;
 
 namespace ExpandWorld.Prefab;
 
-[HarmonyPatch(typeof(ZDOExtraData), nameof(ZDOExtraData.SetConnection))]
 public class PrefabConnector
 {
+  private static bool IsPatched = false;
   private static readonly Dictionary<ZDOID, ZDOID> SwappedZDOs = [];
   private static readonly Dictionary<ZDOID, ZDOID> ReverseConnectionTable = [];
+
+  public static void Patch(Harmony harmony, bool shouldPatch)
+  {
+    if (shouldPatch && !IsPatched)
+      DoPatch(harmony);
+    if (!shouldPatch && IsPatched)
+      DoUnpatch(harmony);
+    if (!shouldPatch)
+    {
+      SwappedZDOs.Clear();
+      ReverseConnectionTable.Clear();
+    }
+  }
+
+  private static void DoPatch(Harmony harmony)
+  {
+    IsPatched = true;
+    var method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.SetConnection));
+    var patch = AccessTools.Method(typeof(PrefabConnector), nameof(Prefix));
+    harmony.Patch(method, prefix: new HarmonyMethod(patch));
+  }
+
+  private static void DoUnpatch(Harmony harmony)
+  {
+    IsPatched = false;
+    var method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.SetConnection));
+    var patch = AccessTools.Method(typeof(PrefabConnector), nameof(Prefix));
+    harmony.Unpatch(method, patch);
+  }
 
   public static void AddSwap(ZDOID from, ZDOID to)
   {
@@ -34,7 +63,7 @@ public class PrefabConnector
     }
   }
   // The idea is that if something tries to connect to a swapped ZDO, it will instead connect to the new ZDO.
-  static void Prefix(ZDOID zid, ref ZDOID target)
+  private static void Prefix(ZDOID zid, ref ZDOID target)
   {
     if (SwappedZDOs.TryGetValue(target, out var newZid))
     {
