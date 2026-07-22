@@ -1,7 +1,9 @@
 - v1.55
   - Adds support for server side only data. Keys starting with `ewp_` are stored as server-only instead of normal ZDO fields.
   - Adds range support for `keys` and `bannedKeys`.
+  - Adds file watcher to the config file to reload when manually edited.
   - Fixes subfolders not working for data files.
+  - Fixes persisted NPC players not being removable by EWP scripts.
   - Optimizes script file reloading to only patch/unpatch game code when needed, instead of always patching/unpatching on every reload.
 
 - v1.54

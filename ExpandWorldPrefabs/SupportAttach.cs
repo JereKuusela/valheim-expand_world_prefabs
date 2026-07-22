@@ -43,25 +43,16 @@ public class SupportAttach
   }
 
   public static bool IsSynced(ZDO zdo) => zdo.GetConnectionType() == ZDOExtraData.ConnectionType.SyncTransform;
-  // Clients can only have one player, so NPCs should stay unowned.
-  public static bool IsPlayer(ZDO zdo) => zdo.GetPrefab() == PlayerHash;
-  public static bool IsNpc(ZDO zdo) => zdo.GetPrefab() == PlayerHash && zdo.Persistent;
-  public static bool IsRealPlayer(ZDO zdo) => zdo.GetPrefab() == PlayerHash && !zdo.Persistent;
 
   public static readonly long HackOwner = 1;
 
   // Cache to more quickly release attached objects if parent is destroyed.
   // This also happens over time thtough SetOwner.
   private static readonly HashSet<ZDOID> Parents = [];
-  private static readonly int PlayerHash = ZdoHelper.Hash("Player");
   static void SetOwner(ZDO __instance, ref long uid)
   {
     if (!IsSynced(__instance))
-    {
-      if (IsNpc(__instance))
-        uid = HackOwner;
       return;
-    }
     var parent = __instance.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform);
     var exists = ZDOMan.instance.GetZDO(parent) != null;
     if (exists)
@@ -73,9 +64,6 @@ public class SupportAttach
     {
       Unattach(__instance);
       Parents.Remove(parent);
-      // Clients can only have one player, so NPCs should stay unowned.
-      if (IsNpc(__instance))
-        uid = HackOwner;
     }
   }
 
@@ -121,7 +109,7 @@ public class SupportAttach
   public static void Attach(ZDO zdo, ZDOID target)
   {
     // Actual players can't be attached or they lose control.
-    if (IsRealPlayer(zdo))
+    if (PersistPlayers.IsRealPlayer(zdo))
       return;
     if (target == ZDOID.None)
     {
@@ -147,7 +135,7 @@ public class SupportAttach
     SyncAttachedWorldTransform(zdo, connectionZdoId);
     zdo.SetConnection(InvalidType, ZDOID.None);
     zdo.DataRevision += 100;
-    if (!IsNpc(zdo) && zdo.GetOwner() == HackOwner)
+    if (!PersistPlayers.IsNpc(zdo) && zdo.GetOwner() == HackOwner)
     {
       zdo.SetOwnerInternal(DelayedOwner.FindNearestOwner(zdo));
       zdo.OwnerRevision += 1;

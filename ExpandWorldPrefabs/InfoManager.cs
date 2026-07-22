@@ -94,9 +94,11 @@ public class InfoManager
   public static void Patch()
   {
     var canPatch = !Helper.IsClient();
+    var shouldPersistPlayers = canPatch && Settings.PersistPlayers;
     var shouldRestoreScale = canPatch && Settings.RestoreScale;
     var shouldSupportAttach = canPatch && Settings.SupportAttach;
     var shouldServerSideData = canPatch && Settings.ServerSideData;
+    PersistPlayers.Patch(EWP.Harmony, shouldPersistPlayers);
     RestoreScale.Patch(EWP.Harmony, shouldRestoreScale);
     SupportAttach.Patch(EWP.Harmony, shouldSupportAttach);
     ServerSideData.Patch(EWP.Harmony, shouldServerSideData);

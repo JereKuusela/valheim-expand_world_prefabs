@@ -27,6 +27,7 @@ public class Settings
     ConfigPersistPlayers = config.Bind("General", "Persist spawned players (experimental)", false, "When enabled, EWP spawned players will be saved to the save file.");
 
     ConfigRestoreScale.SettingChanged += (_, _) => RefreshPatches();
+    ConfigPersistPlayers.SettingChanged += (_, _) => RefreshPatches();
     ConfigSupportAttach.SettingChanged += (_, _) => RefreshPatches();
     ConfigServerSideData.SettingChanged += (_, _) => RefreshPatches();
   }

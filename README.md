@@ -316,6 +316,7 @@ See object filtering [examples](examples_object_filtering.md).
   - owner: Overrides the default initial owner assignment. For example with `<owner>` parameter.
   - connect (P): Connects the spawned object to another object. See Actions for more info.
   - attach (P): Attaches the spawned object to another object. See Actions for more info.
+- swap (P): Swaps the original object with another object.
   - Format and keywords are same as for `spawn`.
   - The initial data is copied from the original object.
   - Swap is done by removing the original object and spawning the swapped object.

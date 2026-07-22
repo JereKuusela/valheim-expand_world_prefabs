@@ -19,7 +19,7 @@ public class DelayedOwner(float delay, ZDOID zdo, long owner)
   }
   public static void Check(ZDO zdo, long owner)
   {
-    bool shouldNotBeOwned = SupportAttach.IsSynced(zdo) || SupportAttach.IsPlayer(zdo);
+    bool shouldNotBeOwned = SupportAttach.IsSynced(zdo) || PersistPlayers.IsPlayer(zdo);
     if (shouldNotBeOwned)
       owner = SupportAttach.HackOwner;
     if (owner == 0)

@@ -109,7 +109,7 @@ public class Manager
     var attach = info.Attach?.Get(parameters);
     if (attach.HasValue && !SupportAttach.CanSync(zdo))
       regenerate = true;
-    if (SupportAttach.IsRealPlayer(zdo))
+    if (PersistPlayers.IsRealPlayer(zdo))
       regenerate = false;
     HandleSpawns(info, zdo, parameters, remove, regenerate, data);
     Poke(info, zdo, parameters);
@@ -222,7 +222,7 @@ public class Manager
       ZDOMan.instance.m_deadZDOs[id] = ZNet.instance.GetTime().Ticks;
     var zdo = ZDOMan.instance.GetZDO(id);
     if (zdo == null) return;
-    zdo.SetOwner(ZDOMan.instance.m_sessionID);
+    zdo.SetOwnerInternal(ZDOMan.instance.m_sessionID);
     ZDOMan.instance.DestroyZDO(zdo);
   }
 

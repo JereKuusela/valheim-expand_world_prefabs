@@ -13,7 +13,7 @@ public class EWP : BaseUnityPlugin
 {
   public const string GUID = "expand_world_prefabs";
   public const string NAME = "Expand World Prefabs";
-  public const string VERSION = "1.54.1";
+  public const string VERSION = "1.54.2";
 #nullable disable
   public static Harmony Harmony;
 #nullable enable
@@ -29,6 +29,7 @@ public class EWP : BaseUnityPlugin
     {
       if (Settings.AutomaticReload)
       {
+        Yaml.SetupWatcher(Config);
         DataLoading.SetupWatcher();
         Loading.SetupWatcher();
       }
