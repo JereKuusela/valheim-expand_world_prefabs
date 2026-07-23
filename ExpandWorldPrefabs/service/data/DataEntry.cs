@@ -675,7 +675,11 @@ public class DataEntry
     return (T)(object)value;
   }
 
-  private bool CheckCanBeInjected() => Ints != null && Ints.ContainsKey(HasFieldsHash);
+  private bool CheckCanBeInjected() =>
+    (Ints == null || !Ints.ContainsKey(HasFieldsHash))
+    && Components == null
+    && Position == null
+    && Rotation == null;
 
   public void RollItems(Parameters pars, ZDO zdo)
   {

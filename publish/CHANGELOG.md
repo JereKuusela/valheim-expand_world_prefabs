@@ -4,6 +4,8 @@
   - Adds file watcher to the config file to reload when manually edited.
   - Fixes subfolders not working for data files.
   - Fixes persisted NPC players not being removable by EWP scripts.
+  - Fixes scale hack not working on single player.
+  - Fíxes automatic `injectData` not being false when position or rotation is set.
   - Optimizes script file reloading to only patch/unpatch game code when needed, instead of always patching/unpatching on every reload.
 
 - v1.54

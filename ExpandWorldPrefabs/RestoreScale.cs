@@ -54,6 +54,9 @@ public class RestoreScale
     var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize));
     var postfix = AccessTools.Method(typeof(RestoreScale), nameof(Deserialize));
     harmony.Patch(original, postfix: new HarmonyMethod(postfix));
+    original = AccessTools.Method(typeof(ZSyncTransform), nameof(ZSyncTransform.Awake));
+    postfix = AccessTools.Method(typeof(RestoreScale), nameof(SinglePlayerFix));
+    harmony.Patch(original, postfix: new HarmonyMethod(postfix));
   }
 
   private static void DoUnpatch(Harmony harmony)
@@ -61,6 +64,9 @@ public class RestoreScale
     IsPatched = false;
     var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize));
     var postfix = AccessTools.Method(typeof(RestoreScale), nameof(Deserialize));
+    harmony.Unpatch(original, postfix);
+    original = AccessTools.Method(typeof(ZSyncTransform), nameof(ZSyncTransform.Awake));
+    postfix = AccessTools.Method(typeof(RestoreScale), nameof(SinglePlayerFix));
     harmony.Unpatch(original, postfix);
   }
 
@@ -107,6 +113,28 @@ public class RestoreScale
     var hasScalar = ZDOExtraData.s_floats.TryGetValue(zdo.m_uid, out var floats) && floats.TryGetValue(ZDOVars.s_scaleScalarHash, out currentScalarScale);
     var hasVec = ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vecs) && vecs.ContainsKey(ZDOVars.s_scaleHash);
     return !hasScalar || Math.Abs(currentScalarScale - backedScalarScale) > 0.0001f || hasVec;
+  }
+
+  // Single player won't trigger Deserialize so correction doesn't happen.
+  // But easy to just handle it manually.
+  static void SinglePlayerFix(ZSyncTransform __instance)
+  {
+    if (!__instance.m_syncScale)
+      return;
+    if (!__instance.m_nview.IsValid())
+      return;
+    var zdo = __instance.m_nview.GetZDO();
+    var vec3 = zdo.GetVec3(ZDOVars.s_scaleHash, Vector3.zero);
+    if (vec3 != Vector3.zero)
+    {
+      __instance.transform.localScale = vec3;
+    }
+    else
+    {
+      var scalar = zdo.GetFloat(ZDOVars.s_scaleScalarHash, __instance.transform.localScale.x);
+      if (!__instance.transform.localScale.x.Equals(scalar))
+        __instance.transform.localScale = new Vector3(scalar, scalar, scalar);
+    }
   }
 
 
