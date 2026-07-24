@@ -53,6 +53,9 @@ public class SupportAttach
   {
     if (!IsSynced(__instance))
       return;
+    // Players attach from client when on beds, ships, etc.
+    if (PersistPlayers.IsRealPlayer(__instance))
+      return;
     var parent = __instance.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform);
     var exists = ZDOMan.instance.GetZDO(parent) != null;
     if (exists)

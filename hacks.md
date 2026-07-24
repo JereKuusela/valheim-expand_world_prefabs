@@ -53,7 +53,9 @@ EWP saves backup of the original scale to the object (scaleBackup or scaleScalar
 
 This can be disabled by setting "Object attaching" to false in the settings.
 
-ZSyncTransform component has unused code for "character parent sync". This allows an object to move with another object. However this works **only when** the object is owned by another game client. EWP supports this by forcing the attached object to be owned by a non-existing client. This means no client is running code for the attached object so it just moving around passively.
+ZSyncTransform component has code for "character parent sync". This allows an object to move with another object. Normally this is used when players are on beds, ships, etc.
+
+This can be set for other objects too but this only works when the object is owned by **another** game client. EWP supports this by forcing the attached object to be owned by a non-existing client. This means no client is running code for the attached object so it just moving around passively.
 
 When the parent object is destroyed, EWP automatically unattaches the child object.
 
@@ -172,8 +174,8 @@ This is intended for internal rule state. Client-visible behavior should still u
 
 ## Persisting spawned players
 
-This can be enabled by setting "Persist spawned players (experimental)" to true in the settings. It is disabled by default because some issues have been resolved (possibly conflict with another mod).
+This can be disabled by setting "Persist spawned players" to false in the settings.
 
-When enabled, EWP automatically makes EWP spawned players persistent. EWP also forces the player object to be owned by a non-existing client. This is needed because game clients automatically destroy non-controlled owned player objects.
+EWP automatically makes EWP spawned players persistent. EWP also forces the player object to be owned by a non-existing client. This is needed because game clients automatically destroy non-controlled owned player objects.
 
 Examples will come later.
