@@ -40,9 +40,6 @@
     <Reference Include="SPlatform">
       <HintPath>..\..\Libs\SPlatform.dll</HintPath>
     </Reference>
-    <Reference Include="com.rlabrecque.steamworks.net">
-      <HintPath>..\..\Libs\com.rlabrecque.steamworks.net.dll</HintPath>
-    </Reference>
     <Reference Include="YamlDotNet">
       <HintPath>..\..\Libs\YamlDotNet.dll</HintPath>
     </Reference>

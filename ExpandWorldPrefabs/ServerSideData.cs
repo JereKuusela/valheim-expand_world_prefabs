@@ -234,35 +234,20 @@ public static class ServerSideData
   public static bool TryGetQuaternion(ZDOID id, int key, out Quaternion value) => TryGet(Quats, id, key, out value);
   public static bool TryGetBytes(ZDOID id, int key, out byte[] value) => TryGet(Bytes, id, key, out value);
 
-  public static void SetString(ZDO zdo, int key, string value)
-  {
-    Set(Strings, zdo.m_uid, key, value);
-  }
-  public static void SetFloat(ZDO zdo, int key, float value)
-  {
-    Set(Floats, zdo.m_uid, key, value);
-  }
-  public static void SetInt(ZDO zdo, int key, int value)
-  {
-    Set(Ints, zdo.m_uid, key, value);
-  }
-  public static void SetLong(ZDO zdo, int key, long value)
-  {
-    Set(Longs, zdo.m_uid, key, value);
-  }
-  public static void SetVec(ZDO zdo, int key, Vector3 value)
-  {
-    Set(Vecs, zdo.m_uid, key, value);
-  }
-  public static void SetQuaternion(ZDO zdo, int key, Quaternion value)
-  {
-    Set(Quats, zdo.m_uid, key, value);
-  }
-  public static void SetBytes(ZDO zdo, int key, byte[] value)
-  {
-    Set(Bytes, zdo.m_uid, key, value);
-  }
-
+  public static void SetString(ZDO zdo, int key, string value) => Set(Strings, zdo.m_uid, key, value);
+  public static void SetFloat(ZDO zdo, int key, float value) => Set(Floats, zdo.m_uid, key, value);
+  public static void SetInt(ZDO zdo, int key, int value) => Set(Ints, zdo.m_uid, key, value);
+  public static void SetLong(ZDO zdo, int key, long value) => Set(Longs, zdo.m_uid, key, value);
+  public static void SetVec(ZDO zdo, int key, Vector3 value) => Set(Vecs, zdo.m_uid, key, value);
+  public static void SetQuaternion(ZDO zdo, int key, Quaternion value) => Set(Quats, zdo.m_uid, key, value);
+  public static void SetBytes(ZDO zdo, int key, byte[] value) => Set(Bytes, zdo.m_uid, key, value);
+  public static void RemoveString(ZDO zdo, int key) => RemoveFromStore(Strings, zdo.m_uid, key);
+  public static void RemoveFloat(ZDO zdo, int key) => RemoveFromStore(Floats, zdo.m_uid, key);
+  public static void RemoveInt(ZDO zdo, int key) => RemoveFromStore(Ints, zdo.m_uid, key);
+  public static void RemoveLong(ZDO zdo, int key) => RemoveFromStore(Longs, zdo.m_uid, key);
+  public static void RemoveVec(ZDO zdo, int key) => RemoveFromStore(Vecs, zdo.m_uid, key);
+  public static void RemoveQuaternion(ZDO zdo, int key) => RemoveFromStore(Quats, zdo.m_uid, key);
+  public static void RemoveBytes(ZDO zdo, int key) => RemoveFromStore(Bytes, zdo.m_uid, key);
   public static void CleanSyncedData(ZDO zdo)
   {
     var id = zdo.m_uid;

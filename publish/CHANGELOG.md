@@ -1,3 +1,7 @@
+- v1.56
+  - Fixes `Object attaching` affecting some normal effects like magic shield bubble.
+  - Removes dependency from Steamworks so should now work on non-Steam hosts.
+
 - v1.55
   - Adds support for server side only data. Keys starting with `ewp_` are stored as server-only instead of normal ZDO fields.
   - Adds range support for `keys` and `bannedKeys`.

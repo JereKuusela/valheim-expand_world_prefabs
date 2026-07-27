@@ -42,7 +42,9 @@ public class SupportAttach
     harmony.Unpatch(original, postfix);
   }
 
-  public static bool IsSynced(ZDO zdo) => zdo.GetConnectionType() == ZDOExtraData.ConnectionType.SyncTransform;
+  // Vanilla uses attaching when players on beds/ships/etc and also some effects like magic shield bubble (all are non-persistent).
+  // Using custom data is most reliable but persistent check is used as backward compatibility.
+  public static bool IsAttached(ZDO zdo) => zdo.GetConnectionType() == ZDOExtraData.ConnectionType.SyncTransform && (zdo.Persistent || ServerSideData.TryGetInt(zdo.m_uid, EWPAttachedHash, out var attached) && attached == 1);
 
   public static readonly long HackOwner = 1;
 
@@ -51,10 +53,7 @@ public class SupportAttach
   private static readonly HashSet<ZDOID> Parents = [];
   static void SetOwner(ZDO __instance, ref long uid)
   {
-    if (!IsSynced(__instance))
-      return;
-    // Players attach from client when on beds, ships, etc.
-    if (PersistPlayers.IsRealPlayer(__instance))
+    if (!IsAttached(__instance))
       return;
     var parent = __instance.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform);
     var exists = ZDOMan.instance.GetZDO(parent) != null;
@@ -91,6 +90,7 @@ public class SupportAttach
   private static readonly int HasFields = ZdoHelper.Hash("HasFields");
   private static readonly int HasFieldsZSyncTransform = ZdoHelper.Hash("HasFieldsZSyncTransform");
   private static readonly int ZSyncTransformCharacterParentSync = ZdoHelper.Hash("ZSyncTransform.m_characterParentSync");
+  private static readonly int EWPAttachedHash = ZdoHelper.Hash("EWP_attached");
   public static void Attach(ZdoEntry zdoEntry, ZDOID target)
   {
     zdoEntry.ConnectionType = ZDOExtraData.ConnectionType.SyncTransform;
@@ -99,6 +99,7 @@ public class SupportAttach
     zdoEntry.Ints[HasFields] = 1;
     zdoEntry.Ints[HasFieldsZSyncTransform] = 1;
     zdoEntry.Ints[ZSyncTransformCharacterParentSync] = 1;
+    zdoEntry.Ints[EWPAttachedHash] = 1;
   }
   public static void Connect(ZdoEntry zdoEntry, ZDOID target)
   {
@@ -124,6 +125,7 @@ public class SupportAttach
     zdo.Set(HasFieldsZSyncTransform, 1);
     zdo.Set(ZSyncTransformCharacterParentSync, 1);
     zdo.SetOwnerInternal(HackOwner);
+    ServerSideData.SetInt(zdo, EWPAttachedHash, 1);
     zdo.OwnerRevision += 1;
     Parents.Add(target);
   }
@@ -137,6 +139,7 @@ public class SupportAttach
       return;
     SyncAttachedWorldTransform(zdo, connectionZdoId);
     zdo.SetConnection(InvalidType, ZDOID.None);
+    ServerSideData.RemoveInt(zdo, EWPAttachedHash);
     zdo.DataRevision += 100;
     if (!PersistPlayers.IsNpc(zdo) && zdo.GetOwner() == HackOwner)
     {
