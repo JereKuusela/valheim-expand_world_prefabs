@@ -5,9 +5,9 @@ namespace Data;
 
 public class BytesValue(string[] values) : AnyValue(values), IBytesValue
 {
-  public byte[]? Get(Parameters pars)
+  public byte[]? Get(Functions f)
   {
-    var value = GetValue(pars);
+    var value = GetValue(f);
     if (value == null || value == "") return null;
     try
     {
@@ -19,13 +19,13 @@ public class BytesValue(string[] values) : AnyValue(values), IBytesValue
     }
   }
 
-  public bool? Match(Parameters pars, byte[]? value)
+  public bool? Match(Functions f, byte[]? value)
   {
     // If all values are null, default to a match.
     var allNull = true;
     foreach (var rawValue in Values)
     {
-      var v = pars.Replace(rawValue);
+      var v = f.Replace(rawValue);
       if (v == null) continue;
       allNull = false;
 
@@ -51,8 +51,8 @@ public class SimpleBytesValue(byte[]? value) : IBytesValue
 {
   private readonly byte[]? Value = value;
 
-  public byte[]? Get(Parameters pars) => Value;
-  public bool? Match(Parameters pars, byte[]? value)
+  public byte[]? Get(Functions f) => Value;
+  public bool? Match(Functions f, byte[]? value)
   {
     if (Value == null && value == null) return true;
     if (Value == null || value == null) return false;
@@ -62,6 +62,6 @@ public class SimpleBytesValue(byte[]? value) : IBytesValue
 
 public interface IBytesValue
 {
-  byte[]? Get(Parameters pars);
-  bool? Match(Parameters pars, byte[]? value);
+  byte[]? Get(Functions f);
+  bool? Match(Functions f, byte[]? value);
 }

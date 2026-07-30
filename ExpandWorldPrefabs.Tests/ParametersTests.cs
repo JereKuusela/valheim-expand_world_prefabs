@@ -14,28 +14,28 @@ public class ParametersTests
   [SetUp]
   public void SetUp()
   {
-    Parameters.ExecuteCode = _ => null;
-    Parameters.ExecuteCodeWithValue = (_, _) => null;
+    Functions.ExecuteCode = _ => null;
+    Functions.ExecuteCodeWithValue = (_, _) => null;
   }
 
   [TearDown]
   public void TearDown()
   {
-    Parameters.ExecuteCode = _ => null;
-    Parameters.ExecuteCodeWithValue = (_, _) => null;
+    Functions.ExecuteCode = _ => null;
+    Functions.ExecuteCodeWithValue = (_, _) => null;
   }
 
-  private static Parameters CreateUninitializedParameters()
+  private static Functions CreateUninitializedParameters()
   {
 #pragma warning disable SYSLIB0050
-    return (Parameters)FormatterServices.GetUninitializedObject(typeof(Parameters));
+    return (Functions)FormatterServices.GetUninitializedObject(typeof(Functions));
 #pragma warning restore SYSLIB0050
   }
 
   private static string Invoke(string methodName, string value, string defaultValue = "fallback")
   {
     var instance = CreateUninitializedParameters();
-    var method = typeof(Parameters).GetMethod(methodName, PrivateInstance);
+    var method = typeof(Functions).GetMethod(methodName, PrivateInstance);
     Assert.That(method, Is.Not.Null, $"Expected private method '{methodName}' on Parameters.");
 
     return (string)method!.Invoke(instance, new object[] { value, defaultValue })!;
@@ -285,7 +285,7 @@ public class ParametersTests
   [Test]
   public void Rad2Deg_ConvertsRadiansToDegrees()
   {
-    var converted = Parameters.Rad2Deg("3.1415927");
+    var converted = Functions.Rad2Deg("3.1415927");
     Assert.That(converted, Is.Not.Null);
     var result = float.Parse(converted!, CultureInfo.InvariantCulture);
 
@@ -295,7 +295,7 @@ public class ParametersTests
   [Test]
   public void Deg2Rad_ConvertsDegreesToRadians()
   {
-    var converted = Parameters.Deg2Rad("180");
+    var converted = Functions.Deg2Rad("180");
     Assert.That(converted, Is.Not.Null);
     var result = float.Parse(converted!, CultureInfo.InvariantCulture);
 
@@ -305,7 +305,7 @@ public class ParametersTests
   [Test]
   public void Vec2Deg_ReturnsAtan2Result()
   {
-    var converted = Parameters.Vec2Deg("0_1");
+    var converted = Functions.Vec2Deg("0_1");
     Assert.That(converted, Is.Not.Null);
     var result = float.Parse(converted!, CultureInfo.InvariantCulture);
 
@@ -315,7 +315,7 @@ public class ParametersTests
   [Test]
   public void Vec2Rad_AppliesAdditionalDeg2RadFactor()
   {
-    var converted = Parameters.Vec2Rad("0_1");
+    var converted = Functions.Vec2Rad("0_1");
     Assert.That(converted, Is.Not.Null);
     var result = float.Parse(converted!, CultureInfo.InvariantCulture);
 
@@ -325,7 +325,7 @@ public class ParametersTests
   [Test]
   public void Rad2Vec_ReturnsExpectedDirectionVector()
   {
-    var result = Parameters.Rad2Vec("0");
+    var result = Functions.Rad2Vec("0");
     Assert.That(result, Is.Not.Null);
     var vec = ParseUnityVector(result!);
 
@@ -337,7 +337,7 @@ public class ParametersTests
   [Test]
   public void Deg2Vec_ReturnsExpectedDirectionVector()
   {
-    var result = Parameters.Deg2Vec("90");
+    var result = Functions.Deg2Vec("90");
     Assert.That(result, Is.Not.Null);
     var vec = ParseUnityVector(result!);
 
@@ -533,7 +533,7 @@ public class ParametersTests
   [Test]
   public void Replace_UsesExecuteCodeForSimpleParameter()
   {
-    Parameters.ExecuteCode = key => key == "name" ? "Alice" : null;
+    Functions.ExecuteCode = key => key == "name" ? "Alice" : null;
 
     var result = Replace("Hello <name>!");
 
@@ -543,7 +543,7 @@ public class ParametersTests
   [Test]
   public void Replace_UsesExecuteCodeWithValueForValueParameter()
   {
-    Parameters.ExecuteCodeWithValue = (key, value) => key == "tag" ? $"[{value}]" : null;
+    Functions.ExecuteCodeWithValue = (key, value) => key == "tag" ? $"[{value}]" : null;
 
     var result = Replace("Value: <tag_demo>");
 
@@ -553,8 +553,8 @@ public class ParametersTests
   [Test]
   public void Replace_ResolvesNestedParametersInsideOut()
   {
-    Parameters.ExecuteCode = key => key == "inner" ? "world" : null;
-    Parameters.ExecuteCodeWithValue = (key, value) => key == "wrap" ? $"[{value}]" : null;
+    Functions.ExecuteCode = key => key == "inner" ? "world" : null;
+    Functions.ExecuteCodeWithValue = (key, value) => key == "wrap" ? $"[{value}]" : null;
 
     var result = Replace("Hello <wrap_<inner>>");
 
@@ -564,7 +564,7 @@ public class ParametersTests
   [Test]
   public void Replace_WithInjectionPrevention_ReplacesSemicolon()
   {
-    Parameters.ExecuteCode = key => key == "cmd" ? "say hi;killall" : null;
+    Functions.ExecuteCode = key => key == "cmd" ? "say hi;killall" : null;
 
     var result = Replace("<cmd>", preventInjections: true);
 
@@ -574,7 +574,7 @@ public class ParametersTests
   [Test]
   public void Replace_WithoutInjectionPrevention_KeepsSemicolon()
   {
-    Parameters.ExecuteCode = key => key == "cmd" ? "say hi;killall" : null;
+    Functions.ExecuteCode = key => key == "cmd" ? "say hi;killall" : null;
 
     var result = Replace("<cmd>", preventInjections: false);
 

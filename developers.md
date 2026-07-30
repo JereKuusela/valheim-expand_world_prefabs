@@ -1,6 +1,6 @@
 # Developers
 
-- Mods can register custom parameter handlers for Expand World Prefabs.
+- Mods can register custom function handlers for Expand World Prefabs.
 - Mods can register custom group handlers for Expand World Prefabs.
 - Mods can directly use custom triggers.
 
@@ -22,9 +22,9 @@ public static class Api
   public const string GUID = "expand_world_prefabs";
   private static bool isSetup = false;
 
-  private static MethodInfo? registerSimpleParameterHandlerMethod;
-  private static MethodInfo? registerValueParameterHandlerMethod;
-  private static MethodInfo? unregisterParameterHandlerMethod;
+  private static MethodInfo? registerSimpleFunctionHandlerMethod;
+  private static MethodInfo? registerValueFunctionHandlerMethod;
+  private static MethodInfo? unregisterFunctionHandlerMethod;
   private static MethodInfo? registerGroupHandlerMethod;
   private static MethodInfo? unregisterGroupHandlerMethod;
   private static MethodInfo? triggerCustomMethod;
@@ -44,31 +44,31 @@ public static class Api
     var type = assembly.GetType("ExpandWorld.Prefab.Api");
     if (type == null) return;
 
-    registerSimpleParameterHandlerMethod = AccessTools.Method(type, "RegisterParameterHandler", [typeof(string), typeof(Func<string?>)]);
-    registerValueParameterHandlerMethod = AccessTools.Method(type, "RegisterParameterHandler", [typeof(string), typeof(Func<string, string?>)]);
-    unregisterParameterHandlerMethod = AccessTools.Method(type, "UnregisterParameterHandler", [typeof(string)]);
+    registerSimpleFunctionHandlerMethod = AccessTools.Method(type, "RegisterFunctionHandler", [typeof(string), typeof(Func<string?>)]);
+    registerValueFunctionHandlerMethod = AccessTools.Method(type, "RegisterFunctionHandler", [typeof(string), typeof(Func<string, string?>)]);
+    unregisterFunctionHandlerMethod = AccessTools.Method(type, "UnregisterFunctionHandler", [typeof(string)]);
     registerGroupHandlerMethod = AccessTools.Method(type, "RegisterGroupHandler", [typeof(string), typeof(Func<string, long, string, bool>)]);
     unregisterGroupHandlerMethod = AccessTools.Method(type, "UnregisterGroupHandler", [typeof(string)]);
     triggerCustomMethod = AccessTools.Method(type, "TriggerCustom", [typeof(string[])]);
     triggerCustomWithPositionMethod = AccessTools.Method(type, "TriggerCustom", [typeof(Vector3), typeof(string[])]);
   }
 
-  public static void AddParameter(string key, Func<string?> handler)
+  public static void AddFunction(string key, Func<string?> handler)
   {
     SetupIfNeeded();
-    registerSimpleParameterHandlerMethod?.Invoke(null, [key, handler]);
+    registerSimpleFunctionHandlerMethod?.Invoke(null, [key, handler]);
   }
 
-  public static void AddValueParameter(string key, Func<string, string?> handler)
+  public static void AddValueFunction(string key, Func<string, string?> handler)
   {
     SetupIfNeeded();
-    registerValueParameterHandlerMethod?.Invoke(null, [key, handler]);
+    registerValueFunctionHandlerMethod?.Invoke(null, [key, handler]);
   }
 
-  public static void RemoveParameter(string key)
+  public static void RemoveFunction(string key)
   {
     SetupIfNeeded();
-    unregisterParameterHandlerMethod?.Invoke(null, [key]);
+    unregisterFunctionHandlerMethod?.Invoke(null, [key]);
   }
 
   public static void RegisterGroupHandler(string key, Func<string, long, string, bool> handler)
@@ -102,8 +102,8 @@ Then to your plugin add
 ```cs
 public void Start()
 {
-  EWP.Api.AddParameter("test", GetSomething);
-  EWP.Api.AddValueParameter("anothertest", AnotherTest);
+  EWP.Api.AddFunction("test", GetSomething);
+  EWP.Api.AddValueFunction("anothertest", AnotherTest);
   EWP.Api.RegisterGroupHandler("modgroup", IsInModGroup);
 }
 

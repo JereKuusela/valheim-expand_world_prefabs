@@ -11,23 +11,23 @@ public class Manager
   public static void HandleGlobal(ActionType type, string[] args, Vector3 pos, bool remove)
   {
     if (!ZNet.instance.IsServer()) return;
-    Parameters parameters = new("", args, pos);
-    var info = InfoSelector.SelectGlobalWeighted(type, args, parameters, pos, remove);
-    var infos = InfoSelector.SelectGlobalSeparate(type, args, parameters, pos, remove);
+    Functions f = new("", args, pos);
+    var info = InfoSelector.SelectGlobalWeighted(type, args, f, pos, remove);
+    var infos = InfoSelector.SelectGlobalSeparate(type, args, f, pos, remove);
     if (info == null && infos == null)
-      info = InfoSelector.SelectGlobalFallback(type, args, parameters, pos, remove);
+      info = InfoSelector.SelectGlobalFallback(type, args, f, pos, remove);
 
     if (info != null)
-      HandleGlobal(info, parameters, pos, remove);
+      HandleGlobal(info, f, pos, remove);
     if (infos != null)
       foreach (var i in infos)
-        HandleGlobal(i, parameters, pos, remove);
+        HandleGlobal(i, f, pos, remove);
   }
-  private static void HandleGlobal(Info info, Parameters parameters, Vector3 pos, bool remove)
+  private static void HandleGlobal(Info info, Functions f, Vector3 pos, bool remove)
   {
     if (info.Chance != null)
     {
-      var chance = info.Chance.Get(parameters);
+      var chance = info.Chance.Get(f);
       if (chance != null && chance < 1f)
       {
         if (UnityEngine.Random.value > chance)
@@ -35,15 +35,15 @@ public class Manager
       }
     }
 
-    info.Execute?.Get(parameters);
+    info.Execute?.Get(f);
     if (info.Commands.Length > 0)
-      Commands.Run(info, parameters);
-    var weightedClientRpc = info.GetWeightedClientRpc(parameters);
+      Commands.Run(info, f);
+    var weightedClientRpc = info.GetWeightedClientRpc(f);
     if (weightedClientRpc != null)
-      weightedClientRpc.InvokeGlobal(parameters);
+      weightedClientRpc.InvokeGlobal(f);
     if (info.ClientRpcs != null)
-      GlobalClientRpc(info.ClientRpcs, parameters);
-    PokeGlobal(info, parameters, pos);
+      GlobalClientRpc(info.ClientRpcs, f);
+    PokeGlobal(info, f, pos);
   }
   public static bool Handle(ActionType type, string[] args, ZDOID id)
   {
@@ -58,27 +58,27 @@ public class Manager
     if (ZDOMan.instance.m_deadZDOs.ContainsKey(zdo.m_uid)) return false;
     if (!ZNet.instance.IsServer()) return false;
     var name = ZNetScene.instance.GetPrefab(zdo.m_prefab)?.name ?? "";
-    ObjectParameters parameters = new(name, args, zdo);
-    var info = InfoSelector.SelectWeighted(type, zdo, args, parameters);
-    var infos = InfoSelector.SelectSeparate(type, zdo, args, parameters);
+    ObjectFunctions f = new(name, args, zdo);
+    var info = InfoSelector.SelectWeighted(type, zdo, args, f);
+    var infos = InfoSelector.SelectSeparate(type, zdo, args, f);
     if (info == null && infos == null)
-      info = InfoSelector.SelectFallback(type, zdo, args, parameters);
+      info = InfoSelector.SelectFallback(type, zdo, args, f);
     if (info == null && infos == null) return false;
 
     bool ret = false;
     if (info != null)
-      ret |= Handle(info, parameters, zdo);
+      ret |= Handle(info, f, zdo);
     if (infos != null)
       foreach (var i in infos)
-        ret |= Handle(i, parameters, zdo);
+        ret |= Handle(i, f, zdo);
     return ret;
   }
 
-  private static bool Handle(Info info, Parameters parameters, ZDO zdo)
+  private static bool Handle(Info info, Functions f, ZDO zdo)
   {
     if (info.Chance != null)
     {
-      var chance = info.Chance.Get(parameters);
+      var chance = info.Chance.Get(f);
       if (chance != null && chance < 1f)
       {
         if (UnityEngine.Random.value > chance)
@@ -86,42 +86,42 @@ public class Manager
       }
     }
 
-    info.Execute?.Get(parameters);
+    info.Execute?.Get(f);
     if (info.Commands.Length > 0)
-      Commands.Run(info, parameters);
+      Commands.Run(info, f);
 
-    var weightedObjectRpc = info.GetWeightedObjectRpc(parameters);
+    var weightedObjectRpc = info.GetWeightedObjectRpc(f);
     if (weightedObjectRpc != null)
-      weightedObjectRpc.Invoke(zdo, parameters);
-    var weightedClientRpc = info.GetWeightedClientRpc(parameters);
+      weightedObjectRpc.Invoke(zdo, f);
+    var weightedClientRpc = info.GetWeightedClientRpc(f);
     if (weightedClientRpc != null)
-      weightedClientRpc.Invoke(zdo, parameters);
+      weightedClientRpc.Invoke(zdo, f);
 
     if (info.ObjectRpcs != null)
-      ObjectRpc(info.ObjectRpcs, zdo, parameters);
+      ObjectRpc(info.ObjectRpcs, zdo, f);
     if (info.ClientRpcs != null)
-      ClientRpc(info.ClientRpcs, zdo, parameters);
+      ClientRpc(info.ClientRpcs, zdo, f);
 
-    var remove = info.Remove?.GetBool(parameters) == true;
-    var data = DataHelper.Get(info.Data, parameters);
+    var remove = info.Remove?.GetBool(f) == true;
+    var data = DataHelper.Get(info.Data, f);
     var inject = info.InjectData ?? data?.CanBeInjected ?? false;
     var regenerate = info.Regenerate && !inject;
-    var attach = info.Attach?.Get(parameters);
+    var attach = info.Attach?.Get(f);
     if (attach.HasValue && !SupportAttach.CanSync(zdo))
       regenerate = true;
     if (PersistPlayers.IsRealPlayer(zdo))
       regenerate = false;
-    HandleSpawns(info, zdo, parameters, remove, regenerate, data);
-    Poke(info, zdo, parameters);
-    Terrain(info, zdo, parameters);
-    var drops = info.Drops?.Get(parameters);
+    HandleSpawns(info, zdo, f, remove, regenerate, data);
+    Poke(info, zdo, f);
+    Terrain(info, zdo, f);
+    var drops = info.Drops?.Get(f);
     if (drops != null && drops == "true")
       SpawnDrops(zdo);
     else if (drops != null && drops != "false")
-      SpawnItems(drops, zdo, parameters);
+      SpawnItems(drops, zdo, f);
     // Original object was regenerated to apply data.
     if (remove || regenerate)
-      DelayedRemove.Add(info.RemoveDelay?.Get(parameters) ?? 0f, zdo.m_uid, remove && info.TriggerRules);
+      DelayedRemove.Add(info.RemoveDelay?.Get(f) ?? 0f, zdo.m_uid, remove && info.TriggerRules);
     else
     {
       if (!info.TriggerRules)
@@ -132,21 +132,21 @@ public class Manager
       if (data != null)
       {
         ZdoEntry entry = new(zdo);
-        entry.Load(data, parameters);
+        entry.Load(data, f);
         hasSyncedDataChanges = entry.HasSyncedChanges();
         if (hasSyncedDataChanges)
           entry.Write(zdo);
         else
           entry.WriteServer(zdo);
       }
-      removeItems?.RemoveItems(parameters, zdo);
-      addItems?.AddItems(parameters, zdo);
-      var owner = info.Owner?.Get(parameters);
+      removeItems?.RemoveItems(f, zdo);
+      addItems?.AddItems(f, zdo);
+      var owner = info.Owner?.Get(f);
       if (owner.HasValue)
         zdo.SetOwner(owner.Value);
       if (attach.HasValue)
         SupportAttach.Attach(zdo, attach.Value);
-      var connect = info.Connect?.Get(parameters);
+      var connect = info.Connect?.Get(f);
       if (connect.HasValue)
         SupportAttach.Connect(zdo, connect.Value);
 
@@ -154,7 +154,7 @@ public class Manager
         zdo.DataRevision += 100;
       HandleChanged.IgnoreZdo = ZDOID.None;
     }
-    var cancel = info.Cancel?.GetBool(parameters) == true;
+    var cancel = info.Cancel?.GetBool(f) == true;
 
     return cancel;
   }
@@ -162,56 +162,56 @@ public class Manager
   {
     if (!ZNet.instance.IsServer()) return false;
     var name = ZNetScene.instance.GetPrefab(zdo.m_prefab)?.name ?? "";
-    ObjectParameters parameters = new(name, args, zdo);
-    var info = InfoSelector.SelectWeighted(type, zdo, args, parameters);
-    var infos = InfoSelector.SelectSeparate(type, zdo, args, parameters);
+    ObjectFunctions f = new(name, args, zdo);
+    var info = InfoSelector.SelectWeighted(type, zdo, args, f);
+    var infos = InfoSelector.SelectSeparate(type, zdo, args, f);
     if (info == null && infos == null)
-      info = InfoSelector.SelectFallback(type, zdo, args, parameters);
+      info = InfoSelector.SelectFallback(type, zdo, args, f);
     if (info == null && infos == null) return false;
-    if (info?.Cancel?.GetBool(parameters) == true)
+    if (info?.Cancel?.GetBool(f) == true)
       return true;
     if (infos != null)
-      return infos.Any(i => i.Cancel?.GetBool(parameters) == true);
+      return infos.Any(i => i.Cancel?.GetBool(f) == true);
     return false;
   }
-  private static void HandleSpawns(Info info, ZDO zdo, Parameters pars, bool remove, bool regenerate, DataEntry? customData)
+  private static void HandleSpawns(Info info, ZDO zdo, Functions f, bool remove, bool regenerate, DataEntry? customData)
   {
     // Original object must be regenerated to apply data.
     var regenerateOriginal = !remove && regenerate;
 
-    var weightedSpawn = info.GetWeightedSpawn(pars);
+    var weightedSpawn = info.GetWeightedSpawn(f);
     if (weightedSpawn != null)
-      DelayedSpawn.Add(weightedSpawn, zdo, customData, pars);
+      DelayedSpawn.Add(weightedSpawn, zdo, customData, f);
     if (info.Spawns != null)
       foreach (var p in info.Spawns)
-        DelayedSpawn.Add(p, zdo, customData, pars);
+        DelayedSpawn.Add(p, zdo, customData, f);
 
-    var weightedSwap = info.GetWeightedSwap(pars);
+    var weightedSwap = info.GetWeightedSwap(f);
     if (info.Swaps == null && info.WeightedSwaps == null && !regenerateOriginal) return;
     var data = DataHelper.Merge(new DataEntry(zdo), customData);
     if (weightedSwap != null)
-      DelayedSpawn.Add(weightedSwap, zdo, data, pars);
+      DelayedSpawn.Add(weightedSwap, zdo, data, f);
     if (info.Swaps != null)
       foreach (var p in info.Swaps)
-        DelayedSpawn.Add(p, zdo, data, pars);
+        DelayedSpawn.Add(p, zdo, data, f);
     if (regenerateOriginal)
     {
       var removeItems = info.RemoveItems;
       var addItems = info.AddItems;
       ZdoEntry entry = new(zdo);
       if (data != null)
-        entry.Load(data, pars);
-      var attach = info.Attach?.Get(pars);
+        entry.Load(data, f);
+      var attach = info.Attach?.Get(f);
       if (attach.HasValue)
         SupportAttach.Attach(entry, attach.Value);
-      var connect = info.Connect?.Get(pars);
+      var connect = info.Connect?.Get(f);
       if (connect.HasValue)
         SupportAttach.Connect(entry, connect.Value);
       var newZdo = DelayedSpawn.CreateObject(entry, false);
       if (newZdo != null)
       {
-        removeItems?.RemoveItems(pars, newZdo);
-        addItems?.AddItems(pars, newZdo);
+        removeItems?.RemoveItems(f, newZdo);
+        addItems?.AddItems(f, newZdo);
         PrefabConnector.AddSwap(zdo.m_uid, newZdo.m_uid);
       }
     }
@@ -287,52 +287,52 @@ public class Manager
     var zdo = ZdoEntry.Spawn(hash, item.transform.position, Vector3.zero, source.GetOwner());
     if (zdo == null) return;
   }
-  public static void SpawnItems(string dataName, ZDO zdo, Parameters pars)
+  public static void SpawnItems(string dataName, ZDO zdo, Functions f)
   {
     var data = DataHelper.Get(dataName);
     if (data == null) return;
-    var items = data.GenerateItems(pars, new(10000, 10000));
+    var items = data.GenerateItems(f, new(10000, 10000));
     HandleCreated.Skip = true;
     foreach (var item in items)
-      item.Spawn(zdo, pars);
+      item.Spawn(zdo, f);
     HandleCreated.Skip = false;
   }
-  public static void Poke(Info info, ZDO zdo, Parameters pars)
+  public static void Poke(Info info, ZDO zdo, Functions f)
   {
     var pos = zdo.m_position;
     var rot = zdo.GetRotation();
     if (info.LegacyPokes != null)
     {
-      var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, rot, pars, null);
-      var pokeParameter = Prefab.Poke.PokeEvaluate(pars.Replace(info.PokeParameter)).Split(' ');
+      var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, rot, f, null);
+      var pokeParameter = Prefab.Poke.PokeEvaluate(f.Replace(info.PokeParameter)).Split(' ');
       var delay = info.PokeDelay;
       DelayedPoke.Add(delay, zdos, pokeParameter);
     }
-    var weightedPoke = info.GetWeightedPoke(pars);
+    var weightedPoke = info.GetWeightedPoke(f);
     if (weightedPoke != null)
-      DelayedPoke.Add(weightedPoke, zdo.m_uid, pos, rot, pars);
+      DelayedPoke.Add(weightedPoke, zdo.m_uid, pos, rot, f);
     if (info.Pokes == null) return;
     foreach (var poke in info.Pokes)
-      DelayedPoke.Add(poke, zdo.m_uid, pos, rot, pars);
+      DelayedPoke.Add(poke, zdo.m_uid, pos, rot, f);
   }
 
-  public static void PokeGlobal(Info info, Parameters pars, Vector3 pos)
+  public static void PokeGlobal(Info info, Functions f, Vector3 pos)
   {
     if (info.LegacyPokes != null)
     {
-      var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, Quaternion.identity, pars, null);
-      var pokeParameter = Prefab.Poke.PokeEvaluate(pars.Replace(info.PokeParameter));
+      var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, Quaternion.identity, f, null);
+      var pokeParameter = Prefab.Poke.PokeEvaluate(f.Replace(info.PokeParameter));
       var delay = info.PokeDelay;
       DelayedPoke.Add(delay, zdos, pokeParameter.Split(' '));
     }
-    var weightedPoke = info.GetWeightedPoke(pars);
+    var weightedPoke = info.GetWeightedPoke(f);
     if (weightedPoke != null)
-      DelayedPoke.AddGlobal(weightedPoke, pos, Quaternion.identity, pars);
+      DelayedPoke.AddGlobal(weightedPoke, pos, Quaternion.identity, f);
     if (info.Pokes == null) return;
     foreach (var poke in info.Pokes)
-      DelayedPoke.AddGlobal(poke, pos, Quaternion.identity, pars);
+      DelayedPoke.AddGlobal(poke, pos, Quaternion.identity, f);
   }
-  public static void Terrain(Info info, ZDO zdo, Parameters pars)
+  public static void Terrain(Info info, ZDO zdo, Functions f)
   {
     if (info.Terrains == null) return;
     var pos = zdo.m_position;
@@ -340,26 +340,26 @@ public class Manager
     var source = zdo.GetOwner();
     foreach (var terrain in info.Terrains)
     {
-      var delay = terrain.Delay?.Get(pars) ?? 0f;
-      terrain.Get(pars, pos, rot, out var p, out var s, out var resetRadius, out var pkg);
+      var delay = terrain.Delay?.Get(f) ?? 0f;
+      terrain.Get(f, pos, rot, out var p, out var s, out var resetRadius, out var pkg);
       DelayedTerrain.Add(delay, source, p, s, pkg, resetRadius);
     }
   }
 
-  public static void ObjectRpc(ObjectRpcInfo[] info, ZDO zdo, Parameters parameters)
+  public static void ObjectRpc(ObjectRpcInfo[] info, ZDO zdo, Functions f)
   {
     foreach (var i in info)
-      i.Invoke(zdo, parameters);
+      i.Invoke(zdo, f);
   }
-  public static void ClientRpc(ClientRpcInfo[] info, ZDO zdo, Parameters parameters)
+  public static void ClientRpc(ClientRpcInfo[] info, ZDO zdo, Functions f)
   {
     foreach (var i in info)
-      i.Invoke(zdo, parameters);
+      i.Invoke(zdo, f);
   }
-  public static void GlobalClientRpc(ClientRpcInfo[] info, Parameters parameters)
+  public static void GlobalClientRpc(ClientRpcInfo[] info, Functions f)
   {
     foreach (var i in info)
-      i.InvokeGlobal(parameters);
+      i.InvokeGlobal(f);
   }
   public static void ModifyTerrain(long source, Vector3 pos, float radius, ZPackage pkg, float resetRadius)
   {

@@ -1,4 +1,3 @@
-using System.Globalization;
 using Service;
 using UnityEngine;
 
@@ -6,9 +5,9 @@ namespace Data;
 
 public class IntValue(string[] values) : AnyValue(values), IIntValue
 {
-  public int? Get(Parameters pars)
+  public int? Get(Functions f)
   {
-    var value = GetValue(pars);
+    var value = GetValue(f);
     if (value == null)
       return null;
     if (!value.Contains(";"))
@@ -38,13 +37,13 @@ public class IntValue(string[] values) : AnyValue(values), IIntValue
     }
     return roll;
   }
-  public bool? Match(Parameters pars, int value)
+  public bool? Match(Functions f, int value)
   {
     // If all values are null, default to a match.
     var allNull = true;
     foreach (var rawValue in Values)
     {
-      var v = pars.Replace(rawValue);
+      var v = f.Replace(rawValue);
       // Case 1: Simple value.
       if (!v.Contains(";"))
       {
@@ -92,11 +91,11 @@ public class IntValue(string[] values) : AnyValue(values), IIntValue
 public class SimpleIntValue(int value) : IIntValue
 {
   private readonly int Value = value;
-  public int? Get(Parameters pars) => Value;
-  public bool? Match(Parameters pars, int value) => Value == value;
+  public int? Get(Functions f) => Value;
+  public bool? Match(Functions f, int value) => Value == value;
 }
 public interface IIntValue
 {
-  int? Get(Parameters pars);
-  bool? Match(Parameters pars, int value);
+  int? Get(Functions f);
+  bool? Match(Functions f, int value);
 }

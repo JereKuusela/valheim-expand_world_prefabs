@@ -155,11 +155,11 @@ public class DataStorage
     return (value.Value - min.Value) % step == 0;
   }
 
-  public static bool HasAnyKey(List<string> keys, Parameters pars)
+  public static bool HasAnyKey(List<string> keys, Functions f)
   {
     foreach (var dataKey in keys)
     {
-      var kvp = Parse.Kvp(dataKey.Contains("<") ? pars.Replace(dataKey) : dataKey, ' ');
+      var kvp = Parse.Kvp(dataKey.Contains("<") ? f.Replace(dataKey) : dataKey, ' ');
       var key = kvp.Key.ToLowerInvariant();
       if (key == "") continue;
       var wildIndex = key.IndexOf('*');
@@ -179,11 +179,11 @@ public class DataStorage
     }
     return false;
   }
-  public static bool HasEveryKey(List<string> keys, Parameters pars)
+  public static bool HasEveryKey(List<string> keys, Functions f)
   {
     foreach (var key in keys)
     {
-      var kvp = Parse.Kvp(key.Contains("<") ? pars.Replace(key) : key, ' ');
+      var kvp = Parse.Kvp(key.Contains("<") ? f.Replace(key) : key, ' ');
       var wildIndex = kvp.Key.IndexOf('*');
       if (wildIndex >= 0)
       {

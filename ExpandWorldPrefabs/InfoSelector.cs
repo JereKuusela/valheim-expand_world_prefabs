@@ -8,33 +8,33 @@ namespace ExpandWorld.Prefab;
 
 public class InfoSelector
 {
-  public static Info? SelectWeighted(ActionType type, ZDO zdo, string[] args, Parameters parameters)
+  public static Info? SelectWeighted(ActionType type, ZDO zdo, string[] args, Functions f)
   {
     var infos = InfoManager.Select(type);
     if (!infos.TryGetWeightedValue(zdo.m_prefab, out var data)) return null;
-    return SelectInfo(data, zdo, args, parameters);
+    return SelectInfo(data, zdo, args, f);
   }
-  public static Info? SelectFallback(ActionType type, ZDO zdo, string[] args, Parameters parameters)
+  public static Info? SelectFallback(ActionType type, ZDO zdo, string[] args, Functions f)
   {
     var infos = InfoManager.Select(type);
     if (!infos.TryGetFallbackValue(zdo.m_prefab, out var data)) return null;
-    return SelectInfo(data, zdo, args, parameters);
+    return SelectInfo(data, zdo, args, f);
   }
-  public static Info[]? SelectSeparate(ActionType type, ZDO zdo, string[] args, Parameters parameters)
+  public static Info[]? SelectSeparate(ActionType type, ZDO zdo, string[] args, Functions f)
   {
     var infos = InfoManager.Select(type);
     if (!infos.TryGetSeparateValue(zdo.m_prefab, out var data)) return null;
-    return SelectInfos(data, zdo.m_position, zdo, args, parameters);
+    return SelectInfos(data, zdo.m_position, zdo, args, f);
   }
 
-  private static Info? SelectInfo(List<Info> data, ZDO zdo, string[] args, Parameters parameters)
+  private static Info? SelectInfo(List<Info> data, ZDO zdo, string[] args, Functions f)
   {
-    var infos = SelectInfos(data, zdo.m_position, zdo, args, parameters);
+    var infos = SelectInfos(data, zdo.m_position, zdo, args, f);
     if (infos == null || infos.Length == 0) return null;
-    return Randomize(infos, parameters);
+    return Randomize(infos, f);
   }
 
-  private static Info[]? SelectInfos(List<Info> data, Vector3 pos, ZDO zdo, string[] args, Parameters parameters)
+  private static Info[]? SelectInfos(List<Info> data, Vector3 pos, ZDO zdo, string[] args, Functions f)
   {
     if (data.Count == 0) return null;
     var biome = WorldGenerator.instance.GetBiome(pos);
@@ -45,22 +45,22 @@ public class InfoSelector
       .Where(d => CheckArgs(d, args))
       .Where(d => (d.Biomes & biome) == biome)
       .Where(d => (d.BannedBiomes & biome) == 0)
-      .Where(d => d.Day?.GetBool(parameters) != false || !day)
-      .Where(d => d.Night?.GetBool(parameters) != false || day)
-      .Where(d => d.MinDistance == null || !d.MinDistance.TryGet(parameters, out var v) || v < distance)
-      .Where(d => d.MaxDistance == null || !d.MaxDistance.TryGet(parameters, out var v) || v >= distance)
-      .Where(d => d.MinY == null || !d.MinY.TryGet(parameters, out var v) || v < pos.y)
-      .Where(d => d.MaxY == null || !d.MaxY.TryGet(parameters, out var v) || v >= pos.y)
-      .Where(d => d.MinX == null || !d.MinX.TryGet(parameters, out var v) || v < pos.x)
-      .Where(d => d.MaxX == null || !d.MaxX.TryGet(parameters, out var v) || v >= pos.x)
-      .Where(d => d.MinZ == null || !d.MinZ.TryGet(parameters, out var v) || v < pos.z)
-      .Where(d => d.MaxZ == null || !d.MaxZ.TryGet(parameters, out var v) || v >= pos.z)
-      .Where(d => d.MinAltitude == null || !d.MinAltitude.TryGet(parameters, out var v) || v < waterY)
-      .Where(d => d.MaxAltitude == null || !d.MaxAltitude.TryGet(parameters, out var v) || v >= waterY)
-      .Where(d => Helper.HasEveryGlobalKey(d.GlobalKeys, parameters))
-      .Where(d => !Helper.HasAnyGlobalKey(d.BannedGlobalKeys, parameters))
-      .Where(d => DataStorage.HasEveryKey(d.Keys, parameters))
-      .Where(d => !DataStorage.HasAnyKey(d.BannedKeys, parameters));
+      .Where(d => d.Day?.GetBool(f) != false || !day)
+      .Where(d => d.Night?.GetBool(f) != false || day)
+      .Where(d => d.MinDistance == null || !d.MinDistance.TryGet(f, out var v) || v < distance)
+      .Where(d => d.MaxDistance == null || !d.MaxDistance.TryGet(f, out var v) || v >= distance)
+      .Where(d => d.MinY == null || !d.MinY.TryGet(f, out var v) || v < pos.y)
+      .Where(d => d.MaxY == null || !d.MaxY.TryGet(f, out var v) || v >= pos.y)
+      .Where(d => d.MinX == null || !d.MinX.TryGet(f, out var v) || v < pos.x)
+      .Where(d => d.MaxX == null || !d.MaxX.TryGet(f, out var v) || v >= pos.x)
+      .Where(d => d.MinZ == null || !d.MinZ.TryGet(f, out var v) || v < pos.z)
+      .Where(d => d.MaxZ == null || !d.MaxZ.TryGet(f, out var v) || v >= pos.z)
+      .Where(d => d.MinAltitude == null || !d.MinAltitude.TryGet(f, out var v) || v < waterY)
+      .Where(d => d.MaxAltitude == null || !d.MaxAltitude.TryGet(f, out var v) || v >= waterY)
+      .Where(d => Helper.HasEveryGlobalKey(d.GlobalKeys, f))
+      .Where(d => !Helper.HasAnyGlobalKey(d.BannedGlobalKeys, f))
+      .Where(d => DataStorage.HasEveryKey(d.Keys, f))
+      .Where(d => !DataStorage.HasAnyKey(d.BannedKeys, f));
     // Minor optimization to resolve simpler checks first (not measured).
     linq = [.. linq];
     var checkEnvironments = linq.Any(d => d.Environments.Count > 0) || linq.Any(d => d.BannedEnvironments.Count > 0);
@@ -79,7 +79,7 @@ public class InfoSelector
       var height = WorldGenerator.instance.GetHeight(pos.x, pos.z);
       linq = [.. linq.Where(d =>
         (d.MinTerrainHeight == null && d.MaxTerrainHeight == null)
-        || Helper.ApproxBetween(height, d.MinTerrainHeight?.Get(parameters) ?? -1000000, d.MaxTerrainHeight?.Get(parameters) ?? 1000000)
+        || Helper.ApproxBetween(height, d.MinTerrainHeight?.Get(f) ?? -1000000, d.MaxTerrainHeight?.Get(f) ?? 1000000)
       )];
     }
     if (checkEnvironments)
@@ -101,16 +101,16 @@ public class InfoSelector
     }
     if (checkObjects)
     {
-      linq = [.. linq.Where(d => d.Objects == null || ObjectsFiltering.HasNearby(d.ObjectsLimit, d.Objects, zdo, parameters))];
+      linq = [.. linq.Where(d => d.Objects == null || ObjectsFiltering.HasNearby(d.ObjectsLimit, d.Objects, zdo, f))];
     }
     if (checkBannedObjects)
     {
-      linq = [.. linq.Where(d => d.BannedObjects == null || ObjectsFiltering.HasNotNearby(d.BannedObjectsLimit, d.BannedObjects, zdo, parameters))];
+      linq = [.. linq.Where(d => d.BannedObjects == null || ObjectsFiltering.HasNotNearby(d.BannedObjectsLimit, d.BannedObjects, zdo, f))];
     }
     if (checkAdmin)
     {
       var admin = PeerManager.IsAdmin(zdo);
-      linq = [.. linq.Where(d => d.Admin == null || d.Admin.GetBool(parameters) == admin)];
+      linq = [.. linq.Where(d => d.Admin == null || d.Admin.GetBool(f) == admin)];
     }
     if (checkLocations)
     {
@@ -136,7 +136,7 @@ public class InfoSelector
     }
     if (checkFilters)
     {
-      linq = [.. linq.Where(d => d.Filters == null || d.Filters.Match(parameters, zdo))];
+      linq = [.. linq.Where(d => d.Filters == null || d.Filters.Match(f, zdo))];
     }
     if (checkPaint)
     {
@@ -201,10 +201,10 @@ public class InfoSelector
     }
     return false;
   }
-  private static Info? Randomize(Info[] valid, Parameters parameters)
+  private static Info? Randomize(Info[] valid, Functions f)
   {
     if (valid.Length == 0) return null;
-    var weights = valid.Select(d => d.Weight?.Get(parameters) ?? 1f).ToArray();
+    var weights = valid.Select(d => d.Weight?.Get(f) ?? 1f).ToArray();
     if (valid.Length == 1 && weights[0] >= 1f) return valid[0];
     var totalWeight = Mathf.Max(1f, weights.Sum());
     var random = Random.Range(0f, totalWeight);
@@ -236,30 +236,30 @@ public class InfoSelector
     Random.state = state;
     return env.m_name.ToLower();
   }
-  public static Info? SelectGlobalWeighted(ActionType type, string[] args, Parameters parameters, Vector3 pos, bool remove)
+  public static Info? SelectGlobalWeighted(ActionType type, string[] args, Functions f, Vector3 pos, bool remove)
   {
     var infos = InfoManager.SelectGlobal(type);
-    return SelectGlobalInfo(infos.Weighted, args, parameters, pos, remove);
+    return SelectGlobalInfo(infos.Weighted, args, f, pos, remove);
   }
-  public static Info? SelectGlobalFallback(ActionType type, string[] args, Parameters parameters, Vector3 pos, bool remove)
+  public static Info? SelectGlobalFallback(ActionType type, string[] args, Functions f, Vector3 pos, bool remove)
   {
     var infos = InfoManager.SelectGlobal(type);
-    return SelectGlobalInfo(infos.Fallback, args, parameters, pos, remove);
+    return SelectGlobalInfo(infos.Fallback, args, f, pos, remove);
   }
-  public static Info[]? SelectGlobalSeparate(ActionType type, string[] args, Parameters parameters, Vector3 pos, bool remove)
+  public static Info[]? SelectGlobalSeparate(ActionType type, string[] args, Functions f, Vector3 pos, bool remove)
   {
     var infos = InfoManager.SelectGlobal(type);
-    return SelectGlobalInfos(infos.Separate, args, parameters, pos, remove);
+    return SelectGlobalInfos(infos.Separate, args, f, pos, remove);
   }
 
-  private static Info? SelectGlobalInfo(List<Info> data, string[] args, Parameters parameters, Vector3 pos, bool remove)
+  private static Info? SelectGlobalInfo(List<Info> data, string[] args, Functions f, Vector3 pos, bool remove)
   {
-    var infos = SelectGlobalInfos(data, args, parameters, pos, remove);
+    var infos = SelectGlobalInfos(data, args, f, pos, remove);
     if (infos == null || infos.Length == 0) return null;
-    return Randomize(infos, parameters);
+    return Randomize(infos, f);
   }
 
-  private static Info[]? SelectGlobalInfos(List<Info> data, string[] args, Parameters parameters, Vector3 pos, bool remove)
+  private static Info[]? SelectGlobalInfos(List<Info> data, string[] args, Functions f, Vector3 pos, bool remove)
   {
     if (data.Count == 0) return null;
     var day = EnvMan.IsDay();
@@ -267,19 +267,19 @@ public class InfoSelector
     var waterY = pos.y - ZoneSystem.instance.m_waterLevel;
     var linq = data
       .Where(d => CheckArgs(d, args))
-      .Where(d => remove == (d.Remove?.GetBool(parameters) == true))
-      .Where(d => d.Day?.GetBool(parameters) != false || !day)
-      .Where(d => d.Night?.GetBool(parameters) != false || day)
-      .Where(d => d.MinDistance == null || distance >= d.MinDistance.Get(parameters))
-      .Where(d => d.MaxDistance == null || distance < d.MaxDistance.Get(parameters))
-      .Where(d => d.MinY == null || !d.MinY.TryGet(parameters, out var v) || v < pos.y)
-      .Where(d => d.MaxY == null || !d.MaxY.TryGet(parameters, out var v) || v >= pos.y)
-      .Where(d => d.MinAltitude == null || !d.MinAltitude.TryGet(parameters, out var v) || v < waterY)
-      .Where(d => d.MaxAltitude == null || !d.MaxAltitude.TryGet(parameters, out var v) || v >= waterY)
-      .Where(d => Helper.HasEveryGlobalKey(d.GlobalKeys, parameters))
-      .Where(d => !Helper.HasAnyGlobalKey(d.BannedGlobalKeys, parameters))
-      .Where(d => DataStorage.HasEveryKey(d.Keys, parameters))
-      .Where(d => !DataStorage.HasAnyKey(d.BannedKeys, parameters));
+      .Where(d => remove == (d.Remove?.GetBool(f) == true))
+      .Where(d => d.Day?.GetBool(f) != false || !day)
+      .Where(d => d.Night?.GetBool(f) != false || day)
+      .Where(d => d.MinDistance == null || distance >= d.MinDistance.Get(f))
+      .Where(d => d.MaxDistance == null || distance < d.MaxDistance.Get(f))
+      .Where(d => d.MinY == null || !d.MinY.TryGet(f, out var v) || v < pos.y)
+      .Where(d => d.MaxY == null || !d.MaxY.TryGet(f, out var v) || v >= pos.y)
+      .Where(d => d.MinAltitude == null || !d.MinAltitude.TryGet(f, out var v) || v < waterY)
+      .Where(d => d.MaxAltitude == null || !d.MaxAltitude.TryGet(f, out var v) || v >= waterY)
+      .Where(d => Helper.HasEveryGlobalKey(d.GlobalKeys, f))
+      .Where(d => !Helper.HasAnyGlobalKey(d.BannedGlobalKeys, f))
+      .Where(d => DataStorage.HasEveryKey(d.Keys, f))
+      .Where(d => !DataStorage.HasAnyKey(d.BannedKeys, f));
 
 
     Info[] result = [.. linq];

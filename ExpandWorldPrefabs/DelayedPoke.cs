@@ -32,42 +32,42 @@ public class DelayedMultiPoke(float delay, ZDOID[] zdos, string[] args) : Delaye
 public class DelayedPoke
 {
   private static readonly List<IPokeable> Pokes = [];
-  public static void Add(Poke poke, ZDOID zdo, Vector3 pos, Quaternion rot, Parameters pars)
+  public static void Add(Poke poke, ZDOID zdo, Vector3 pos, Quaternion rot, Functions f)
   {
-    var chance = poke.Chance?.Get(pars) ?? 1f;
+    var chance = poke.Chance?.Get(f) ?? 1f;
     if (chance < 1f && Random.value > chance)
       return;
 
-    var delay = poke.Delay?.Get(pars) ?? 0f;
-    var repeat = poke.Repeat?.Get(pars) ?? 0;
-    var repeatInterval = poke.RepeatInterval?.Get(pars) ?? delay;
-    var repeatChance = poke.RepeatChance?.Get(pars) ?? 1f;
+    var delay = poke.Delay?.Get(f) ?? 0f;
+    var repeat = poke.Repeat?.Get(f) ?? 0;
+    var repeatInterval = poke.RepeatInterval?.Get(f) ?? delay;
+    var repeatChance = poke.RepeatChance?.Get(f) ?? 1f;
     var delays = Helper.GenerateDelays(delay, repeat, repeatInterval, repeatChance);
     if (delays != null)
     {
       foreach (var d in delays)
-        Add(poke, zdo, pos, rot, pars, d);
+        Add(poke, zdo, pos, rot, f, d);
     }
     else
-      Add(poke, zdo, pos, rot, pars, delay);
+      Add(poke, zdo, pos, rot, f, delay);
 
   }
-  private static void Add(Poke poke, ZDOID zdo, Vector3 pos, Quaternion rot, Parameters pars, float delay)
+  private static void Add(Poke poke, ZDOID zdo, Vector3 pos, Quaternion rot, Functions f, float delay)
   {
-    var self = poke.Self?.GetBool(pars);
-    var connected = poke.Connected?.GetBool(pars) == true;
-    var target = poke.Target?.Get(pars);
+    var self = poke.Self?.GetBool(f);
+    var connected = poke.Connected?.GetBool(f) == true;
+    var target = poke.Target?.Get(f);
     if (poke.HasPrefab)
     {
-      var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, rot, pars, self == true ? null : zdo).ToList();
+      var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(f) ?? 0, poke.Filter, pos, rot, f, self == true ? null : zdo).ToList();
       if (connected)
       {
         var connectedZdos = new HashSet<ZDOID>(SupportAttach.GetConnnected(zdo));
         zdos.RemoveAll(id => !connectedZdos.Contains(id));
       }
       if (zdos.Count == 0) return;
-      pars.Amount = zdos.Count;
-      var args = poke.GetArgs(pars);
+      f.Amount = zdos.Count;
+      var args = poke.GetArgs(f);
       Add(delay, [.. zdos], args);
     }
     else if (self == true || target != null || connected)
@@ -80,33 +80,33 @@ public class DelayedPoke
       if (connected)
         targets.UnionWith(SupportAttach.GetConnnected(zdo));
       if (targets.Count == 0) return;
-      var args = poke.GetArgs(pars);
+      var args = poke.GetArgs(f);
       Add(delay, [.. targets], args);
     }
   }
-  public static void AddGlobal(Poke poke, Vector3 pos, Quaternion rot, Parameters pars)
+  public static void AddGlobal(Poke poke, Vector3 pos, Quaternion rot, Functions f)
   {
-    var chance = poke.Chance?.Get(pars) ?? 1f;
+    var chance = poke.Chance?.Get(f) ?? 1f;
     if (chance < 1f && Random.value > chance)
       return;
 
-    var delay = poke.Delay?.Get(pars) ?? 0f;
-    var repeat = poke.Repeat?.Get(pars) ?? 0;
-    var repeatInterval = poke.RepeatInterval?.Get(pars) ?? delay;
-    var repeatChance = poke.RepeatChance?.Get(pars) ?? 1f;
+    var delay = poke.Delay?.Get(f) ?? 0f;
+    var repeat = poke.Repeat?.Get(f) ?? 0;
+    var repeatInterval = poke.RepeatInterval?.Get(f) ?? delay;
+    var repeatChance = poke.RepeatChance?.Get(f) ?? 1f;
     var delays = Helper.GenerateDelays(delay, repeat, repeatInterval, repeatChance);
     if (delays != null)
     {
       foreach (var d in delays)
-        AddGlobal(poke, pos, rot, pars, d);
+        AddGlobal(poke, pos, rot, f, d);
     }
     else
-      AddGlobal(poke, pos, rot, pars, delay);
+      AddGlobal(poke, pos, rot, f, delay);
   }
-  private static void AddGlobal(Poke poke, Vector3 pos, Quaternion rot, Parameters pars, float delay)
+  private static void AddGlobal(Poke poke, Vector3 pos, Quaternion rot, Functions f, float delay)
   {
-    var args = poke.GetArgs(pars);
-    var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(pars) ?? 0, poke.Filter, pos, rot, pars, null);
+    var args = poke.GetArgs(f);
+    var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(f) ?? 0, poke.Filter, pos, rot, f, null);
     Add(delay, zdos, args);
   }
   public static void Add(float delay, ZDOID[] zdos, string[] args)

@@ -4,15 +4,15 @@ namespace Data;
 
 public class HashValue(string[] values) : AnyValue(values), IHashValue
 {
-  public int? Get(Parameters pars)
+  public int? Get(Functions f)
   {
-    var value = GetValue(pars);
+    var value = GetValue(f);
     if (value == null || value == "") return null;
     return value.GetStableHashCode();
   }
-  public bool? Match(Parameters pars, int value)
+  public bool? Match(Functions f, int value)
   {
-    var values = GetAllValues(pars);
+    var values = GetAllValues(f);
     if (values.Count == 0) return null;
     return values.Any(v => v.GetStableHashCode() == value);
   }
@@ -21,11 +21,11 @@ public class SimpleHashValue(string value) : IHashValue
 {
   private readonly int Value = value.GetStableHashCode();
 
-  public int? Get(Parameters pars) => Value;
-  public bool? Match(Parameters pars, int value) => Value == value;
+  public int? Get(Functions f) => Value;
+  public bool? Match(Functions f, int value) => Value == value;
 }
 public interface IHashValue
 {
-  int? Get(Parameters pars);
-  bool? Match(Parameters pars, int value);
+  int? Get(Functions f);
+  bool? Match(Functions f, int value);
 }

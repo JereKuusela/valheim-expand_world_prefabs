@@ -9,10 +9,10 @@ namespace ExpandWorld.Prefab;
 public class Commands
 {
 
-  public static void Run(Info info, Parameters pars)
+  public static void Run(Info info, Functions f)
   {
     if (info.Commands.Length == 0) return;
-    var commands = info.Commands.Select(c => pars.Replace(c, true)).ToArray();
+    var commands = info.Commands.Select(c => f.Replace(c, true)).ToArray();
     Run(commands);
   }
 

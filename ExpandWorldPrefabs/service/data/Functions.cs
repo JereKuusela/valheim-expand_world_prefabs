@@ -9,10 +9,10 @@ using UnityEngine;
 
 namespace Data;
 
-// Parameters are technically just a key-value mapping.
+// Functions are technically just a key-value mapping.
 // Proper class allows properly adding caching and other features.
 // While also ensuring that all code is in one place.
-public class Parameters(string prefab, string[] args, Vector3 pos)
+public class Functions(string prefab, string[] args, Vector3 pos)
 {
   protected const char Separator = '_';
   public static Func<string, string?> ExecuteCode = key => null!;
@@ -44,9 +44,9 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
         if (nesting == 1)
         {
           var key = str.Substring(start, i - start + 1);
-          var resolved = ResolveParameters(key);
+          var resolved = ResolveFunctions(key);
           // Server Devcommands mod supports running commands separated by ';'.
-          // This allows injection attacks when players can control parameter values.
+          // This allows injection attacks when players can control function values.
           // For example with player name, chat messages or sign texts.
           if (preventInjections && resolved.Contains(";"))
             resolved = resolved.Replace(";", ",");
@@ -62,7 +62,7 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
 
     return parts.ToString();
   }
-  private string ResolveParameters(string str)
+  private string ResolveFunctions(string str)
   {
     for (int i = 0; i < str.Length; i++)
     {
@@ -72,11 +72,11 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
       var start = str.LastIndexOf("<", end);
       if (start == -1) continue;
       var length = end - start + 1;
-      if (TryReplaceParameter(str.Substring(start, length), out var resolved))
+      if (TryReplaceFunction(str.Substring(start, length), out var resolved))
       {
         str = str.Remove(start, length);
         str = str.Insert(start, resolved);
-        // Resolved could contain parameters, so need to recheck the same position.
+        // Resolved could contain functions, so need to recheck the same position.
         i = start - 1;
       }
       else
@@ -86,7 +86,7 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     }
     return str;
   }
-  private bool TryReplaceParameter(string rawKey, out string? resolved)
+  private bool TryReplaceFunction(string rawKey, out string? resolved)
   {
     var key = rawKey.Substring(1, rawKey.Length - 2);
     var keyDefault = Parse.Kvp(key, '=');
@@ -97,33 +97,33 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     else
       key = keyDefault.Key;
 
-    resolved = GetParameter(key, defaultValue);
+    resolved = GetFunction(key, defaultValue);
     if (resolved == null)
       resolved = ResolveValue(rawKey);
     return resolved != rawKey;
   }
 
-  protected virtual string? GetParameter(string key, string defaultValue)
+  protected virtual string? GetFunction(string key, string defaultValue)
   {
-    var value = Api.ResolveParameter(key);
+    var value = Api.ResolveFunction(key);
     if (value != null) return value;
     value = ExecuteCode(key);
     if (value != null) return value;
-    value = GetGeneralParameter(key, defaultValue);
+    value = GetGeneralFunction(key, defaultValue);
     if (value != null) return value;
     var keyArg = Parse.Kvp(key, Separator);
     if (keyArg.Value == "") return null;
     key = keyArg.Key;
     var arg = keyArg.Value;
 
-    value = Api.ResolveValueParameter(key, arg);
+    value = Api.ResolveValueFunction(key, arg);
     if (value != null) return value;
     value = ExecuteCodeWithValue(key, arg);
     if (value != null) return value;
-    return GetValueParameter(key, arg, defaultValue);
+    return GetValueFunction(key, arg, defaultValue);
   }
 
-  private string? GetGeneralParameter(string key, string defaultValue) =>
+  private string? GetGeneralFunction(string key, string defaultValue) =>
     key switch
     {
       "prefab" => prefab,
@@ -152,7 +152,7 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
       _ => null,
     };
 
-  protected virtual string? GetValueParameter(string key, string value, string defaultValue) =>
+  protected virtual string? GetValueFunction(string key, string value, string defaultValue) =>
    key switch
    {
      "sqrt" => Parse.TryFloat(value, out var f) ? Mathf.Sqrt(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
@@ -1054,7 +1054,7 @@ public class Parameters(string prefab, string[] args, Vector3 pos)
     return offsetTime.ToString(format, CultureInfo.InvariantCulture);
   }
 
-  // Parameter value could be a value group, so that has to be resolved.
+  // Function value could be a value group, so that has to be resolved.
   private static string ResolveValue(string value)
   {
     if (!value.StartsWith("<", StringComparison.OrdinalIgnoreCase)) return value;

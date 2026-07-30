@@ -7,9 +7,9 @@ namespace Data;
 
 public class FloatValue(string[] values) : AnyValue(values), IFloatValue
 {
-  public float? Get(Parameters pars)
+  public float? Get(Functions f)
   {
-    var value = GetValue(pars);
+    var value = GetValue(f);
     if (value == null)
       return null;
     if (!value.Contains(";"))
@@ -39,20 +39,20 @@ public class FloatValue(string[] values) : AnyValue(values), IFloatValue
     }
     return roll;
   }
-  public bool TryGet(Parameters pars, out float value)
+  public bool TryGet(Functions f, out float value)
   {
-    var v = Get(pars);
+    var v = Get(f);
     if (v.HasValue) value = v.Value;
     else value = 0;
     return v.HasValue;
   }
-  public bool? Match(Parameters pars, float value)
+  public bool? Match(Functions f, float value)
   {
     // If all values are null, default to a match.
     var allNull = true;
     foreach (var rawValue in Values)
     {
-      var v = pars.Replace(rawValue);
+      var v = f.Replace(rawValue);
       // Case 1: Simple value.
       if (!v.Contains(";"))
       {
@@ -100,17 +100,17 @@ public class FloatValue(string[] values) : AnyValue(values), IFloatValue
 public class SimpleFloatValue(float value) : IFloatValue
 {
   private readonly float Value = value;
-  public float? Get(Parameters pars) => Value;
-  public bool TryGet(Parameters pars, out float value)
+  public float? Get(Functions f) => Value;
+  public bool TryGet(Functions f, out float value)
   {
     value = Value;
     return true;
   }
-  public bool? Match(Parameters pars, float value) => Value == value;
+  public bool? Match(Functions f, float value) => Value == value;
 }
 public interface IFloatValue
 {
-  float? Get(Parameters pars);
-  bool TryGet(Parameters pars, out float value);
-  bool? Match(Parameters pars, float value);
+  float? Get(Functions f);
+  bool TryGet(Functions f, out float value);
+  bool? Match(Functions f, float value);
 }

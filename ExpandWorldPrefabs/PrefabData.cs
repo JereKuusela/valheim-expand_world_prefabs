@@ -193,12 +193,12 @@ public class Info
   public Spawn[]? Spawns;
   public Spawn[]? WeightedSpawns;
 
-  public Spawn? GetWeightedSpawn(Parameters pars) => GetWeighted(pars, WeightedSpawns);
-  public Spawn? GetWeightedSwap(Parameters pars) => GetWeighted(pars, WeightedSwaps);
-  private Spawn? GetWeighted(Parameters pars, Spawn[]? candidates)
+  public Spawn? GetWeightedSpawn(Functions f) => GetWeighted(f, WeightedSpawns);
+  public Spawn? GetWeightedSwap(Functions r) => GetWeighted(r, WeightedSwaps);
+  private Spawn? GetWeighted(Functions r, Spawn[]? candidates)
   {
     if (candidates == null || candidates.Length == 0) return null;
-    var weights = candidates.Select(s => s.Weight?.Get(pars) ?? 0f).ToArray();
+    var weights = candidates.Select(s => s.Weight?.Get(r) ?? 0f).ToArray();
     var total = Mathf.Max(1f, weights.Sum(s => s));
     var random = UnityEngine.Random.Range(0f, total);
     for (var i = 0; i < weights.Length; i++)
@@ -240,10 +240,10 @@ public class Info
   public Object[]? LegacyPokes;
   public Poke[]? Pokes;
   public Poke[]? WeightedPokes;
-  public Poke? GetWeightedPoke(Parameters pars)
+  public Poke? GetWeightedPoke(Functions f)
   {
     if (WeightedPokes == null || WeightedPokes.Length == 0) return null;
-    var weights = WeightedPokes.Select(p => p.Weight?.Get(pars) ?? 0f).ToArray();
+    var weights = WeightedPokes.Select(p => p.Weight?.Get(f) ?? 0f).ToArray();
     var total = Mathf.Max(1f, weights.Sum(s => s));
     var random = UnityEngine.Random.Range(0f, total);
     for (var i = 0; i < weights.Length; i++)
@@ -273,10 +273,10 @@ public class Info
   public bool TriggerRules;
   public ObjectRpcInfo[]? ObjectRpcs;
   public ObjectRpcInfo[]? WeightedObjectRpcs;
-  public ObjectRpcInfo? GetWeightedObjectRpc(Parameters pars)
+  public ObjectRpcInfo? GetWeightedObjectRpc(Functions f)
   {
     if (WeightedObjectRpcs == null || WeightedObjectRpcs.Length == 0) return null;
-    var weights = WeightedObjectRpcs.Select(r => r.Weight?.Get(pars) ?? 0f).ToArray();
+    var weights = WeightedObjectRpcs.Select(r => r.Weight?.Get(f) ?? 0f).ToArray();
     var total = Mathf.Max(1f, weights.Sum(s => s));
     var random = UnityEngine.Random.Range(0f, total);
     for (var i = 0; i < weights.Length; i++)
@@ -289,10 +289,10 @@ public class Info
   public ClientRpcInfo[]? ClientRpcs;
   public ClientRpcInfo[]? WeightedClientRpcs;
 
-  public ClientRpcInfo? GetWeightedClientRpc(Parameters pars)
+  public ClientRpcInfo? GetWeightedClientRpc(Functions f)
   {
     if (WeightedClientRpcs == null || WeightedClientRpcs.Length == 0) return null;
-    var weights = WeightedClientRpcs.Select(r => r.Weight?.Get(pars) ?? 0f).ToArray();
+    var weights = WeightedClientRpcs.Select(r => r.Weight?.Get(f) ?? 0f).ToArray();
     var total = Mathf.Max(1f, weights.Sum(s => s));
     var random = UnityEngine.Random.Range(0f, total);
     for (var i = 0; i < weights.Length; i++)
@@ -438,7 +438,7 @@ public class Spawn
     }
 
   }
-  public int GetPrefab(Parameters pars) => Prefab.Get(pars) ?? 0;
+  public int GetPrefab(Functions f) => Prefab.Get(f) ?? 0;
 }
 
 public class Poke(PokeData data)
@@ -459,15 +459,15 @@ public class Poke(PokeData data)
   private readonly IBoolValue? Evaluate = data.evaluate == null ? null : DataValue.Bool(data.evaluate);
   public bool HasPrefab = !string.IsNullOrWhiteSpace(data.prefab);
 
-  public string[] GetArgs(Parameters pars)
+  public string[] GetArgs(Functions f)
   {
 
     if (Parameters != null)
-      return [.. Parameters.Select(pars.Replace)];
+      return [.. Parameters.Select(f.Replace)];
     else
     {
-      var pokeParameter = pars.Replace(Parameter ?? "");
-      if (Evaluate?.GetBool(pars) != false)
+      var pokeParameter = f.Replace(Parameter ?? "");
+      if (Evaluate?.GetBool(f) != false)
         pokeParameter = PokeEvaluate(pokeParameter);
       return pokeParameter.Split(' ');
     }
@@ -569,15 +569,15 @@ public class Object
   public Vector3 CachedPosition;
   public int Weight;
 
-  public void Roll(Parameters pars, Vector3 pos, Quaternion rot)
+  public void Roll(Functions f, Vector3 pos, Quaternion rot)
   {
-    MinDistance = MinDistanceValue?.Get(pars);
-    MaxDistance = MaxDistanceValue.Get(pars) ?? 100f;
-    MinHeight = MinHeightValue?.Get(pars);
-    MaxHeight = MaxHeightValue?.Get(pars);
-    Weight = WeightValue.Get(pars) ?? 1;
-    Position = PositionValue?.Get(pars);
-    Offset = OffsetValue?.Get(pars);
+    MinDistance = MinDistanceValue?.Get(f);
+    MaxDistance = MaxDistanceValue.Get(f) ?? 100f;
+    MinHeight = MinHeightValue?.Get(f);
+    MaxHeight = MaxHeightValue?.Get(f);
+    Weight = WeightValue.Get(f) ?? 1;
+    Position = PositionValue?.Get(f);
+    Offset = OffsetValue?.Get(f);
     if (Position.HasValue)
       CachedPosition = Position.Value;
     else
@@ -587,9 +587,9 @@ public class Object
       CachedPosition += rot * Offset.Value;
   }
 
-  public bool IsValid(ZDO zdo, Parameters pars)
+  public bool IsValid(ZDO zdo, Functions f)
   {
-    if (HasPrefabFilter && PrefabsValue.Match(pars, zdo.GetPrefab()) != true) return false;
+    if (HasPrefabFilter && PrefabsValue.Match(f, zdo.GetPrefab()) != true) return false;
     var d = Utils.DistanceXZ(CachedPosition, zdo.GetPosition());
     if (MinDistance != null && d < MinDistance) return false;
     if (d > MaxDistance) return false;
@@ -598,7 +598,7 @@ public class Object
     if (MaxHeight != null && dy > MaxHeight) return false;
 
     if (filters == null) return true;
-    return filters.Match(pars, zdo);
+    return filters.Match(f, zdo);
   }
 }
 
@@ -719,11 +719,11 @@ public class Filters(string[]? filters, string[]? bannedFilters, string? filterL
   public readonly IFloatValue? Limit = filterLimit == null ? new SimpleFloatValue(filters?.Length ?? 0f) : DataValue.Float(filterLimit);
   public readonly Filter[] Values = [.. filters?.Select(f => new Filter(f, false)) ?? [], .. bannedFilters?.Select(f => new Filter(f, true)) ?? []];
 
-  public bool Match(Parameters parameters, ZDO zdo)
+  public bool Match(Functions f, ZDO zdo)
   {
-    var limit = Limit?.Get(parameters);
+    var limit = Limit?.Get(f);
     if (limit == null) return false;
-    var totalWeight = Values.Sum(f => f.Match(parameters, zdo));
+    var totalWeight = Values.Sum(v => v.Match(f, zdo));
     return limit <= totalWeight || Helper.Approx(totalWeight, limit.Value);
   }
 }
@@ -757,12 +757,12 @@ public class Filter
   // Default behavior is that none of the banned filters must match (so default limit of banned filter must be very high).
   public readonly IFloatValue? Weight;
 
-  public float Match(Parameters parameters, ZDO zdo)
+  public float Match(Functions f, ZDO zdo)
   {
-    var data = DataHelper.Get(Data, parameters);
+    var data = DataHelper.Get(Data, f);
     if (data == null) return 0f;
-    if (!data.Match(parameters, zdo)) return 0f;
-    var weight = Weight?.Get(parameters) ?? 0f;
+    if (!data.Match(f, zdo)) return 0f;
+    var weight = Weight?.Get(f) ?? 0f;
     // Negative weight for banned means it counts towards failing the filter.
     return Banned ? -weight : weight;
   }
@@ -785,37 +785,37 @@ public class Terrain(TerrainData data)
   public readonly IBoolValue? PaintHeightCheck = data.paintHeightCheck == null ? null : DataValue.Bool(data.paintHeightCheck);
   public readonly IStringValue? Paint = data.paint == null ? null : DataValue.String(data.paint);
 
-  public void Get(Parameters pars, Vector3 basePosition, Quaternion baseRotation, out Vector3 pos, out float size, out float resetRadius, out ZPackage pkg)
+  public void Get(Functions f, Vector3 basePosition, Quaternion baseRotation, out Vector3 pos, out float size, out float resetRadius, out ZPackage pkg)
   {
     pos = basePosition;
-    pos += baseRotation * (Position?.Get(pars) ?? Vector3.zero);
+    pos += baseRotation * (Position?.Get(f) ?? Vector3.zero);
     pkg = new ZPackage();
     pkg.Write(pos);
-    pkg.Write(LevelOffset?.Get(pars) ?? 0f);
-    var levelRadius = LevelRadius?.Get(pars) ?? 0f;
+    pkg.Write(LevelOffset?.Get(f) ?? 0f);
+    var levelRadius = LevelRadius?.Get(f) ?? 0f;
     pkg.Write(levelRadius > 0f);
     pkg.Write(levelRadius);
-    pkg.Write(Square?.GetBool(pars) == true);
-    var raiseRadius = RaiseRadius?.Get(pars) ?? 0f;
+    pkg.Write(Square?.GetBool(f) == true);
+    var raiseRadius = RaiseRadius?.Get(f) ?? 0f;
     pkg.Write(raiseRadius > 0f);
     pkg.Write(raiseRadius);
-    pkg.Write(RaisePower?.Get(pars) ?? 0f);
-    pkg.Write(RaiseDelta?.Get(pars) ?? 0f);
-    var smoothRadius = SmoothRadius?.Get(pars) ?? 0f;
+    pkg.Write(RaisePower?.Get(f) ?? 0f);
+    pkg.Write(RaiseDelta?.Get(f) ?? 0f);
+    var smoothRadius = SmoothRadius?.Get(f) ?? 0f;
     pkg.Write(smoothRadius > 0f);
     pkg.Write(smoothRadius);
-    pkg.Write(SmoothPower?.Get(pars) ?? 0f);
-    var paintRadius = PaintRadius?.Get(pars) ?? 0f;
+    pkg.Write(SmoothPower?.Get(f) ?? 0f);
+    var paintRadius = PaintRadius?.Get(f) ?? 0f;
     pkg.Write(paintRadius > 0f);
-    pkg.Write(PaintHeightCheck?.GetBool(pars) == true);
-    var paint = Paint?.Get(pars) ?? "Reset";
+    pkg.Write(PaintHeightCheck?.GetBool(f) == true);
+    var paint = Paint?.Get(f) ?? "Reset";
     var paintEnum =
       Enum.TryParse(paint, true, out TerrainModifier.PaintType paintType) ? paintType :
       int.TryParse(paint, out var paintInt) ? (TerrainModifier.PaintType)paintInt :
       TerrainModifier.PaintType.Reset;
     pkg.Write((int)paintEnum);
     pkg.Write(paintRadius);
-    resetRadius = ResetRadius?.Get(pars) ?? 0f;
+    resetRadius = ResetRadius?.Get(f) ?? 0f;
     size = Mathf.Max(levelRadius, raiseRadius, smoothRadius, paintRadius, resetRadius);
   }
 }

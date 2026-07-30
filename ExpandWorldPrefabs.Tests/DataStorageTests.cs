@@ -11,23 +11,23 @@ public class DataStorageTests
   [SetUp]
   public void SetUp()
   {
-    Parameters.ExecuteCode = _ => null;
-    Parameters.ExecuteCodeWithValue = (_, _) => null;
+    Functions.ExecuteCode = _ => null;
+    Functions.ExecuteCodeWithValue = (_, _) => null;
     DataStorage.SetValue("*", "");
   }
 
   [TearDown]
   public void TearDown()
   {
-    Parameters.ExecuteCode = _ => null;
-    Parameters.ExecuteCodeWithValue = (_, _) => null;
+    Functions.ExecuteCode = _ => null;
+    Functions.ExecuteCodeWithValue = (_, _) => null;
     DataStorage.SetValue("*", "");
   }
 
-  private static Parameters CreateParameters()
+  private static Functions CreateParameters()
   {
 #pragma warning disable SYSLIB0050
-    return (Parameters)FormatterServices.GetUninitializedObject(typeof(Parameters));
+    return (Functions)FormatterServices.GetUninitializedObject(typeof(Functions));
 #pragma warning restore SYSLIB0050
   }
 

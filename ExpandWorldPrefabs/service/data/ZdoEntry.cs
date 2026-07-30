@@ -86,14 +86,14 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
   }
 
 
-  public void Load(DataEntry data, Parameters pars)
+  public void Load(DataEntry data, Functions f)
   {
-    data.RollItems(pars, zdo);
+    data.RollItems(f, zdo);
     if (data.Floats?.Count > 0)
     {
       foreach (var pair in data.Floats)
       {
-        var value = pair.Value.Get(pars);
+        var value = pair.Value.Get(f);
         if (value.HasValue)
           AddFloat(pair.Key, value.Value);
       }
@@ -102,7 +102,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     {
       foreach (var pair in data.Ints)
       {
-        var value = pair.Value.Get(pars);
+        var value = pair.Value.Get(f);
         if (value.HasValue)
           AddInt(pair.Key, value.Value);
       }
@@ -111,7 +111,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     {
       foreach (var pair in data.Longs)
       {
-        var value = pair.Value.Get(pars);
+        var value = pair.Value.Get(f);
         if (value.HasValue)
           AddLong(pair.Key, value.Value);
       }
@@ -120,7 +120,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     {
       foreach (var pair in data.Strings)
       {
-        var value = pair.Value.Get(pars);
+        var value = pair.Value.Get(f);
         if (value != null)
           AddString(pair.Key, value);
       }
@@ -129,7 +129,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     {
       foreach (var pair in data.Vecs)
       {
-        var value = pair.Value.Get(pars);
+        var value = pair.Value.Get(f);
         if (value.HasValue)
           AddVec(pair.Key, value.Value);
       }
@@ -138,7 +138,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     {
       foreach (var pair in data.Quats)
       {
-        var value = pair.Value.Get(pars);
+        var value = pair.Value.Get(f);
         if (value.HasValue)
           AddQuat(pair.Key, value.Value);
       }
@@ -147,7 +147,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     {
       foreach (var pair in data.ByteArrays)
       {
-        var value = pair.Value.Get(pars);
+        var value = pair.Value.Get(f);
         if (value != null)
           AddByteArray(pair.Key, value);
       }
@@ -156,7 +156,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     {
       foreach (var pair in data.Bools)
       {
-        var value = pair.Value.GetInt(pars);
+        var value = pair.Value.GetInt(f);
         if (value.HasValue)
           AddInt(pair.Key, value.Value);
       }
@@ -165,7 +165,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     {
       foreach (var pair in data.Hashes)
       {
-        var value = pair.Value.Get(pars);
+        var value = pair.Value.Get(f);
         if (value.HasValue)
           AddInt(pair.Key, value.Value);
       }
@@ -174,7 +174,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     {
       foreach (var pair in data.Components)
       {
-        var value = pair.Value.Get(pars);
+        var value = pair.Value.Get(f);
         if (value.HasValue)
           AddInt(pair.Key, value.Value);
       }
@@ -182,14 +182,14 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     ConnectionHash = data.ConnectionHash;
     ConnectionType = data.ConnectionType;
     if (data.OriginalId != null)
-      OriginalId = data.OriginalId.Get(pars);
+      OriginalId = data.OriginalId.Get(f);
     if (data.TargetConnectionId != null)
-      TargetConnectionId = data.TargetConnectionId.Get(pars);
-    Distant = data.Distant?.GetBool(pars);
-    Persistent = data.Persistent?.GetBool(pars);
+      TargetConnectionId = data.TargetConnectionId.Get(f);
+    Distant = data.Distant?.GetBool(f);
+    Persistent = data.Persistent?.GetBool(f);
     Type = data.Priority;
-    Position = data.Position?.Get(pars) ?? Position;
-    Rotation = data.Rotation?.Get(pars)?.eulerAngles ?? Rotation;
+    Position = data.Position?.Get(f) ?? Position;
+    Rotation = data.Rotation?.Get(f)?.eulerAngles ?? Rotation;
   }
 
   public void Write(ZDO zdo)

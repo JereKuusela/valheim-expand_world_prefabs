@@ -18,19 +18,19 @@ public class DataHelper
   }
   public static bool Exists(int hash) => DataLoading.Data.ContainsKey(hash);
 
-  public static bool Match(int hash, ZDO zdo, Parameters pars)
+  public static bool Match(int hash, ZDO zdo, Functions f)
   {
     if (DataLoading.Data.TryGetValue(hash, out var data))
     {
-      return data.Match(pars, zdo);
+      return data.Match(f, zdo);
     }
     return false;
   }
   public static DataEntry? Get(string name) => name == "" ? null : DataLoading.Get(name);
-  public static DataEntry? Get(IStringValue? name, Parameters parameters)
+  public static DataEntry? Get(IStringValue? name, Functions f)
   {
     if (name == null) return null;
-    var dataStr = name.GetWhole(parameters);
+    var dataStr = name.GetWhole(f);
     if (dataStr == null) return null;
     var hash = dataStr.GetStableHashCode();
     // Usually there is a single data entry, so makes sense to check the cache first.
@@ -47,7 +47,7 @@ public class DataHelper
       DataLoading.Add(hash, entry);
       return entry;
     }
-    return Get(name.Get(parameters) ?? "");
+    return Get(name.Get(f) ?? "");
   }
   public static int GetHash(string name)
   {

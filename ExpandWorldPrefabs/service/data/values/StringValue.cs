@@ -5,12 +5,12 @@ namespace Data;
 public class StringValue(string[] values) : AnyValue(values), IStringValue
 {
   private readonly bool IsPattern = values.Any(v => v.Contains("*"));
-  public string? Get(Parameters pars) => GetValue(pars);
-  public string? GetWhole(Parameters pars) => GetWholeValue(pars);
+  public string? Get(Functions f) => GetValue(f);
+  public string? GetWhole(Functions f) => GetWholeValue(f);
 
-  public bool? Match(Parameters pars, string value)
+  public bool? Match(Functions f, string value)
   {
-    var values = GetAllValues(pars);
+    var values = GetAllValues(f);
     if (values.Count == 0) return null;
     return IsPattern ? values.Any(v => SimpleStringValue.PatternMatch(value, v)) : values.Contains(value);
   }
@@ -19,9 +19,9 @@ public class SimpleStringValue(string value) : IStringValue
 {
   private readonly string Value = value;
   private readonly bool IsPattern = value.Contains("*");
-  public string? Get(Parameters pars) => Value;
-  public string? GetWhole(Parameters pars) => Value;
-  public bool? Match(Parameters pars, string value) => IsPattern ? PatternMatch(value, Value) : Value == value;
+  public string? Get(Functions f) => Value;
+  public string? GetWhole(Functions f) => Value;
+  public bool? Match(Functions f, string value) => IsPattern ? PatternMatch(value, Value) : Value == value;
   public static bool PatternMatch(string value, string pattern)
   {
     if (value == pattern) return true;
@@ -51,8 +51,8 @@ public class SimpleStringValue(string value) : IStringValue
 }
 public interface IStringValue
 {
-  string? Get(Parameters pars);
+  string? Get(Functions f);
   // GetWhole is needed when the value is passed as it is, and processed later.
-  string? GetWhole(Parameters pars);
-  bool? Match(Parameters pars, string value);
+  string? GetWhole(Functions f);
+  bool? Match(Functions f, string value);
 }

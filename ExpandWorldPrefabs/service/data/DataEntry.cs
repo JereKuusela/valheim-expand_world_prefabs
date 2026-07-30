@@ -573,22 +573,22 @@ public class DataEntry
       Priority = (ZDO.ObjectType)pkg.ReadByte();
     CanBeInjected = CheckCanBeInjected();
   }
-  public bool Match(Parameters pars, ZDO zdo)
+  public bool Match(Functions f, ZDO zdo)
   {
-    if (Strings != null && Strings.Any(pair => pair.Value.Match(pars, GetString(zdo, pair.Key)) == false)) return false;
-    if (Floats != null && Floats.Any(pair => pair.Value.Match(pars, GetFloat(zdo, pair.Key)) == false)) return false;
-    if (Ints != null && Ints.Any(pair => pair.Value.Match(pars, GetInt(zdo, pair.Key)) == false)) return false;
-    if (Longs != null && Longs.Any(pair => pair.Value.Match(pars, GetLong(zdo, pair.Key)) == false)) return false;
-    if (Bools != null && Bools.Any(pair => pair.Value.Match(pars, GetBool(zdo, pair.Key)) == false)) return false;
-    if (Hashes != null && Hashes.Any(pair => pair.Value.Match(pars, GetInt(zdo, pair.Key)) == false)) return false;
-    if (Vecs != null && Vecs.Any(pair => pair.Value.Match(pars, GetVec(zdo, pair.Key)) == false)) return false;
-    if (Quats != null && Quats.Any(pair => pair.Value.Match(pars, GetQuaternion(zdo, pair.Key)) == false)) return false;
-    if (ByteArrays != null && ByteArrays.Any(pair => pair.Value.Match(pars, zdo.GetByteArray(pair.Key)) == false)) return false;
-    if (Persistent != null && Persistent.Match(pars, zdo.Persistent) == false) return false;
-    if (Distant != null && Distant.Match(pars, zdo.Distant) == false) return false;
+    if (Strings != null && Strings.Any(pair => pair.Value.Match(f, GetString(zdo, pair.Key)) == false)) return false;
+    if (Floats != null && Floats.Any(pair => pair.Value.Match(f, GetFloat(zdo, pair.Key)) == false)) return false;
+    if (Ints != null && Ints.Any(pair => pair.Value.Match(f, GetInt(zdo, pair.Key)) == false)) return false;
+    if (Longs != null && Longs.Any(pair => pair.Value.Match(f, GetLong(zdo, pair.Key)) == false)) return false;
+    if (Bools != null && Bools.Any(pair => pair.Value.Match(f, GetBool(zdo, pair.Key)) == false)) return false;
+    if (Hashes != null && Hashes.Any(pair => pair.Value.Match(f, GetInt(zdo, pair.Key)) == false)) return false;
+    if (Vecs != null && Vecs.Any(pair => pair.Value.Match(f, GetVec(zdo, pair.Key)) == false)) return false;
+    if (Quats != null && Quats.Any(pair => pair.Value.Match(f, GetQuaternion(zdo, pair.Key)) == false)) return false;
+    if (ByteArrays != null && ByteArrays.Any(pair => pair.Value.Match(f, zdo.GetByteArray(pair.Key)) == false)) return false;
+    if (Persistent != null && Persistent.Match(f, zdo.Persistent) == false) return false;
+    if (Distant != null && Distant.Match(f, zdo.Distant) == false) return false;
     if (Priority != null && Priority.Value != zdo.Type) return false;
-    if (Items != null) return ItemValue.Match(pars, Items, zdo, ItemAmount);
-    else if (ItemAmount != null) return ItemValue.Match(pars, zdo, ItemAmount);
+    if (Items != null) return ItemValue.Match(f, Items, zdo, ItemAmount);
+    else if (ItemAmount != null) return ItemValue.Match(f, zdo, ItemAmount);
     if (ConnectionType.HasValue)
     {
       if (ConnectionType.Value == ZDOExtraData.ConnectionType.None)
@@ -605,29 +605,29 @@ public class DataEntry
         }
         else
         {
-          var target = TargetConnectionId.Get(pars);
+          var target = TargetConnectionId.Get(f);
           if (target != null && conn != target) return false;
         }
       }
     }
     return true;
   }
-  public bool Unmatch(Parameters pars, ZDO zdo)
+  public bool Unmatch(Functions f, ZDO zdo)
   {
-    if (Strings != null && Strings.Any(pair => pair.Value.Match(pars, GetString(zdo, pair.Key)) == true)) return false;
-    if (Floats != null && Floats.Any(pair => pair.Value.Match(pars, GetFloat(zdo, pair.Key)) == true)) return false;
-    if (Ints != null && Ints.Any(pair => pair.Value.Match(pars, GetInt(zdo, pair.Key)) == true)) return false;
-    if (Longs != null && Longs.Any(pair => pair.Value.Match(pars, GetLong(zdo, pair.Key)) == true)) return false;
-    if (Bools != null && Bools.Any(pair => pair.Value.Match(pars, GetBool(zdo, pair.Key)) == true)) return false;
-    if (Hashes != null && Hashes.Any(pair => pair.Value.Match(pars, GetInt(zdo, pair.Key)) == true)) return false;
-    if (Vecs != null && Vecs.Any(pair => pair.Value.Match(pars, GetVec(zdo, pair.Key)) == true)) return false;
-    if (Quats != null && Quats.Any(pair => pair.Value.Match(pars, GetQuaternion(zdo, pair.Key)) == true)) return false;
-    if (ByteArrays != null && ByteArrays.Any(pair => pair.Value.Match(pars, zdo.GetByteArray(pair.Key)) == true)) return false;
-    if (Persistent != null && Persistent.Match(pars, zdo.Persistent) == true) return false;
-    if (Distant != null && Distant.Match(pars, zdo.Distant) == true) return false;
+    if (Strings != null && Strings.Any(pair => pair.Value.Match(f, GetString(zdo, pair.Key)) == true)) return false;
+    if (Floats != null && Floats.Any(pair => pair.Value.Match(f, GetFloat(zdo, pair.Key)) == true)) return false;
+    if (Ints != null && Ints.Any(pair => pair.Value.Match(f, GetInt(zdo, pair.Key)) == true)) return false;
+    if (Longs != null && Longs.Any(pair => pair.Value.Match(f, GetLong(zdo, pair.Key)) == true)) return false;
+    if (Bools != null && Bools.Any(pair => pair.Value.Match(f, GetBool(zdo, pair.Key)) == true)) return false;
+    if (Hashes != null && Hashes.Any(pair => pair.Value.Match(f, GetInt(zdo, pair.Key)) == true)) return false;
+    if (Vecs != null && Vecs.Any(pair => pair.Value.Match(f, GetVec(zdo, pair.Key)) == true)) return false;
+    if (Quats != null && Quats.Any(pair => pair.Value.Match(f, GetQuaternion(zdo, pair.Key)) == true)) return false;
+    if (ByteArrays != null && ByteArrays.Any(pair => pair.Value.Match(f, zdo.GetByteArray(pair.Key)) == true)) return false;
+    if (Persistent != null && Persistent.Match(f, zdo.Persistent) == true) return false;
+    if (Distant != null && Distant.Match(f, zdo.Distant) == true) return false;
     if (Priority != null && Priority.Value == zdo.Type) return false;
-    if (Items != null) return !ItemValue.Match(pars, Items, zdo, ItemAmount);
-    else if (ItemAmount != null) return !ItemValue.Match(pars, zdo, ItemAmount);
+    if (Items != null) return !ItemValue.Match(f, Items, zdo, ItemAmount);
+    else if (ItemAmount != null) return !ItemValue.Match(f, zdo, ItemAmount);
     if (ConnectionType.HasValue)
     {
       if (ConnectionType.Value == ZDOExtraData.ConnectionType.None)
@@ -644,7 +644,7 @@ public class DataEntry
         }
         else
         {
-          var target = TargetConnectionId.Get(pars);
+          var target = TargetConnectionId.Get(f);
           if (target != null && conn == target) return false;
         }
       }
@@ -681,45 +681,45 @@ public class DataEntry
     && Position == null
     && Rotation == null;
 
-  public void RollItems(Parameters pars, ZDO zdo)
+  public void RollItems(Functions f, ZDO zdo)
   {
     if (Items?.Count > 0)
     {
-      var size = ContainerSize ?? ZdoHelper.GetInventorySize(this, pars, zdo);
-      var encoded = ItemValue.LoadItems(pars, Items, size, ItemAmount?.Get(pars) ?? 0);
+      var size = ContainerSize ?? ZdoHelper.GetInventorySize(this, f, zdo);
+      var encoded = ItemValue.LoadItems(f, Items, size, ItemAmount?.Get(f) ?? 0);
       Strings ??= [];
       Strings[ZDOVars.s_items] = DataValue.Simple(encoded);
     }
   }
 
-  public void AddItems(Parameters parameters, ZDO zdo)
+  public void AddItems(Functions f, ZDO zdo)
   {
     if (Items == null || Items.Count == 0) return;
-    var size = ContainerSize ?? ZdoHelper.GetInventorySize(this, parameters, zdo);
+    var size = ContainerSize ?? ZdoHelper.GetInventorySize(this, f, zdo);
     var inv = ItemValue.CreateInventory(zdo, size.x, size.y);
-    var items = GenerateItems(parameters, size);
+    var items = GenerateItems(f, size);
     foreach (var item in items)
-      item.AddTo(parameters, inv);
+      item.AddTo(f, inv);
     ZPackage pkg = new();
     inv.Save(pkg);
     zdo.Set(ZDOVars.s_items, pkg.GetBase64());
   }
-  public void RemoveItems(Parameters parameters, ZDO zdo)
+  public void RemoveItems(Functions f, ZDO zdo)
   {
     if (Items == null || Items.Count == 0) return;
     var inv = ItemValue.CreateInventory(zdo);
     if (inv.m_inventory.Count == 0) return;
 
-    var items = GenerateItems(parameters, new(10000, 10000));
+    var items = GenerateItems(f, new(10000, 10000));
     foreach (var item in items)
-      item.RemoveFrom(parameters, inv);
+      item.RemoveFrom(f, inv);
     ZPackage pkg = new();
     inv.Save(pkg);
     zdo.Set(ZDOVars.s_items, pkg.GetBase64());
   }
-  public List<ItemValue> GenerateItems(Parameters pars, Vector2i size)
+  public List<ItemValue> GenerateItems(Functions f, Vector2i size)
   {
     if (Items == null) throw new ArgumentNullException(nameof(Items));
-    return ItemValue.Generate(pars, Items, size, ItemAmount?.Get(pars) ?? 0);
+    return ItemValue.Generate(f, Items, size, ItemAmount?.Get(f) ?? 0);
   }
 }

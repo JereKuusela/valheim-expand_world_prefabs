@@ -5,9 +5,9 @@ namespace Data;
 
 public class LongValue(string[] values) : AnyValue(values), ILongValue
 {
-  public long? Get(Parameters pars)
+  public long? Get(Functions f)
   {
-    var value = GetValue(pars);
+    var value = GetValue(f);
     if (value == null)
       return null;
     if (!value.Contains(";"))
@@ -37,13 +37,13 @@ public class LongValue(string[] values) : AnyValue(values), ILongValue
     }
     return roll;
   }
-  public bool? Match(Parameters pars, long value)
+  public bool? Match(Functions f, long value)
   {
     // If all values are null, default to a match.
     var allNull = true;
     foreach (var rawValue in Values)
     {
-      var v = pars.Replace(rawValue);
+      var v = f.Replace(rawValue);
       // Case 1: Simple value.
       if (!v.Contains(";"))
       {
@@ -91,12 +91,12 @@ public class LongValue(string[] values) : AnyValue(values), ILongValue
 public class SimpleLongValue(long value) : ILongValue
 {
   private readonly long Value = value;
-  public long? Get(Parameters pars) => Value;
-  public bool? Match(Parameters pars, long value) => Value == value;
+  public long? Get(Functions f) => Value;
+  public bool? Match(Functions f, long value) => Value == value;
 }
 
 public interface ILongValue
 {
-  long? Get(Parameters pars);
-  bool? Match(Parameters pars, long value);
+  long? Get(Functions f);
+  bool? Match(Functions f, long value);
 }

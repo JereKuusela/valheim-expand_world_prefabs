@@ -15,50 +15,50 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
     HandleCreated.Skip = false;
     return zdo;
   }
-  public static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Parameters pars)
+  public static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Functions f)
   {
-    var chance = spawn.Chance?.Get(pars) ?? 1f;
+    var chance = spawn.Chance?.Get(f) ?? 1f;
     if (chance < 1f && Random.value > chance)
       return;
 
-    var delay = spawn.Delay?.Get(pars) ?? 0f;
-    var repeat = spawn.Repeat?.Get(pars) ?? 0;
-    var repeatInterval = spawn.RepeatInterval?.Get(pars) ?? delay;
-    var repeatChance = spawn.RepeatChance?.Get(pars) ?? 1f;
+    var delay = spawn.Delay?.Get(f) ?? 0f;
+    var repeat = spawn.Repeat?.Get(f) ?? 0;
+    var repeatInterval = spawn.RepeatInterval?.Get(f) ?? delay;
+    var repeatChance = spawn.RepeatChance?.Get(f) ?? 1f;
     var delays = Helper.GenerateDelays(delay, repeat, repeatInterval, repeatChance);
     if (delays != null)
     {
       foreach (var d in delays)
-        Add(spawn, originalZdo, data, pars, d);
+        Add(spawn, originalZdo, data, f, d);
     }
     else
-      Add(spawn, originalZdo, data, pars, delay);
+      Add(spawn, originalZdo, data, f, delay);
   }
-  private static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Parameters pars, float delay)
+  private static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Functions f, float delay)
   {
     var pos = originalZdo.m_position;
     var rotQuat = originalZdo.GetRotation();
-    pos += rotQuat * (spawn.Pos?.Get(pars) ?? Vector3.zero);
-    rotQuat *= spawn.Rot?.Get(pars) ?? Quaternion.identity;
+    pos += rotQuat * (spawn.Pos?.Get(f) ?? Vector3.zero);
+    rotQuat *= spawn.Rot?.Get(f) ?? Quaternion.identity;
     var rot = rotQuat.eulerAngles;
-    if (spawn.Snap?.GetBool(pars) == true)
+    if (spawn.Snap?.GetBool(f) == true)
       pos.y = WorldGenerator.instance.GetHeight(pos.x, pos.z);
-    data = DataHelper.Merge(data, DataHelper.Get(spawn.Data, pars));
-    var prefab = spawn.GetPrefab(pars);
+    data = DataHelper.Merge(data, DataHelper.Get(spawn.Data, f));
+    var prefab = spawn.GetPrefab(f);
     if (prefab == 0) return;
     ZdoEntry zdoEntry = new(prefab, pos, rot, originalZdo);
     if (data != null)
-      zdoEntry.Load(data, pars);
-    var owner = spawn.Owner?.Get(pars);
+      zdoEntry.Load(data, f);
+    var owner = spawn.Owner?.Get(f);
     if (owner.HasValue)
       zdoEntry.Owner = owner.Value;
-    var attach = spawn.Attach?.Get(pars);
+    var attach = spawn.Attach?.Get(f);
     if (attach.HasValue && attach.Value != ZDOID.None)
       SupportAttach.Attach(zdoEntry, attach.Value);
-    var connect = spawn.Connect?.Get(pars);
+    var connect = spawn.Connect?.Get(f);
     if (connect.HasValue && connect.Value != ZDOID.None)
       SupportAttach.Connect(zdoEntry, connect.Value);
-    Add(delay, zdoEntry, spawn.TriggerRules?.GetBool(pars) ?? false);
+    Add(delay, zdoEntry, spawn.TriggerRules?.GetBool(f) ?? false);
   }
   private static void Add(float delay, ZdoEntry zdoEntry, bool triggerRules)
   {

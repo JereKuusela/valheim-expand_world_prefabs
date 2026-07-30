@@ -8,14 +8,14 @@ using UnityEngine;
 
 namespace Data;
 
-public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameters(prefab, args, zdo.m_position)
+public class ObjectFunctions(string prefab, string[] args, ZDO zdo) : Functions(prefab, args, zdo.m_position)
 {
   private Inventory? inventory;
 
 
-  protected override string? GetParameter(string key, string defaultValue)
+  protected override string? GetFunction(string key, string defaultValue)
   {
-    var value = base.GetParameter(key, defaultValue);
+    var value = base.GetFunction(key, defaultValue);
     if (value != null) return value;
     value = GetGeneralParameter(key);
     if (value != null) return value;
@@ -25,9 +25,9 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
     var arg = keyArg.Value;
     value = ExecuteCodeWithValue(key, arg);
     if (value != null) return value;
-    value = base.GetValueParameter(key, arg, defaultValue);
+    value = base.GetValueFunction(key, arg, defaultValue);
     if (value != null) return value;
-    return GetValueParameter(key, arg, defaultValue);
+    return GetValueFunction(key, arg, defaultValue);
   }
 
   private string? GetGeneralParameter(string key) =>
@@ -57,7 +57,7 @@ public class ObjectParameters(string prefab, string[] args, ZDO zdo) : Parameter
   private string GetConnected() => (zdo.GetConnection()?.m_target ?? ZDOID.None).ToString();
 
 
-  protected override string? GetValueParameter(string key, string value, string defaultValue) =>
+  protected override string? GetValueFunction(string key, string value, string defaultValue) =>
    key switch
    {
      "key" => DataHelper.GetGlobalKey(value),

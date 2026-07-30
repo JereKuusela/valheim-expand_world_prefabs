@@ -57,7 +57,7 @@ public class DataValue
     if (values.Length > 2 && values[0] == '"' && values[values.Length - 1] == '"')
       return new SimpleStringValue(values.Substring(1, values.Length - 2));
     var split = SplitWithValues(values);
-    if (split.Length == 1 && !HasParameters(split[0]))
+    if (split.Length == 1 && !HasFunctions(split[0]))
       return new SimpleStringValue(split[0]);
     return new StringValue(split);
   }
@@ -72,7 +72,7 @@ public class DataValue
   public static IBytesValue Bytes(string values)
   {
     var split = SplitWithValues(values);
-    if (split.Length == 1 && !HasParameters(split[0]))
+    if (split.Length == 1 && !HasFunctions(split[0]))
     {
       if (string.IsNullOrEmpty(split[0]))
         return new SimpleBytesValue(null);
@@ -92,13 +92,13 @@ public class DataValue
   public static IHashValue Hash(string values)
   {
     var split = SplitWithValues(values);
-    if (split.Length == 1 && !HasParameters(split[0]))
+    if (split.Length == 1 && !HasFunctions(split[0]))
       return new SimpleHashValue(split[0]);
     return new HashValue(split);
   }
   public static IPrefabValue Prefab(string values)
   {
-    if (HasParameters(values))
+    if (HasFunctions(values))
       return new PrefabValue(SplitWithValues(values));
     var prefabs = PrefabHelper.GetPrefabs(values, "");
     if (prefabs.Count == 0) return new SimplePrefabValue(null);
@@ -109,7 +109,7 @@ public class DataValue
   public static IVector3Value Vector3(string values)
   {
     var split = SplitWithValues(values);
-    if (HasParameters(values) || split.Length > 3)
+    if (HasFunctions(values) || split.Length > 3)
     {
       // Vectors are trickly to handle because the coordinate separator is same as value separator.
       List<string> combined = [];
@@ -127,7 +127,7 @@ public class DataValue
   public static IQuaternionValue Quaternion(string values)
   {
     var split = SplitWithValues(values);
-    if (HasParameters(values) || split.Length > 3)
+    if (HasFunctions(values) || split.Length > 3)
     {
       List<string> combined = [];
       for (var i = 0; i < split.Length; i += 3)
@@ -141,7 +141,7 @@ public class DataValue
     return new SimpleQuaternionValue(parsed.HasValue ? parsed.Value : UnityEngine.Quaternion.identity);
   }
 
-  private static bool HasParameters(string value) => value.Contains("<") && value.Contains(">");
+  private static bool HasFunctions(string value) => value.Contains("<") && value.Contains(">");
 
   private static string[] SplitWithValues(string str)
   {
@@ -218,43 +218,43 @@ public class AnyValue(string[] values)
       return Values[0];
     return Values[Random.Range(0, Values.Length)];
   }
-  protected string? GetValue(Parameters pars)
+  protected string? GetValue(Functions f)
   {
     var value = RollValue();
     if (value == null || value == "<none>")
       return null;
-    return pars.Replace(value);
+    return f.Replace(value);
   }
   protected string? GetValue()
   {
     var value = RollValue();
     return value == null || value == "<none>" ? null : value;
   }
-  protected List<string> GetAllValues(Parameters pars)
+  protected List<string> GetAllValues(Functions f)
   {
-    return [.. Values.Select(pars.Replace).Where(v => v != null && v != "" && v != "<none>")];
+    return [.. Values.Select(f.Replace).Where(v => v != null && v != "" && v != "<none>")];
   }
-  protected string GetWholeValue(Parameters pars)
+  protected string GetWholeValue(Functions f)
   {
-    return string.Join(",", Values.Select(pars.Replace));
+    return string.Join(",", Values.Select(f.Replace));
   }
 }
 public class ItemValue(ItemData data)
 {
 
-  public static bool Match(Parameters pars, List<ItemValue> data, ZDO zdo, IIntValue? amount)
+  public static bool Match(Functions f, List<ItemValue> data, ZDO zdo, IIntValue? amount)
   {
     var inv = CreateInventory(zdo);
-    var matches = data.Where(item => item.Match(pars, inv)).Count();
+    var matches = data.Count(item => item.Match(f, inv));
     // If no amount is set, then must match exactly.
     if (amount == null)
       return matches == data.Count && inv.m_inventory.Count == 0;
-    return amount.Match(pars, matches) == true;
+    return amount.Match(f, matches) == true;
   }
-  public static bool Match(Parameters pars, ZDO zdo, IIntValue amount)
+  public static bool Match(Functions f, ZDO zdo, IIntValue amount)
   {
     var inv = CreateInventory(zdo);
-    return amount.Match(pars, inv.m_inventory.Count) == true;
+    return amount.Match(f, inv.m_inventory.Count) == true;
   }
 
   public static Inventory CreateInventory(ZDO zdo, int width = 100000, int height = 10000)
@@ -270,44 +270,44 @@ public class ItemValue(ItemData data)
     return inv;
   }
 
-  public static string LoadItems(Parameters pars, List<ItemValue> items, Vector2i size, int amount)
+  public static string LoadItems(Functions f, List<ItemValue> items, Vector2i size, int amount)
   {
     ZPackage pkg = new();
     pkg.Write(106);
-    items = Generate(pars, items, size, amount);
+    items = Generate(f, items, size, amount);
     pkg.Write(items.Count);
     foreach (var item in items)
-      item.Write(pars, pkg);
+      item.Write(f, pkg);
     return pkg.GetBase64();
   }
-  public static List<ItemValue> Generate(Parameters pars, List<ItemValue> data, Vector2i size, int amount)
+  public static List<ItemValue> Generate(Functions f, List<ItemValue> data, Vector2i size, int amount)
   {
     var fixedPos = data.Where(item => item.Position != "").ToList();
     var randomPos = data.Where(item => item.Position == "").ToList();
     Dictionary<Vector2i, ItemValue> inventory = [];
     foreach (var item in fixedPos)
     {
-      if (!item.Roll(pars)) continue;
+      if (!item.Roll(f)) continue;
       inventory[item.RolledPosition] = item;
     }
     if (amount == 0)
-      GenerateEach(pars, inventory, size, randomPos);
+      GenerateEach(f, inventory, size, randomPos);
     else
-      GenerateAmount(pars, inventory, size, randomPos, amount);
+      GenerateAmount(f, inventory, size, randomPos, amount);
     return [.. inventory.Values];
   }
-  private static void GenerateEach(Parameters pars, Dictionary<Vector2i, ItemValue> inventory, Vector2i size, List<ItemValue> items)
+  private static void GenerateEach(Functions f, Dictionary<Vector2i, ItemValue> inventory, Vector2i size, List<ItemValue> items)
   {
     foreach (var item in items)
     {
-      if (!item.Roll(pars)) continue;
+      if (!item.Roll(f)) continue;
       var slot = FindNextFreeSlot(inventory, size);
       if (!slot.HasValue) break;
       item.RolledPosition = slot.Value;
       inventory[slot.Value] = item;
     }
   }
-  private static void GenerateAmount(Parameters pars, Dictionary<Vector2i, ItemValue> inventory, Vector2i size, List<ItemValue> items, int amount)
+  private static void GenerateAmount(Functions f, Dictionary<Vector2i, ItemValue> inventory, Vector2i size, List<ItemValue> items, int amount)
   {
     var maxWeight = items.Sum(item => item.Chance);
     for (var i = 0; i < amount && items.Count > 0; ++i)
@@ -316,7 +316,7 @@ public class ItemValue(ItemData data)
       if (!slot.HasValue) break;
       var item = RollItem(items, maxWeight);
       item.RolledPosition = slot.Value;
-      if (item.RollPrefab(pars))
+      if (item.RollPrefab(f))
         inventory[slot.Value] = item;
       maxWeight -= item.Chance;
       items.Remove(item);
@@ -364,20 +364,20 @@ public class ItemValue(ItemData data)
   // Must know before writing is the prefab good, so it has to be rolled first.
   private int RolledPrefab = 0;
   private int RolledStack = 0;
-  public bool RollPrefab(Parameters pars)
+  public bool RollPrefab(Functions f)
   {
-    RolledPrefab = Prefab.Get(pars) ?? 0;
-    RolledStack = Stack?.Get(pars) ?? 1;
+    RolledPrefab = Prefab.Get(f) ?? 0;
+    RolledStack = Stack?.Get(f) ?? 1;
     return RolledPrefab != 0 && RolledStack != 0;
   }
   public bool RollChance() => Chance >= 1f || Random.value <= Chance;
-  public bool Roll(Parameters pars) => RollChance() && RollPrefab(pars);
-  public void Write(Parameters pars, ZPackage pkg)
+  public bool Roll(Functions f) => RollChance() && RollPrefab(f);
+  public void Write(Functions f, ZPackage pkg)
   {
     var prefab = ObjectDB.instance.GetItemPrefab(RolledPrefab);
     pkg.Write(prefab?.name ?? "");
-    var quality = Quality?.Get(pars) ?? 1;
-    var durability = Durability?.Get(pars);
+    var quality = Quality?.Get(f) ?? 1;
+    var durability = Durability?.Get(f);
     if (!durability.HasValue)
     {
       if (prefab != null && prefab.TryGetComponent(out ItemDrop drop))
@@ -389,24 +389,24 @@ public class ItemValue(ItemData data)
     pkg.Write(RolledStack);
     pkg.Write(durability.Value);
     pkg.Write(RolledPosition);
-    pkg.Write(Equipped?.GetBool(pars) ?? false);
+    pkg.Write(Equipped?.GetBool(f) ?? false);
     pkg.Write(quality);
-    pkg.Write(Variant?.Get(pars) ?? 0);
-    pkg.Write(CrafterID?.Get(pars) ?? 0L);
-    pkg.Write(CrafterName?.Get(pars) ?? "");
+    pkg.Write(Variant?.Get(f) ?? 0);
+    pkg.Write(CrafterID?.Get(f) ?? 0L);
+    pkg.Write(CrafterName?.Get(f) ?? "");
     pkg.Write(CustomData?.Count ?? 0);
     if (CustomData != null)
     {
       foreach (var kvp in CustomData)
       {
         pkg.Write(kvp.Key);
-        pkg.Write(kvp.Value.Get(pars));
+        pkg.Write(kvp.Value.Get(f));
       }
     }
-    pkg.Write(WorldLevel?.Get(pars) ?? 0);
-    pkg.Write(PickedUp?.GetBool(pars) ?? false);
+    pkg.Write(WorldLevel?.Get(f) ?? 0);
+    pkg.Write(PickedUp?.GetBool(f) ?? false);
   }
-  public void Spawn(ZDO source, Parameters pars)
+  public void Spawn(ZDO source, Functions f)
   {
     var prefab = ZNetScene.instance.GetPrefab(RolledPrefab);
     if (prefab == null)
@@ -419,12 +419,12 @@ public class ItemValue(ItemData data)
     {
       var zdo = ZdoEntry.Spawn(RolledPrefab, pos, Vector3.zero, source.GetOwner());
       if (zdo == null) return;
-      zdo.Set(ZDOVars.s_durability, Durability?.Get(pars) ?? 100f);
+      zdo.Set(ZDOVars.s_durability, Durability?.Get(f) ?? 100f);
       zdo.Set(ZDOVars.s_stack, RolledStack);
-      zdo.Set(ZDOVars.s_quality, Quality?.Get(pars) ?? 1);
-      zdo.Set(ZDOVars.s_variant, Variant?.Get(pars) ?? 0);
-      zdo.Set(ZDOVars.s_crafterID, CrafterID?.Get(pars) ?? 0L);
-      zdo.Set(ZDOVars.s_crafterName, CrafterName?.Get(pars) ?? "");
+      zdo.Set(ZDOVars.s_quality, Quality?.Get(f) ?? 1);
+      zdo.Set(ZDOVars.s_variant, Variant?.Get(f) ?? 0);
+      zdo.Set(ZDOVars.s_crafterID, CrafterID?.Get(f) ?? 0L);
+      zdo.Set(ZDOVars.s_crafterName, CrafterName?.Get(f) ?? "");
       zdo.Set(ZDOVars.s_dataCount, CustomData?.Count ?? 0);
       int num = 0;
       if (CustomData != null)
@@ -432,12 +432,12 @@ public class ItemValue(ItemData data)
         foreach (var kvp in CustomData)
         {
           zdo.Set(string.Format("data_{0}", num), kvp.Key);
-          zdo.Set(string.Format("data__{0}", num), kvp.Value.Get(pars) ?? "");
+          zdo.Set(string.Format("data__{0}", num), kvp.Value.Get(f) ?? "");
           num += 1;
         }
       }
-      zdo.Set(ZDOVars.s_worldLevel, WorldLevel?.Get(pars) ?? 0);
-      zdo.Set(ZDOVars.s_pickedUp, PickedUp?.GetBool(pars) ?? false);
+      zdo.Set(ZDOVars.s_worldLevel, WorldLevel?.Get(f) ?? 0);
+      zdo.Set(ZDOVars.s_pickedUp, PickedUp?.GetBool(f) ?? false);
     }
     else
     {
@@ -446,37 +446,37 @@ public class ItemValue(ItemData data)
         var zdo = ZdoEntry.Spawn(RolledPrefab, pos, Vector3.zero, source.GetOwner());
         if (zdo == null) return;
         if (prefab.GetComponent<Character>())
-          zdo.Set(ZDOVars.s_level, Quality?.Get(pars) ?? 1);
+          zdo.Set(ZDOVars.s_level, Quality?.Get(f) ?? 1);
         if (CustomData != null)
         {
           foreach (var kvp in CustomData)
-            LoadCustomData(zdo, pars, kvp);
+            LoadCustomData(zdo, f, kvp);
         }
       }
     }
   }
-  private void LoadCustomData(ZDO zdo, Parameters pars, KeyValuePair<string, IStringValue> kvp)
+  private void LoadCustomData(ZDO zdo, Functions f, KeyValuePair<string, IStringValue> kvp)
   {
     if (kvp.Key == "data")
     {
-      var data = DataHelper.Get(kvp.Value.Get(pars) ?? "");
+      var data = DataHelper.Get(kvp.Value.Get(f) ?? "");
       if (data == null) return;
       ZdoEntry entry = new(zdo);
-      entry.Load(data, pars);
+      entry.Load(data, f);
       entry.Write(zdo);
     }
   }
-  public void AddTo(Parameters pars, Inventory inv)
+  public void AddTo(Functions f, Inventory inv)
   {
-    var stack = Stack?.Get(pars) ?? 1;
-    stack = StackTo(pars, stack, inv);
-    InsertTo(pars, stack, inv);
+    var stack = Stack?.Get(f) ?? 1;
+    stack = StackTo(f, stack, inv);
+    InsertTo(f, stack, inv);
   }
-  private int StackTo(Parameters pars, int stack, Inventory inv)
+  private int StackTo(Functions f, int stack, Inventory inv)
   {
     foreach (var item in inv.m_inventory)
     {
-      if (!MatchItem(pars, item)) continue;
+      if (!MatchItem(f, item)) continue;
       var amount = Mathf.Min(item.m_shared.m_maxStackSize - item.m_stack, stack);
       item.m_stack += amount;
       stack -= amount;
@@ -484,25 +484,25 @@ public class ItemValue(ItemData data)
     }
     return stack;
   }
-  private int InsertTo(Parameters pars, int stack, Inventory inv)
+  private int InsertTo(Functions f, int stack, Inventory inv)
   {
     while (stack > 0)
     {
-      var prefab = Prefab.Get(pars) ?? 0;
+      var prefab = Prefab.Get(f) ?? 0;
       var item = ObjectDB.instance.GetItemPrefab(prefab);
       if (item == null || !item.TryGetComponent(out ItemDrop drop)) return stack;
       var itemData = drop.m_itemData.Clone();
       itemData.m_dropPrefab = item;
-      itemData.m_quality = Quality?.Get(pars) ?? 1;
-      itemData.m_variant = Variant?.Get(pars) ?? 0;
-      itemData.m_crafterID = CrafterID?.Get(pars) ?? 0L;
-      itemData.m_crafterName = CrafterName?.Get(pars) ?? "";
-      itemData.m_worldLevel = WorldLevel?.Get(pars) ?? 0;
-      itemData.m_durability = Durability?.Get(pars) ?? itemData.GetMaxDurability(itemData.m_quality);
-      itemData.m_equipped = Equipped?.GetBool(pars) ?? false;
-      itemData.m_pickedUp = PickedUp?.GetBool(pars) ?? false;
+      itemData.m_quality = Quality?.Get(f) ?? 1;
+      itemData.m_variant = Variant?.Get(f) ?? 0;
+      itemData.m_crafterID = CrafterID?.Get(f) ?? 0L;
+      itemData.m_crafterName = CrafterName?.Get(f) ?? "";
+      itemData.m_worldLevel = WorldLevel?.Get(f) ?? 0;
+      itemData.m_durability = Durability?.Get(f) ?? itemData.GetMaxDurability(itemData.m_quality);
+      itemData.m_equipped = Equipped?.GetBool(f) ?? false;
+      itemData.m_pickedUp = PickedUp?.GetBool(f) ?? false;
       if (CustomData != null)
-        itemData.m_customData = CustomData.ToDictionary(x => x.Key, x => x.Value.Get(pars) ?? "");
+        itemData.m_customData = CustomData.ToDictionary(x => x.Key, x => x.Value.Get(f) ?? "");
 
       var amount = Mathf.Min(itemData.m_shared.m_maxStackSize, stack);
       stack -= amount;
@@ -524,13 +524,13 @@ public class ItemValue(ItemData data)
     }
     return stack;
   }
-  public void RemoveFrom(Parameters pars, Inventory inv)
+  public void RemoveFrom(Functions f, Inventory inv)
   {
-    var stack = Stack?.Get(pars) ?? 1;
+    var stack = Stack?.Get(f) ?? 1;
     for (var i = inv.m_inventory.Count - 1; i >= 0; --i)
     {
       var item = inv.m_inventory[i];
-      if (!MatchItem(pars, item)) continue;
+      if (!MatchItem(f, item)) continue;
       var amount = Mathf.Min(item.m_stack, stack);
       item.m_stack -= amount;
       stack -= amount;
@@ -539,47 +539,47 @@ public class ItemValue(ItemData data)
     inv.m_inventory.RemoveAll(x => x.m_stack <= 0);
   }
 
-  public bool Match(Parameters pars, Inventory inv)
+  public bool Match(Functions f, Inventory inv)
   {
-    var item = FindMatch(pars, inv);
+    var item = FindMatch(f, inv);
     if (item == null) return false;
     inv.RemoveItem(item);
     return true;
   }
-  private ItemDrop.ItemData? FindMatch(Parameters pars, Inventory inv)
+  private ItemDrop.ItemData? FindMatch(Functions f, Inventory inv)
   {
     if (Position != "")
     {
       var item = inv.GetItemAt(RolledPosition.x, RolledPosition.y);
       if (item == null) return null;
-      if (Stack?.Match(pars, item.m_stack) == false) return null;
-      if (MatchItem(pars, item)) return item;
+      if (Stack?.Match(f, item.m_stack) == false) return null;
+      if (MatchItem(f, item)) return item;
     }
     foreach (var item in inv.m_inventory)
     {
-      if (Stack?.Match(pars, item.m_stack) == false) continue;
-      if (MatchItem(pars, item)) return item;
+      if (Stack?.Match(f, item.m_stack) == false) continue;
+      if (MatchItem(f, item)) return item;
 
     }
     return null;
   }
-  private bool MatchItem(Parameters pars, ItemDrop.ItemData item)
+  private bool MatchItem(Functions f, ItemDrop.ItemData item)
   {
     var name = item.m_dropPrefab?.name ?? item.m_shared.m_name;
-    if (Prefab.Match(pars, StringExtensionMethods.GetStableHashCode(name)) == false) return false;
-    if (Durability?.Match(pars, item.m_durability) == false) return false;
-    if (Equipped?.Match(pars, item.m_equipped) == false) return false;
-    if (Quality?.Match(pars, item.m_quality) == false) return false;
-    if (Variant?.Match(pars, item.m_variant) == false) return false;
-    if (CrafterID?.Match(pars, item.m_crafterID) == false) return false;
-    if (CrafterName?.Match(pars, item.m_crafterName) == false) return false;
-    if (WorldLevel?.Match(pars, item.m_worldLevel) == false) return false;
-    if (PickedUp?.Match(pars, item.m_pickedUp) == false) return false;
+    if (Prefab.Match(f, StringExtensionMethods.GetStableHashCode(name)) == false) return false;
+    if (Durability?.Match(f, item.m_durability) == false) return false;
+    if (Equipped?.Match(f, item.m_equipped) == false) return false;
+    if (Quality?.Match(f, item.m_quality) == false) return false;
+    if (Variant?.Match(f, item.m_variant) == false) return false;
+    if (CrafterID?.Match(f, item.m_crafterID) == false) return false;
+    if (CrafterName?.Match(f, item.m_crafterName) == false) return false;
+    if (WorldLevel?.Match(f, item.m_worldLevel) == false) return false;
+    if (PickedUp?.Match(f, item.m_pickedUp) == false) return false;
     if (CustomData == null) return true;
     foreach (var kvp in CustomData)
     {
       if (!item.m_customData.TryGetValue(kvp.Key, out var value)) return false;
-      if (kvp.Value.Match(pars, value) == false) return false;
+      if (kvp.Value.Match(f, value) == false) return false;
     }
     return true;
   }
