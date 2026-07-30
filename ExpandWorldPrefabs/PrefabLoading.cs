@@ -87,6 +87,7 @@ public class Loading
     var allClientRpcs = ParseClientRpcs(data);
     var minPaint = data.minPaint != "" ? Parse.Color(data.minPaint, 0f) : data.paint != "" ? Parse.Color(data.paint, 0f) : null;
     var maxPaint = data.maxPaint != "" ? Parse.Color(data.maxPaint, 1f) : data.paint != "" ? Parse.Color(data.paint, 0f) : null;
+    var condition = ParseCondition(data);
     var addItems = HandleItems(data.addItems);
     var removeItems = HandleItems(data.removeItems);
     var minTerrainHeight = data.minTerrainHeight == null ? null : DataValue.Float(data.minTerrainHeight);
@@ -192,8 +193,17 @@ public class Loading
         MaxTerrainHeight = maxTerrainHeight,
         Execute = data.exec == null ? null : DataValue.String(data.exec),
         Admin = data.admin == null ? null : DataValue.Bool(data.admin),
+        Condition = condition,
       };
     })];
+  }
+  private static ConditionClause? ParseCondition(Data data)
+  {
+    if (string.IsNullOrWhiteSpace(data.condition)) return null;
+    var rawCondition = data.condition!;
+    if (Conditions.TryParse(rawCondition, out var condition, out var error)) return condition;
+    Log.Warning($"Invalid condition '{rawCondition}' for prefab '{data.prefab}': {error}");
+    return Conditions.False(rawCondition);
   }
   private static string FormatKey(string key)
   {

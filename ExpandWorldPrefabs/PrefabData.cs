@@ -176,6 +176,8 @@ public class Data
   public string? admin;
   [DefaultValue(null)]
   public string? chance;
+  [DefaultValue(null)]
+  public string? condition;
 }
 
 
@@ -315,6 +317,7 @@ public class Info
   public IStringValue? Execute;
   public IBoolValue? Admin;
   public IFloatValue? Chance;
+  public ConditionClause? Condition;
 }
 
 public class SpawnData

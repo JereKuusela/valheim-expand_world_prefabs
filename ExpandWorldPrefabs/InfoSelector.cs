@@ -60,7 +60,8 @@ public class InfoSelector
       .Where(d => Helper.HasEveryGlobalKey(d.GlobalKeys, f))
       .Where(d => !Helper.HasAnyGlobalKey(d.BannedGlobalKeys, f))
       .Where(d => DataStorage.HasEveryKey(d.Keys, f))
-      .Where(d => !DataStorage.HasAnyKey(d.BannedKeys, f));
+      .Where(d => !DataStorage.HasAnyKey(d.BannedKeys, f))
+      .Where(d => d.Condition == null || d.Condition.Evaluate(f));
     // Minor optimization to resolve simpler checks first (not measured).
     linq = [.. linq];
     var checkEnvironments = linq.Any(d => d.Environments.Count > 0) || linq.Any(d => d.BannedEnvironments.Count > 0);
@@ -279,7 +280,8 @@ public class InfoSelector
       .Where(d => Helper.HasEveryGlobalKey(d.GlobalKeys, f))
       .Where(d => !Helper.HasAnyGlobalKey(d.BannedGlobalKeys, f))
       .Where(d => DataStorage.HasEveryKey(d.Keys, f))
-      .Where(d => !DataStorage.HasAnyKey(d.BannedKeys, f));
+      .Where(d => !DataStorage.HasAnyKey(d.BannedKeys, f))
+      .Where(d => d.Condition == null || d.Condition.Evaluate(f));
 
 
     Info[] result = [.. linq];

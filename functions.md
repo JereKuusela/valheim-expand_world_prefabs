@@ -210,6 +210,6 @@ Time related functions:
   - This can be used if the server timezone is different from desired timezone.
   - Example: `<realtime_HH:mm_-5>` for Eastern Standard Time.
 
-## Functions
+## Custom functions
 
 Custom functions: See [Expand World Code](https://github.com/JereKuusela/valheim-expand_world_code).

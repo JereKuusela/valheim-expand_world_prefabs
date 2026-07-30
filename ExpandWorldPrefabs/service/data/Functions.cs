@@ -244,6 +244,8 @@ public class Functions(string prefab, string[] args, Vector3 pos)
      "findlower" => HandleFindLower(value, defaultValue),
      "time" => HandleTime(value),
      "realtime" => HandleRealtime(value),
+     "key" => DataStorage.GetValue(value, defaultValue),
+     "globalkey" => ZoneSystem.instance.GetGlobalKey(value, out var globalKey) ? globalKey.ToString() : defaultValue,
      _ => null,
    };
 
