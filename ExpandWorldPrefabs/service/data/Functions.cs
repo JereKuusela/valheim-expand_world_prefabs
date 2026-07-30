@@ -21,8 +21,8 @@ public class Functions(string prefab, string[] args, Vector3 pos)
   private readonly double time = ZNet.instance.GetTimeSeconds();
 
   public int Amount = 0;
-  public string Replace(string str) => Replace(str, false);
-  public string Replace(string str, bool preventInjections)
+  public string Replace(string str) => Replace(str, false, false);
+  public string Replace(string str, bool preventInjections, bool allValues)
   {
     StringBuilder parts = new();
     int nesting = 0;
@@ -44,7 +44,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
         if (nesting == 1)
         {
           var key = str.Substring(start, i - start + 1);
-          var resolved = ResolveFunctions(key);
+          var resolved = ResolveFunctions(key, allValues);
           // Server Devcommands mod supports running commands separated by ';'.
           // This allows injection attacks when players can control function values.
           // For example with player name, chat messages or sign texts.
@@ -62,7 +62,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
 
     return parts.ToString();
   }
-  private string ResolveFunctions(string str)
+  private string ResolveFunctions(string str, bool allValues)
   {
     for (int i = 0; i < str.Length; i++)
     {
@@ -72,7 +72,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
       var start = str.LastIndexOf("<", end);
       if (start == -1) continue;
       var length = end - start + 1;
-      if (TryReplaceFunction(str.Substring(start, length), out var resolved))
+      if (TryReplaceFunction(str.Substring(start, length), allValues, out var resolved))
       {
         str = str.Remove(start, length);
         str = str.Insert(start, resolved);
@@ -86,7 +86,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
     }
     return str;
   }
-  private bool TryReplaceFunction(string rawKey, out string? resolved)
+  private bool TryReplaceFunction(string rawKey, bool allValues, out string? resolved)
   {
     var key = rawKey.Substring(1, rawKey.Length - 2);
     var keyDefault = Parse.Kvp(key, '=');
@@ -99,7 +99,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
 
     resolved = GetFunction(key, defaultValue);
     if (resolved == null)
-      resolved = ResolveValue(rawKey);
+      resolved = allValues ? ResolveConditionValue(rawKey) : ResolveValue(rawKey);
     return resolved != rawKey;
   }
 
@@ -1067,6 +1067,17 @@ public class Functions(string prefab, string[] args, Vector3 pos)
     return value;
   }
 
+  // Condition values can reference value groups, so these are expanded to all values.
+  private static string ResolveConditionValue(string value)
+  {
+    if (!value.StartsWith("<", StringComparison.OrdinalIgnoreCase)) return value;
+    if (!value.EndsWith(">", StringComparison.OrdinalIgnoreCase)) return value;
+    var sub = value.Substring(1, value.Length - 2);
+    if (TryGetValuesFromGroup(sub, out var valuesFromGroup))
+      return string.Join(",", valuesFromGroup);
+    return value;
+  }
+
   private static bool TryGetValueFromGroup(string group, out string value)
   {
     var hash = group.ToLowerInvariant().GetStableHashCode();
@@ -1079,5 +1090,32 @@ public class Functions(string prefab, string[] args, Vector3 pos)
     // Value from group could be another group, so yet another resolve is needed.
     value = ResolveValue(DataLoading.ValueGroups[hash][roll]);
     return true;
+  }
+
+  private static bool TryGetValuesFromGroup(string group, out List<string> values)
+  {
+    values = [];
+    HashSet<int> handled = [];
+    AddGroupValues(group, values, handled);
+    return values.Count > 0;
+  }
+
+  private static void AddGroupValues(string group, List<string> values, HashSet<int> handled)
+  {
+    var hash = group.ToLowerInvariant().GetStableHashCode();
+    if (!handled.Add(hash)) return;
+    if (!DataLoading.ValueGroups.TryGetValue(hash, out var groupValues)) return;
+    foreach (var groupValue in groupValues)
+    {
+      if (groupValue.StartsWith("<", StringComparison.OrdinalIgnoreCase) && groupValue.EndsWith(">", StringComparison.OrdinalIgnoreCase))
+      {
+        var subGroup = groupValue.Substring(1, groupValue.Length - 2);
+        AddGroupValues(subGroup, values, handled);
+      }
+      else
+      {
+        values.Add(groupValue);
+      }
+    }
   }
 }

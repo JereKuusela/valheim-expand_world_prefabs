@@ -80,6 +80,37 @@ public class ConditionsTests
   }
 
   [Test]
+  public void Evaluate_InOperator_UsesContainsMatching()
+  {
+    Assert.That(Evaluate("wolf IN wolf,boar,deer"), Is.True);
+    Assert.That(Evaluate("boar IN wolf,boar,deer"), Is.True);
+    Assert.That(Evaluate("lox IN wolf,boar,deer"), Is.False);
+  }
+
+  [Test]
+  public void Evaluate_NotInOperator_UsesContainsMatching()
+  {
+    Assert.That(Evaluate("wolf NOT IN wolf,boar,deer"), Is.False);
+    Assert.That(Evaluate("lox NOT IN wolf,boar,deer"), Is.True);
+  }
+
+  [Test]
+  public void Evaluate_InAndNotInWorkWithSimpleLists()
+  {
+    Assert.That(Evaluate("wolf IN wolf,boar,deer"), Is.True);
+    Assert.That(Evaluate("wolf IN boar,deer"), Is.False);
+    Assert.That(Evaluate("wolf NOT IN boar,deer"), Is.True);
+    Assert.That(Evaluate("wolf NOT IN wolf,boar,deer"), Is.False);
+  }
+
+  [Test]
+  public void Evaluate_InSupportsCaseInsensitiveContainsBehavior()
+  {
+    Assert.That(Evaluate("wolf IN AlphaWolf"), Is.True);
+    Assert.That(Evaluate("Wolf IN alphawolf"), Is.True);
+  }
+
+  [Test]
   public void TryParse_DetectsMalformedCondition()
   {
     var parsed = Conditions.TryParse("(1 AND 0", out var clause, out var error);

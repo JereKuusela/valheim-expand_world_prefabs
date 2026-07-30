@@ -17,6 +17,9 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
   }
   public static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Functions f)
   {
+    if (spawn.Condition != null && !spawn.Condition.Evaluate(f))
+      return;
+
     var chance = spawn.Chance?.Get(f) ?? 1f;
     if (chance < 1f && Random.value > chance)
       return;

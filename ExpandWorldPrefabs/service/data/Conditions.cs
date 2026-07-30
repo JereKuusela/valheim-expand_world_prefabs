@@ -17,7 +17,7 @@ public sealed class ConditionClause
 
   public bool Evaluate(Functions f)
   {
-    return Evaluate(f.Replace);
+    return Evaluate(r => f.Replace(r, false, true));
   }
 
   public bool Evaluate(Func<string, string> resolveValue)
@@ -76,6 +76,8 @@ public static class Conditions
     Or,
     Not,
     Xor,
+    In,
+    NotIn,
     Equal,
     NotEqual,
     Greater,
@@ -288,6 +290,7 @@ public static class Conditions
         "OR" => TokenType.Or,
         "NOT" => TokenType.Not,
         "XOR" => TokenType.Xor,
+        "IN" => TokenType.In,
         _ => null,
       };
     }
@@ -305,6 +308,7 @@ public static class Conditions
     private int index = 0;
 
     private Token Current => tokens[index];
+    private Token Next => index + 1 < tokens.Count ? tokens[index + 1] : tokens[tokens.Count - 1];
 
     public ConditionNode ParseCondition()
     {
@@ -373,11 +377,20 @@ public static class Conditions
     private ConditionNode ParseComparisonOrValue()
     {
       var left = ParseValue();
-      if (!IsComparisonToken(Current.Type))
+      if (!IsComparisonToken(Current.Type) && !(Current.Type == TokenType.Not && Next.Type == TokenType.In))
         return new ValueNode(left);
 
-      var token = Current.Type;
-      ++index;
+      TokenType token;
+      if (Current.Type == TokenType.Not)
+      {
+        token = TokenType.NotIn;
+        index += 2;
+      }
+      else
+      {
+        token = Current.Type;
+        ++index;
+      }
       var right = ParseValue();
       return new ComparisonNode(token, left, right);
     }
@@ -394,6 +407,7 @@ public static class Conditions
 
     private static bool IsComparisonToken(TokenType token)
     {
+      if (token == TokenType.In) return true;
       return token == TokenType.Equal
         || token == TokenType.NotEqual
         || token == TokenType.Greater
@@ -483,6 +497,11 @@ public static class Conditions
   {
     var leftTrimmed = left.Trim();
     var rightTrimmed = right.Trim();
+    if (operatorType == TokenType.In || operatorType == TokenType.NotIn)
+    {
+      var contains = ContainsValue(rightTrimmed, leftTrimmed);
+      return operatorType == TokenType.In ? contains : !contains;
+    }
     var leftNumber = double.TryParse(leftTrimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out var leftValue);
     var rightNumber = double.TryParse(rightTrimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out var rightValue);
 
@@ -504,5 +523,11 @@ public static class Conditions
       TokenType.LessOrEqual => leftValue < rightValue || Math.Abs(leftValue - rightValue) <= NumericTolerance,
       _ => false,
     };
+  }
+
+  private static bool ContainsValue(string commaSeparatedValues, string value)
+  {
+    if (value == "") return false;
+    return commaSeparatedValues.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
   }
 }

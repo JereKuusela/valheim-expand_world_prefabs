@@ -58,13 +58,19 @@ public class ParametersTests
     var trimmed = value.Trim('(', ')');
     var parts = trimmed.Split(',');
     Assert.That(parts.Length, Is.EqualTo(3), "Expected a Vector3-formatted string.");
-    return parts.Select(p => float.Parse(p.Trim(), CultureInfo.InvariantCulture)).ToArray();
+    // Game string format is x,z,y, convert it back to Unity x,y,z for assertions.
+    return
+    [
+      float.Parse(parts[0].Trim(), CultureInfo.InvariantCulture),
+      float.Parse(parts[2].Trim(), CultureInfo.InvariantCulture),
+      float.Parse(parts[1].Trim(), CultureInfo.InvariantCulture),
+    ];
   }
 
   private static string Replace(string input, bool preventInjections = false)
   {
     var instance = CreateUninitializedParameters();
-    return instance.Replace(input, preventInjections);
+    return instance.Replace(input, preventInjections, false);
   }
 
   [Test]
@@ -79,7 +85,7 @@ public class ParametersTests
   {
     var result = Invoke("HandleAdd", "1,2,3_4,5,6");
 
-    Assert.That(result, Is.EqualTo("5 7 9"));
+    Assert.That(result, Is.EqualTo("5,7,9"));
   }
 
   [Test]
@@ -94,7 +100,7 @@ public class ParametersTests
   {
     var result = Invoke("HandleSub", "5,7,9_1");
 
-    Assert.That(result, Is.EqualTo("4 6 8"));
+    Assert.That(result, Is.EqualTo("4,6,8"));
   }
 
   [Test]
@@ -109,7 +115,7 @@ public class ParametersTests
   {
     var result = Invoke("HandleMul", "1,2,3_2");
 
-    Assert.That(result, Is.EqualTo("2 4 6"));
+    Assert.That(result, Is.EqualTo("2,4,6"));
   }
 
   [Test]
@@ -131,7 +137,7 @@ public class ParametersTests
   {
     var result = Invoke("HandleDiv", "8,12,16_2,3,4");
 
-    Assert.That(result, Is.EqualTo("4 4 4"));
+    Assert.That(result, Is.EqualTo("4,4,4"));
   }
 
   [Test]
@@ -391,7 +397,7 @@ public class ParametersTests
   {
     var result = Invoke("HandleCross", "1,0,0_0,0,1");
 
-    Assert.That(result, Is.EqualTo("0 1 0"));
+    Assert.That(result, Is.EqualTo("0,1,0"));
   }
 
   [Test]
@@ -399,7 +405,7 @@ public class ParametersTests
   {
     var result = Invoke("HandleNormalize", "3,4,0");
 
-    Assert.That(result, Is.EqualTo("0.6 0.8 0"));
+    Assert.That(result, Is.EqualTo("0.6,0.8,0"));
   }
 
   [Test]
@@ -423,7 +429,7 @@ public class ParametersTests
   {
     var result = Invoke("HandleProject", "3,4,0_1,0,0");
 
-    Assert.That(result, Is.EqualTo("3 0 0"));
+    Assert.That(result, Is.EqualTo("3,0,0"));
   }
 
   [Test]
@@ -431,7 +437,7 @@ public class ParametersTests
   {
     var result = Invoke("HandleReflect", "1,-1,0_0,1,0");
 
-    Assert.That(result, Is.EqualTo("1 1 0"));
+    Assert.That(result, Is.EqualTo("1,1,0"));
   }
 
   [Test]
@@ -439,7 +445,7 @@ public class ParametersTests
   {
     var result = Invoke("HandleLerp", "0,0,0_10,0,0_0.25");
 
-    Assert.That(result, Is.EqualTo("2.5 0 0"));
+    Assert.That(result, Is.EqualTo("2.5,0,0"));
   }
 
   [Test]

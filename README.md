@@ -236,6 +236,7 @@ bannedFilters:
     - All objects are searched if the max distance is more than 10000 meters.
   - minHeight: Minimum height difference to the object.
   - maxHeight: Maximum height difference to the object.
+  - condition: Optional condition expression. Must evaluate to true for the object.
   - weight: How much this object counts towards the `objectsLimit`. Default is 1.
   - offset: Position offset in x,z,y from the original object position and rotation.  
   - Data filters like `filter`, `filters`, `bannedFilter` and `bannedFilters` can be used to filter the object.
@@ -300,6 +301,7 @@ See object filtering [examples](examples_object_filtering.md).
 
 - spawn (P): Spawns another object.
   - prefab: Object id or value group.
+  - condition: Optional condition expression. Must evaluate to true for this spawn attempt.
   - data: Entry in the `data.yaml` to be used as initial data.
     - Supports `type, key, value` format to set a single data value.
   - pos: Position offset in x,z,y from the original object.

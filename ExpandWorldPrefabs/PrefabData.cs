@@ -356,6 +356,8 @@ public class SpawnData
   public string? connect;
   [DefaultValue(null)]
   public string? triggerRules;
+  [DefaultValue(null)]
+  public string? condition;
 }
 
 public class Spawn
@@ -375,6 +377,7 @@ public class Spawn
   public readonly IZdoIdValue? Attach;
   public readonly IZdoIdValue? Connect;
   public readonly IBoolValue? TriggerRules;
+  public readonly ConditionClause? Condition;
 
   public Spawn(SpawnData data, float? delay, bool? triggerRules)
   {
@@ -393,6 +396,16 @@ public class Spawn
     Attach = data.attach == null ? null : DataValue.ZdoId(data.attach);
     Connect = data.connect == null ? null : DataValue.ZdoId(data.connect);
     TriggerRules = data.triggerRules == null ? triggerRules == null ? null : new SimpleBoolValue(triggerRules.Value) : DataValue.Bool(data.triggerRules);
+    if (data.condition != null)
+    {
+      if (Conditions.TryParse(data.condition, out var condition, out var error))
+        Condition = condition;
+      else
+      {
+        Log.Warning($"Invalid spawn condition '{data.condition}' for spawn prefab '{data.prefab}': {error}");
+        Condition = Conditions.False(data.condition);
+      }
+    }
   }
 
   public Spawn(string line, float? delay, bool? triggerRules)
@@ -464,7 +477,6 @@ public class Poke(PokeData data)
 
   public string[] GetArgs(Functions f)
   {
-
     if (Parameters != null)
       return [.. Parameters.Select(f.Replace)];
     else
@@ -506,6 +518,7 @@ public class Object
   private readonly IFloatValue? MaxHeightValue;
   private readonly IVector3Value? PositionValue;
   private readonly IVector3Value? OffsetValue;
+  private readonly ConditionClause? Condition;
   private readonly Filters? filters;
   private readonly IIntValue WeightValue = new SimpleIntValue(1);
 
@@ -530,6 +543,16 @@ public class Object
       OffsetValue = DataValue.Vector3(data.offset);
     if (data.weight != null)
       WeightValue = DataValue.Int(data.weight);
+    if (data.condition != null)
+    {
+      if (Conditions.TryParse(data.condition, out var condition, out var error))
+        Condition = condition;
+      else
+      {
+        Log.Warning($"Invalid object condition '{data.condition}' for prefab '{data.prefab}': {error}");
+        Condition = Conditions.False(data.condition);
+      }
+    }
     if (data.filters != null || data.bannedFilters != null)
       filters = new Filters(data.filters, data.bannedFilters, data.filterLimit);
     else if (data.data != null)
@@ -561,6 +584,16 @@ public class Object
       if (range.Min != range.Max)
         MinHeightValue = DataValue.Float(range.Min);
       MaxHeightValue = DataValue.Float(range.Max);
+    }
+    if (split.Count > 5)
+    {
+      if (Conditions.TryParse(split[5], out var condition, out var error))
+        Condition = condition;
+      else
+      {
+        Log.Warning($"Invalid object condition '{split[5]}' for object '{split[0]}': {error}");
+        Condition = Conditions.False(split[5]);
+      }
     }
   }
   private float? MinDistance;
@@ -599,6 +632,7 @@ public class Object
     var dy = Mathf.Abs(CachedPosition.y - zdo.GetPosition().y);
     if (MinHeight != null && dy < MinHeight) return false;
     if (MaxHeight != null && dy > MaxHeight) return false;
+    if (Condition != null && !Condition.Evaluate(f)) return false;
 
     if (filters == null) return true;
     return filters.Match(f, zdo);
@@ -658,6 +692,8 @@ public class ObjectData
   public string? filterLimit;
   [DefaultValue(null)]
   public string? weight;
+  [DefaultValue(null)]
+  public string? condition;
 }
 
 
