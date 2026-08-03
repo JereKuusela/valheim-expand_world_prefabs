@@ -260,7 +260,7 @@ See object filtering [examples](examples_object_filtering.md).
   - This only works properly for some actions, since the RPC calls are usually for cosmetic changes.
   - For example chat messages can be cancelled so that they are never shown to other players (for example for non-admin custom commands).
 - command: Console command to run.
-  - Parameters are supported.
+  - Functions are supported.
   - Using `say` command requires either Discord Control mod or Server Devcommands mod (with Server chat enabled).
 - commands: List of console commands to run.
 - data (P): Sets object data either with format `name` or `type, key, value`.
@@ -269,8 +269,8 @@ See object filtering [examples](examples_object_filtering.md).
   - If a component field is set, the object is respawned to apply the changes.
   - Otherwise the data is force pushed to clients, which can override local changes (such as creature movement).
 - injectData: If set, overrides the default logic for data changes.
-  - When true, the object is always respawned (even when component fields are not changed).
-  - When false, the object is never respawned (even when component fields are changed).
+  - When false, the object is always respawned (even when component fields are not changed).
+  - When true, the object is never respawned (even when component fields are changed).
   - Only use this if really needed, the default logic works for most cases.
 - drops (P): If true, the object drops are spawned.
   - These include creature drops, destructible drops and structure materials.
