@@ -12,17 +12,11 @@ Install on the server (modding [guide](https://youtu.be/L9ljm2eKLrk)).
 - Swap destroyed creatures, structures and objects.
 - And a lot more...
 
-When swapping creature spawns, the spawn limit still checks the amount of original creature. This can lead to very high amount of creatures.
-
 ## Configuration
 
 The file `expand_world/expand_prefabs.yaml` is created when loading a world.
 
 This mod uses the [data system](https://github.com/JereKuusela/valheim-world_edit_commands/blob/main/README_data.md) of World Edit Commands.
-
-Most of the values can be parametrized. These are indicated by letter P in this document.
-
-See section [Parameters](### Parameters) for more information.
 
 ### expand_prefabs.yaml
 
@@ -81,9 +75,9 @@ Most fields are put on a single line. List values are separated by `,`.
       - Uses server timezone.
   - Objects spawned or removed by this mod won't trigger `create` or `destroy`.
 - types: List of types.
-- chance (default: `1`, P): Chance to execute this entry when all filters match.
+- chance (default: `1`): Chance to execute this entry when all filters match.
   - This can be combined with weight and is checked after weight selection.
-- weight (optional, P): When set, only one of the weighted entries is selected.
+- weight (optional): When set, only one of the weighted entries is selected.
   - All weights are summed and the probability is `weight / sum`.
   - Sum is at least 1, so with low weights there is a chance to not select anything.
 - fallback (default: `false`): If true, this entry can only get selected if no other entries match.
@@ -94,26 +88,26 @@ If a filter is not specified, it's not checked and is always considered valid.
 
 All valid entries will be executed in unspecified order. Weight system can be used trigger only one entry.
 
-- admin (P): Checks if the object owner is an admin.
+- admin: Checks if the object owner is an admin.
   - If true, the owner must be an admin.
   - If false, the owner must not be an admin.
   - If not set, nothing is checked.
 - biomes: List of valid biomes.
 - bannedBiomes: List of invalid biomes.
-- day (P): Valid during the day.
-- night (P): Valid during the night.
-- minDistance (P): Minimum distance from the world center.
-- maxDistance (P): Maximum distance from the world center.
-- minX (P): Minimum x coordinate.
-- maxX (P): Maximum x coordinate.
-- minZ (P): Minimum z coordinate.
-- maxZ (P): Maximum z coordinate.
-- minY (P): Minimum y coordinate.
-- maxY (P): Maximum y coordinate.
-- minAltitude (P): Minimum altitude (y coordinate + 30).
-- maxAltitude (P): Maximum altitude (y coordinate + 30).
-- minTerrainHeight (P): Minimum terrain height (y coordinate).
-- maxTerrainHeight (P): Maximum terrain height (y coordinate).
+- day: Valid during the day.
+- night: Valid during the night.
+- minDistance: Minimum distance from the world center.
+- maxDistance: Maximum distance from the world center.
+- minX: Minimum x coordinate.
+- maxX: Maximum x coordinate.
+- minZ: Minimum z coordinate.
+- maxZ: Maximum z coordinate.
+- minY: Minimum y coordinate.
+- maxY: Maximum y coordinate.
+- minAltitude: Minimum altitude (y coordinate + 30).
+- maxAltitude: Maximum altitude (y coordinate + 30).
+- minTerrainHeight: Minimum terrain height (y coordinate).
+- maxTerrainHeight: Maximum terrain height (y coordinate).
 - paint: Valid terrain paint color.
   - Supports values cultivated, dirt, grass, grass_dark, patches, paved, paved_dark, paved_dirt and paved_moss.
   - Supports numeric value r,g,b,a.
@@ -124,15 +118,15 @@ All valid entries will be executed in unspecified order. Weight system can be us
   - Each terrain color component must be same or lower.
 - environments: List of valid environments.
 - bannedEnvironments: List of  invalid environments.
-- globalKeys (P): List of global keys that must be set.
+- globalKeys: List of global keys that must be set.
   - The values are converted to lower case because the game always uses lower case.
-- bannedGlobalKeys (P): List of global keys that must not be set.
+- bannedGlobalKeys: List of global keys that must not be set.
   - The values are converted to lower case because the game always uses lower case.
-- keys (P): List of saved custom data that must be set.
+- keys: List of saved custom data that must be set.
   - The values are converted to lower case to match global keys behavior.
   - Format is `key1 value1, key2 value2, ...`.
   - Value can be a range `min;max;step` for integers (step defaults 1 if not given).
-- bannedKeys (P): List of saved custom data that must not be set.
+- bannedKeys: List of saved custom data that must not be set.
   - The values are converted to lower case to match global keys behavior.
   - Format is `key1 value1, key2 value2, ...`.
   - Value can be a range `min;max;step` for integers (step defaults 1 if not given).
@@ -156,7 +150,7 @@ All valid entries will be executed in unspecified order. Weight system can be us
   - Requires using Server Devcommands mod or some other mod that provides group implementation.
 - bannedGroups: List of groups. Player must not be in any of these groups.
 
-### Data filters (P)
+### Data filters
 
 Filtering can be done based on object's data.
 
@@ -191,7 +185,7 @@ Containers can be filtered by items. This is done by using "items" from a data e
 - Items are checked in the same order as they are defined in the "items" list.
 - If item amount is set but items are not, then only the item count is checked.
 
-### Multiple filters (P)
+### Multiple filters
 
 There can be multiple required filters and banned filters. By default, each required filter and no banned filter must match.
 
@@ -229,7 +223,7 @@ bannedFilters:
   - If not set, then each entry must be found at least once. One object can match multiple filters.
   - If set, that many entries must be found. Each filter can be matched by multiple entries.
   - When using max, all objects must be searched.
-- objects (P): List of required nearby objects.
+- objects: List of required nearby objects.
   - prefab: Target object id or value group.
   - self: When set to true, the object itself is included in the search.
   - minDistance: Minimum distance to the object.
@@ -245,7 +239,7 @@ bannedFilters:
   - If not set, then all of the entries must not be found.
   - If set, that many `bannedObjects` must not be found. Each filter can be matched by multiple entries.
   - When using max, all objects must be searched.
-- bannedObjects (P): List of banned nearby objects.
+- bannedObjects: List of banned nearby objects.
 
 See object filtering [examples](examples_object_filtering.md).
 
@@ -256,7 +250,7 @@ See object filtering [examples](examples_object_filtering.md).
   - If the item exists, its stack amount is increased up to the max.
   - Remaining stack amount is added as new items.
   - For adding a single item, shorthand `itemid, amount` can be used.
-- cancel (default: `false`, P): If true, the RPC call of the triggering action is cancelled.
+- cancel (default: `false`): If true, the RPC call of the triggering action is cancelled.
   - This affects types `command`, `damage`, `say`, `state` and `repair`.
   - This only works properly for some actions, since the RPC calls are usually for cosmetic changes.
   - For example chat messages can be cancelled so that they are never shown to other players (for example for non-admin custom commands).
@@ -264,7 +258,7 @@ See object filtering [examples](examples_object_filtering.md).
   - Functions are supported.
   - Using `say` command requires either Discord Control mod or Server Devcommands mod (with Server chat enabled).
 - commands: List of console commands to run.
-- data (P): Sets object data either with format `name` or `type, key, value`.
+- data: Sets object data either with format `name` or `type, key, value`.
   - Format `name` can be used to set multiple values (entry name from `data.yaml`).
   - Format `type, key, value` is a shorthand to set a single data value.
   - If a component field is set, the object is respawned to apply the changes.
@@ -273,26 +267,26 @@ See object filtering [examples](examples_object_filtering.md).
   - When false, the object is always respawned (even when component fields are not changed).
   - When true, the object is never respawned (even when component fields are changed).
   - Only use this if really needed, the default logic works for most cases.
-- drops (P): If true, the object drops are spawned.
+- drops: If true, the object drops are spawned.
   - These include creature drops, destructible drops and structure materials.
   - This can also be a data entry with `items` information.
   - Not supported for type `destroy`.
-- exec (P): Runs parameters with side effects.
+- exec: Runs functions with side effects.
   - Mostly useful for saving custom data with the `save` function.
-- owner (P): Changes the object owner (number).
+- owner: Changes the object owner (number).
   - Only works when using `injectData: true`.
   - Number 0 removes the owner, but the server will reassign it after a few seconds.
-- remove (default: `false`, P): If true, the original object is removed.
-- removeDelay (P): Delay in seconds for remove.
+- remove (default: `false`): If true, the original object is removed.
+- removeDelay: Delay in seconds for remove.
 - removeItems: Data entry that is used to removes items from the container object.
   - Data type "items" is used for this.
   - If the item doesn't exist then nothing happens.
   - For removing a single item, shorthand `itemid, amount` can be used.
 - triggerRules (default: `false`): If true, spawns or remove from this entry can trigger other entries.
-- connect (P): Connects this object to another object.
+- connect: Connects this object to another object.
   - This can be done by passing `<zdo>` as poke parameter.
   - Connections allow direct poking.
-- attach: (P): Attaches this object to another object.
+- attach:: Attaches this object to another object.
   - This can be done by passing `<zdo>` as poke parameter.
   - Attaching is SyncTransform connection, so it can also be used for direct poking.
   - Attaching makes the object follow the other object (requires ZSyncTransform component).
@@ -300,7 +294,7 @@ See object filtering [examples](examples_object_filtering.md).
 
 ### Spawns
 
-- spawn (P): Spawns another object.
+- spawn: Spawns another object.
   - prefab: Object id or value group.
   - condition: Optional condition expression. Must evaluate to true for this spawn attempt.
   - data: Entry in the `data.yaml` to be used as initial data.
@@ -316,22 +310,23 @@ See object filtering [examples](examples_object_filtering.md).
   - repeat (default: `0`): How many times the spawn is repeated.
   - repeatInterval (default: `0`): Interval in seconds between repeats.
   - repeatChance (default: `1`): Chance to spawn for each attempt (including the original).
-  - owner: Overrides the default initial owner assignment. For example with `<owner>` parameter.
-  - connect (P): Connects the spawned object to another object. See Actions for more info.
-  - attach (P): Attaches the spawned object to another object. See Actions for more info.
-- swap (P): Swaps the original object with another object.
+  - owner: Overrides the default initial owner assignment. For example with `<owner>` function.
+  - connect: Connects the spawned object to another object. See Actions for more info.
+  - attach: Attaches the spawned object to another object. See Actions for more info.
+- swap: Swaps the original object with another object.
   - Format and keywords are same as for `spawn`.
   - The initial data is copied from the original object.
   - Swap is done by removing the original object and spawning the swapped object.
   - If the swapped object is not valid, the original object is still removed.
   - Swapping can break ZDO connection, so spawn points may respawn even when the creature is alive.
   - Chance works for swap too. If it fails, the original object is still removed.
+  - Note: Swapping creatures can cause high amount of creatures because spawn limits are based on the amount of the original creature.
 
 ### Pokes
 
 Poking allows to trigger actions on other objects (or even on the original object).
 
-- poke (P): List of poke objects:
+- poke: List of poke objects:
   - prefab: Target object id or value group.
     - By default, the object itself can't be poked. You can set `self` to true allow self poking.
   - self: When set to true, the object itself can be poked.
@@ -381,23 +376,23 @@ RPC format:
 
 - name: Name of the RPC call. Must be exact match.
   - See list of supported calls: (RPCs.md)
-- target (P): Target of the RPC call. Default is `owner`.
+- target: Target of the RPC call. Default is `owner`.
   - `owner`: The RPC is sent to the owner of the object.
-  - `all`: The is sent to all clients.
+  - `all`: The RPC is sent to all clients.
   - ZDO id: The RPC is sent to the owner of this ZDO.
-    - Parameters are supported. For example `<zdo>` can be useful.
+    - Functions are supported. For example `<zdo>` can be useful.
 - chance (default: `1`): Chance to trigger.
 - weight (optional): When set, only one of the weighted RPCs is selected.
   - All weights are summed and the probability is `weight / sum`.
   - Sum is at least 1, so with low weights there is a chance to not trigger anything.
-- delay (P): Delay in seconds for the RPC call.
+- delay: Delay in seconds for the RPC call.
 - repeat (default: `0`): How many times the RPC is repeated.
 - repeatInterval (default: `0`): Interval in seconds between repeats.
 - repeatChance (default: `1`): Chance to trigger for each attempt (including the original).
 - overwrite (default: `false`): If true, the RPC call overwrites any existing delayed calls with same name and target.
   - This is useful for messages so that only the last one is shown.
-- source (P): ZDO id. The RPC call is faked to be from owner of this ZDO.
-  - Parameters are supported. For example `<zdo>` can be useful.
+- source: ZDO id. The RPC call is faked to be from owner of this ZDO.
+  - Functions are supported. For example `<zdo>` can be useful.
 - packaged: If true, the parameters are sent as a package. Default is false.
   - This must be set to true for some RPC calls.
 - 1: First parameter.
@@ -413,7 +408,7 @@ However this is very difficult to use because of the underlyting terrain compile
 
 For this reason, terrrain changes have their own field.
 
-- terrain (P): List of terrain operations.
+- terrain: List of terrain operations.
   - Automatically creates missing _TerrainCompiler objects.
   - When compiler object is created, the terrain change is delayed by 1 second.
   - Automatically affects all compilers within the radius.
