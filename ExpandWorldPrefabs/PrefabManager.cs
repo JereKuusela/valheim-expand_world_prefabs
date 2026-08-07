@@ -303,7 +303,7 @@ public class Manager
     var rot = zdo.GetRotation();
     if (info.LegacyPokes != null)
     {
-      var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, rot, f, null);
+      var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, rot, f, zdo.m_uid);
       var pokeParameter = Prefab.Poke.PokeEvaluate(f.Replace(info.PokeParameter)).Split(' ');
       var delay = info.PokeDelay;
       DelayedPoke.Add(delay, zdos, pokeParameter);

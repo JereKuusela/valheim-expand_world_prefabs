@@ -86,6 +86,8 @@ public class PeerManager
   public static void HandlePlayerCreatedState(ZDO zdo)
   {
     if (zdo.m_prefab != PlayerHash) return;
+    // Chat messages rely on player list, so must update it immediatelly to work reliably.
+    ZNet.instance.UpdatePlayerList();
     var owner = zdo.GetOwner();
     var peer = GetPeer(owner);
     if (peer == null) return;

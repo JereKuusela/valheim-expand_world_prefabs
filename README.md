@@ -231,6 +231,7 @@ bannedFilters:
   - When using max, all objects must be searched.
 - objects (P): List of required nearby objects.
   - prefab: Target object id or value group.
+  - self: When set to true, the object itself is included in the search.
   - minDistance: Minimum distance to the object.
   - maxDistance: Maximum distance to the object. Default is 100 meters.
     - All objects are searched if the max distance is more than 10000 meters.

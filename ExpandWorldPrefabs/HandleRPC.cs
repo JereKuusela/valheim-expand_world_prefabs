@@ -181,10 +181,10 @@ public class HandleRPC
     return Manager.CheckCancel(ActionType.Say, text.Split(' '), zdo);
   }
   static readonly int ChatMessageHash = ZdoHelper.Hash("ChatMessage");
-  static readonly ParameterInfo[] ChatMessgePars = AccessTools.Method(typeof(Chat), nameof(Chat.RPC_ChatMessage)).GetParameters();
+  static readonly ParameterInfo[] ChatMessagePars = AccessTools.Method(typeof(Chat), nameof(Chat.RPC_ChatMessage)).GetParameters();
   private static bool HandleChat(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    var pars = ZNetView.Deserialize(data.m_senderPeerID, ChatMessgePars, data.m_parameters);
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, ChatMessagePars, data.m_parameters);
     data.m_parameters.SetPos(0);
     if (pars.Length < 5) return false;
     var text = (string)pars[4];
@@ -192,7 +192,7 @@ public class HandleRPC
   }
   private static bool CancelChat(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
-    var pars = ZNetView.Deserialize(data.m_senderPeerID, ChatMessgePars, data.m_parameters);
+    var pars = ZNetView.Deserialize(data.m_senderPeerID, ChatMessagePars, data.m_parameters);
     data.m_parameters.SetPos(0);
     if (pars.Length < 5) return false;
     var text = (string)pars[4];

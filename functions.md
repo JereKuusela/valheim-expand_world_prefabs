@@ -12,7 +12,8 @@ Following functions are available to be used in the yaml file:
 - `<i>` and `<j>`: Object zone indices.
 - `<a>`: Object rotation.
 - `<rot>`: Object rotation as y,x,z.
-- `<key_*>`: Global key value.
+- `<globalkey_*>`: Global key value.
+- `<key_*>`: Custom data value.
 - `<int_*>`: Integer value from the object data.
 - `<float_*>`: Decimal value from the object data.
 - `<long_*>`: Big integer value from the object data.

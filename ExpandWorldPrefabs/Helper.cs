@@ -60,13 +60,14 @@ public class Helper
   public static bool Approx(float a, float b) => Mathf.Abs(a - b) < 0.001f;
   public static bool ApproxBetween(float a, float min, float max) => min - 0.001f <= a && a <= max + 0.001f;
 
-  public static bool HasAnyGlobalKey(List<string> keys, Functions r)
+  public static bool HasAnyGlobalKey(List<string> keys, Functions f)
   {
     foreach (var key in keys)
     {
       if (key.Contains("<"))
       {
-        if (ZoneSystem.instance.m_globalKeys.Contains(r.Replace(key))) return true;
+        // Lower is required because functions can return upper case.
+        if (ZoneSystem.instance.m_globalKeys.Contains(f.Replace(key).ToLowerInvariant())) return true;
       }
       else
       {

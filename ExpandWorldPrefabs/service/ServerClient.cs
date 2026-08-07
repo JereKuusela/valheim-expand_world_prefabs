@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using HarmonyLib;
@@ -94,10 +95,21 @@ public class ServerClient
 
   private static PlatformUserID GetServerUserId()
   {
-    var hostName = ZNet.instance.m_hostSocket.GetHostName();
+    try
+    {
+      // Steamworks is not available for Microsoft clients.
+      var steamGameServer = Type.GetType("Steamworks.SteamGameServer, com.rlabrecque.steamworks.net", false);
+      var getSteamId = steamGameServer?.GetMethod("GetSteamID");
+      var steamId = getSteamId?.Invoke(null, null)?.ToString();
+      if (!string.IsNullOrEmpty(steamId))
+        return new PlatformUserID(ZNet.instance.m_steamPlatform, steamId);
+    }
+    catch
+    {
+    }
     if (ZNet.m_onlineBackend == OnlineBackendType.Steamworks)
-      return new PlatformUserID(ZNet.instance.m_steamPlatform, hostName);
-    return new PlatformUserID(hostName);
+      return new PlatformUserID(ZNet.instance.m_steamPlatform, ZNet.instance.m_hostSocket.GetHostName());
+    return new PlatformUserID("playfab", ZPlayFabMatchmaking.m_instance.m_serverData.remotePlayerId);
   }
 
   public static void Write(ZPackage pkg)

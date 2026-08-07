@@ -54,12 +54,10 @@ public class DelayedPoke
   }
   private static void Add(Poke poke, ZDOID zdo, Vector3 pos, Quaternion rot, Functions f, float delay)
   {
-    var self = poke.Self?.GetBool(f);
     var connected = poke.Connected?.GetBool(f) == true;
-    var target = poke.Target?.Get(f);
     if (poke.HasPrefab)
     {
-      var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(f) ?? 0, poke.Filter, pos, rot, f, self == true ? null : zdo).ToList();
+      var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(f) ?? 0, poke.Filter, pos, rot, f, zdo).ToList();
       if (connected)
       {
         var connectedZdos = new HashSet<ZDOID>(SupportAttach.GetConnnected(zdo));
@@ -69,13 +67,16 @@ public class DelayedPoke
       f.Amount = zdos.Count;
       var args = poke.GetArgs(f);
       Add(delay, [.. zdos], args);
+      return;
     }
-    else if (self == true || target != null || connected)
+    var self = poke.Filter.AllowSelf(f);
+    var target = poke.Target?.Get(f);
+    if (self || target != null || connected)
     {
       HashSet<ZDOID> targets = [];
-      if (self == true)
+      if (self)
         targets.Add(zdo);
-      if (target != null && (self == true || target.Value != zdo))
+      if (target != null && (self || target.Value != zdo))
         targets.Add(target.Value);
       if (connected)
         targets.UnionWith(SupportAttach.GetConnnected(zdo));

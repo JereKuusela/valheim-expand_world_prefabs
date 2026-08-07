@@ -60,7 +60,6 @@ public class ObjectFunctions(string prefab, string[] args, ZDO zdo) : Functions(
   protected override string? GetValueFunction(string key, string value, string defaultValue) =>
    key switch
    {
-     "key" => DataHelper.GetGlobalKey(value),
      "string" => GetString(value, defaultValue),
      "float" => GetFloat(value, defaultValue).ToString(CultureInfo.InvariantCulture),
      "int" => GetInt(value, defaultValue).ToString(CultureInfo.InvariantCulture),

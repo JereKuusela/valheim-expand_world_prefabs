@@ -469,7 +469,6 @@ public class Poke(PokeData data)
   public IFloatValue? RepeatInterval = data.repeatInterval == null ? null : DataValue.Float(data.repeatInterval);
   public IFloatValue? RepeatChance = data.repeatChance == null ? null : DataValue.Float(data.repeatChance);
   public IFloatValue? Chance = data.chance == null ? null : DataValue.Float(data.chance);
-  public IBoolValue? Self = data.self == null ? null : DataValue.Bool(data.self);
   public IBoolValue? Connected = data.connected == null ? null : DataValue.Bool(data.connected);
   public IZdoIdValue? Target = data.target == null ? null : DataValue.ZdoId(data.target);
   private readonly IBoolValue? Evaluate = data.evaluate == null ? null : DataValue.Bool(data.evaluate);
@@ -521,6 +520,7 @@ public class Object
   private readonly ConditionClause? Condition;
   private readonly Filters? filters;
   private readonly IIntValue WeightValue = new SimpleIntValue(1);
+  private readonly IBoolValue? IncludeSelfValue;
 
   public Object(ObjectData data)
   {
@@ -543,6 +543,8 @@ public class Object
       OffsetValue = DataValue.Vector3(data.offset);
     if (data.weight != null)
       WeightValue = DataValue.Int(data.weight);
+    if (data.self != null)
+      IncludeSelfValue = DataValue.Bool(data.self);
     if (data.condition != null)
     {
       if (Conditions.TryParse(data.condition, out var condition, out var error))
@@ -604,6 +606,7 @@ public class Object
   private Vector3? Offset;
   public Vector3 CachedPosition;
   public int Weight;
+  public bool IncludeSelf;
 
   public void Roll(Functions f, Vector3 pos, Quaternion rot)
   {
@@ -612,6 +615,7 @@ public class Object
     MinHeight = MinHeightValue?.Get(f);
     MaxHeight = MaxHeightValue?.Get(f);
     Weight = WeightValue.Get(f) ?? 1;
+    IncludeSelf = IncludeSelfValue?.GetBool(f) == true;
     Position = PositionValue?.Get(f);
     Offset = OffsetValue?.Get(f);
     if (Position.HasValue)
@@ -623,8 +627,9 @@ public class Object
       CachedPosition += rot * Offset.Value;
   }
 
-  public bool IsValid(ZDO zdo, Functions f)
+  public bool IsValid(ZDO zdo, Functions f, ZDOID? self)
   {
+    if (!IncludeSelf && zdo.m_uid == self) return false;
     if (HasPrefabFilter && PrefabsValue.Match(f, zdo.GetPrefab()) != true) return false;
     var d = Utils.DistanceXZ(CachedPosition, zdo.GetPosition());
     if (MinDistance != null && d < MinDistance) return false;
@@ -637,6 +642,8 @@ public class Object
     if (filters == null) return true;
     return filters.Match(f, zdo);
   }
+
+  public bool AllowSelf(Functions f) => IncludeSelfValue?.GetBool(f) == true;
 }
 
 public class PokeData : ObjectData
@@ -651,8 +658,6 @@ public class PokeData : ObjectData
   public string? repeatChance;
   [DefaultValue(null)]
   public string? chance;
-  [DefaultValue(null)]
-  public string? self;
   [DefaultValue(null)]
   public string? connected;
   [DefaultValue(null)]
@@ -692,6 +697,8 @@ public class ObjectData
   public string? filterLimit;
   [DefaultValue(null)]
   public string? weight;
+  [DefaultValue(null)]
+  public string? self;
   [DefaultValue(null)]
   public string? condition;
 }

@@ -9,14 +9,14 @@ public class PrefabValue(string[] values) : AnyValue(values), IPrefabValue
   // Caching makes sense because parameters and wildcards makes it slow.
   // Also prefab is often checked many times.
   private List<int>? Cache;
-  private Functions? LastParameters;
+  private Functions? LastFunctions;
   public int? Get(Functions f)
   {
-    if (f != LastParameters)
+    if (f != LastFunctions)
     {
       var values = GetAllValues(f);
       Cache = PrefabHelper.GetPrefabs(values, null);
-      LastParameters = f;
+      LastFunctions = f;
     }
     if (Cache == null || Cache.Count == 0) return null;
     if (Cache.Count == 1) return Cache[0];
@@ -25,11 +25,11 @@ public class PrefabValue(string[] values) : AnyValue(values), IPrefabValue
 
   public bool? Match(Functions f, int value)
   {
-    if (f != LastParameters)
+    if (f != LastFunctions)
     {
       var values = GetAllValues(f);
       Cache = PrefabHelper.GetPrefabs(values, null);
-      LastParameters = f;
+      LastFunctions = f;
     }
     if (Cache == null || Cache.Count == 0) return null;
     return Cache.Contains(value);

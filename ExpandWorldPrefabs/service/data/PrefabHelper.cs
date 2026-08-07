@@ -42,7 +42,7 @@ public class PrefabHelper
     if (includes.Count == 0) return null;
     HashSet<int>? excludedPrefabs = null;
     if (excludes != null && excludes.Count > 0)
-      excludedPrefabs = excludes.Select(ParsePrefabs).Where(s => s != null).SelectMany(s => s).ToHashSet();
+      excludedPrefabs = [.. excludes.Select(ParsePrefabs).Where(s => s != null).SelectMany(s => s)];
 
     if (includes.Count == 1)
     {
