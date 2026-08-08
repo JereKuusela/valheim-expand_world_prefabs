@@ -11,6 +11,20 @@ namespace Service;
 
 public class Yaml
 {
+  public enum FileChangeType
+  {
+    Created,
+    Changed,
+    Renamed,
+    Deleted
+  }
+
+  public class MixedFileEntries
+  {
+    public List<global::ExpandWorld.Prefab.Data> ScriptEntries = [];
+    public List<global::Data.DataData> DataEntries = [];
+  }
+
   public static string BaseDirectory = Path.Combine(Paths.ConfigPath, "expand_world");
   public static string BackupDirectory = Path.Combine(Paths.ConfigPath, "expand_world_backups");
 
@@ -39,6 +53,126 @@ public class Yaml
       }
     }
     return result;
+  }
+
+  public static List<T> ReadFile<T>(string file, bool migrate)
+  {
+    try
+    {
+      var raw = migrate ? PreParse(File.ReadAllLines(file)) : File.ReadAllText(file);
+      return Deserialize<T>(raw, file);
+    }
+    catch (Exception ex)
+    {
+      Log.Error($"Error reading {Path.GetFileName(file)}: {ex.Message}");
+      return [];
+    }
+  }
+
+  public static MixedFileEntries ReadMixedFile(string file, bool migrateScripts)
+  {
+    try
+    {
+      var split = SplitMixed(File.ReadAllLines(file));
+      var result = new MixedFileEntries();
+      if (split.ScriptLines.Count > 0)
+      {
+        var raw = migrateScripts ? PreParse([.. split.ScriptLines]) : string.Join("\n", split.ScriptLines);
+        result.ScriptEntries = Deserialize<global::ExpandWorld.Prefab.Data>(raw, file);
+      }
+      if (split.DataLines.Count > 0)
+      {
+        var raw = string.Join("\n", split.DataLines);
+        result.DataEntries = Deserialize<global::Data.DataData>(raw, file);
+      }
+      return result;
+    }
+    catch (Exception ex)
+    {
+      Log.Error($"Error reading {Path.GetFileName(file)}: {ex.Message}");
+      return new MixedFileEntries();
+    }
+  }
+
+  private class MixedSplit
+  {
+    public List<string> ScriptLines = [];
+    public List<string> DataLines = [];
+  }
+
+  private static MixedSplit SplitMixed(string[] lines)
+  {
+    var split = new MixedSplit();
+    List<string> pending = [];
+    List<string> block = [];
+    foreach (var line in lines)
+    {
+      if (IsTopLevelListItem(line))
+      {
+        if (block.Count > 0)
+          AddMixedBlock(split, block);
+        block = [];
+        if (pending.Count > 0)
+        {
+          block.AddRange(pending);
+          pending.Clear();
+        }
+        block.Add(line);
+      }
+      else
+      {
+        if (block.Count == 0)
+          pending.Add(line);
+        else
+          block.Add(line);
+      }
+    }
+    if (block.Count > 0)
+      AddMixedBlock(split, block);
+    return split;
+  }
+
+  private static void AddMixedBlock(MixedSplit split, List<string> block)
+  {
+    if (IsDataBlock(block))
+      split.DataLines.AddRange(block);
+    else
+      split.ScriptLines.AddRange(block);
+  }
+
+  private static bool IsTopLevelListItem(string line)
+  {
+    var raw = line.Length > 0 && line[0] == '\uFEFF' ? line.Substring(1) : line;
+    return raw.StartsWith("- ");
+  }
+
+  private static bool IsDataBlock(List<string> block)
+  {
+    foreach (var line in block)
+    {
+      var key = ParseBlockKey(line);
+      if (key == null) continue;
+      return key.Equals("name", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("valueGroup", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("value", StringComparison.OrdinalIgnoreCase);
+    }
+    return false;
+  }
+
+  private static string? ParseBlockKey(string line)
+  {
+    var noComment = line.Split('#')[0].Trim();
+    if (noComment.Length == 0) return null;
+    if (noComment.StartsWith("- "))
+      noComment = noComment.Substring(2).TrimStart();
+    if (noComment.Length == 0 || noComment.StartsWith("-")) return null;
+    var index = noComment.IndexOf(':');
+    if (index <= 0) return null;
+    var key = noComment.Substring(0, index).Trim();
+    if (key.Length == 0) return null;
+    if (key.StartsWith("\"") && key.EndsWith("\"") && key.Length > 1)
+      key = key.Substring(1, key.Length - 2);
+    return key;
   }
 
   private static string PreParse(string[] lines)
@@ -184,10 +318,22 @@ public class Yaml
     BackupFile(file, overwriteBackup);
     action();
   });
+  public static void SetupWatcher(string folder, string pattern, Action<string, string?, FileChangeType> action, bool overwriteBackup) => SetupWatcherSub(folder, pattern, (path, oldPath, type) =>
+  {
+    if (type != FileChangeType.Deleted && path != "")
+      BackupFile(path, overwriteBackup);
+    action(path, oldPath, type);
+  });
   public static void SetupWatcher(string pattern, Action action, bool overwriteBackup) => SetupWatcherSub(BaseDirectory, pattern, file =>
   {
     BackupFile(file, overwriteBackup);
     action();
+  });
+  public static void SetupWatcher(string pattern, Action<string, string?, FileChangeType> action, bool overwriteBackup) => SetupWatcherSub(BaseDirectory, pattern, (path, oldPath, type) =>
+  {
+    if (type != FileChangeType.Deleted && path != "")
+      BackupFile(path, overwriteBackup);
+    action(path, oldPath, type);
   });
 
 
@@ -198,6 +344,17 @@ public class Yaml
     watcher.Changed += (s, e) => action(e.FullPath);
     watcher.Renamed += (s, e) => action(e.FullPath);
     watcher.Deleted += (s, e) => action(e.FullPath);
+    watcher.IncludeSubdirectories = true;
+    watcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
+    watcher.EnableRaisingEvents = true;
+  }
+  private static void SetupWatcherSub(string folder, string pattern, Action<string, string?, FileChangeType> action)
+  {
+    FileSystemWatcher watcher = new(folder, pattern);
+    watcher.Created += (s, e) => action(e.FullPath, null, FileChangeType.Created);
+    watcher.Changed += (s, e) => action(e.FullPath, null, FileChangeType.Changed);
+    watcher.Renamed += (s, e) => action(e.FullPath, e.OldFullPath, FileChangeType.Renamed);
+    watcher.Deleted += (s, e) => action(e.FullPath, null, FileChangeType.Deleted);
     watcher.IncludeSubdirectories = true;
     watcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
     watcher.EnableRaisingEvents = true;

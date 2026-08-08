@@ -1,20 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using BepInEx;
 using Service;
 namespace Data;
 
 public class DataLoading
 {
-  private static readonly string GamePath = Path.GetFullPath(Path.Combine("BepInEx", "config", "data"));
-  private static readonly string ProfilePath = Path.GetFullPath(Path.Combine(Paths.ConfigPath, "data"));
-
   // Each file can have multiple data entries so we need to load them all.
   // Hash is used as key because base64 encoded strings can be loaded too.
   public static Dictionary<int, DataEntry> Data = [];
   public static readonly Dictionary<int, List<string>> ValueGroups = [];
+  private static readonly Dictionary<string, List<DataData>> FileEntries = new(StringComparer.OrdinalIgnoreCase);
 
   public static void Add(int hash, DataEntry entry)
   {
@@ -49,18 +45,25 @@ public class DataLoading
     return entry != null;
   }
 
-  public static void LoadEntries()
+  public static void LoadFromFiles(List<string> files, Dictionary<string, List<DataData>> fileEntries)
   {
     var prev = Data;
+    FileEntries.Clear();
+    foreach (var file in files)
+      FileEntries[file] = fileEntries.TryGetValue(file, out var entries) ? entries : [];
+    RebuildFromCache(prev, files);
+  }
+
+  private static void RebuildFromCache(Dictionary<int, DataEntry> prev, List<string> files)
+  {
     Data = [];
     ValueGroups.Clear();
-    var files = Directory.GetFiles(GamePath, "*.yaml", SearchOption.AllDirectories)
-      .Concat(Directory.GetFiles(ProfilePath, "*.yaml", SearchOption.AllDirectories))
-      .Concat(Directory.GetFiles(Yaml.BaseDirectory, Pattern, SearchOption.AllDirectories))
-      .Select(Path.GetFullPath).Distinct().ToList();
-    var data = Yaml.Read<DataData>(files, false);
-    foreach (var d in data)
-      LoadValues(d);
+    foreach (var file in files)
+    {
+      if (!FileEntries.TryGetValue(file, out var entries)) continue;
+      foreach (var d in entries)
+        LoadValues(d);
+    }
     if (ValueGroups.Count > 0)
       Log.Info($"Loaded {ValueGroups.Count} value groups.");
 
@@ -72,12 +75,16 @@ public class DataLoading
       if (!ValueGroups.ContainsKey(kvp.Key))
         ValueGroups[kvp.Key] = kvp.Value;
     }
-    // Entries need fully resolved value groups, so two passes are needed.
-    foreach (var d in data)
-      LoadEntry(d, prev);
+    foreach (var file in files)
+    {
+      if (!FileEntries.TryGetValue(file, out var entries)) continue;
+      foreach (var d in entries)
+        LoadEntry(d, prev);
+    }
     PrefabHelper.ClearCache();
     Log.Info($"Loaded {Data.Count} data entries.");
   }
+
   private static void LoadValues(DataData data)
   {
     if (data.value != null)
@@ -169,20 +176,4 @@ public class DataLoading
       }
     }
   }
-
-  public static string Pattern = "expand_data*.yaml";
-  public static void SetupWatcher()
-  {
-    if (!Directory.Exists(GamePath))
-      Directory.CreateDirectory(GamePath);
-    if (!Directory.Exists(ProfilePath))
-      Directory.CreateDirectory(ProfilePath);
-    if (!Directory.Exists(Yaml.BaseDirectory))
-      Directory.CreateDirectory(Yaml.BaseDirectory);
-    Yaml.SetupWatcher(GamePath, "*", LoadEntries, true);
-    if (GamePath != ProfilePath)
-      Yaml.SetupWatcher(ProfilePath, "*", LoadEntries, true);
-    Yaml.SetupWatcher(Pattern, LoadEntries, true);
-  }
-
 }

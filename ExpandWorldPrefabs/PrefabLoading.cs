@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Data;
 using HarmonyLib;
@@ -9,32 +8,16 @@ namespace ExpandWorld.Prefab;
 
 public class Loading
 {
-  private static readonly string FileName = "expand_prefabs.yaml";
-  private static readonly string FilePath = Path.Combine(Yaml.BaseDirectory, FileName);
-  private static readonly string Pattern = "expand_prefabs*.yaml";
-
-  public static void FromFile()
+  public static void LoadFromFiles(List<string> files, Dictionary<string, List<Data>> fileEntries)
   {
     if (Helper.IsClient()) return;
-    if (!File.Exists(FilePath))
-    {
-      var yaml = "# Write your entries here. Good luck!";
-      File.WriteAllText(FilePath, yaml);
-      // Watcher triggers reload.
-      return;
-    }
-    else
-    {
-      Load();
-    }
+    RebuildFromCache(files, fileEntries);
   }
 
-  private static void Load()
+  private static void RebuildFromCache(List<string> files, Dictionary<string, List<Data>> fileEntries)
   {
     InfoManager.Clear();
-    if (Helper.IsClient()) return;
-
-    var data = Yaml.Read<Data>(Pattern, true);
+    var data = files.Where(fileEntries.ContainsKey).SelectMany(f => fileEntries[f]).ToList();
     if (data.Count == 0)
     {
       Log.Warning($"Failed to load any prefab data.");
@@ -43,9 +26,7 @@ public class Loading
     Log.Info($"Reloading prefab rules ({data.Count} entries).");
     var items = data.SelectMany(FromData).ToList();
     foreach (var item in items)
-    {
       InfoManager.Add(item);
-    }
     InfoManager.Patch();
   }
 
@@ -279,12 +260,6 @@ public class Loading
     null : int.TryParse(str, out var limit) ?
       new Range<int>(limit, 0) : Parse.IntRange(str);
 
-  public static void SetupWatcher()
-  {
-    if (!Directory.Exists(Yaml.BaseDirectory))
-      Directory.CreateDirectory(Yaml.BaseDirectory);
-    Yaml.SetupWatcher(Pattern, FromFile, true);
-  }
   private static DataEntry? HandleItems(string items)
   {
     var split = Parse.Kvp(items);
@@ -311,8 +286,7 @@ public class InitializeContent
   {
     if (Helper.IsServer())
     {
-      DataLoading.LoadEntries();
-      Loading.FromFile();
+      FileLoading.ReloadAll();
     }
 
   }

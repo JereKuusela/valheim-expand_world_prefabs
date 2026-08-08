@@ -30,8 +30,7 @@ public class EWP : BaseUnityPlugin
       if (Settings.AutomaticReload)
       {
         Yaml.SetupWatcher(Config);
-        DataLoading.SetupWatcher();
-        Loading.SetupWatcher();
+        FileLoading.SetupWatchers(true);
       }
       DataStorage.LoadSavedData();
     }
@@ -52,8 +51,7 @@ public class EWP : BaseUnityPlugin
     }, true);
     new Terminal.ConsoleCommand("ewp_reload", "Manually reloads all config and data files.", (args) =>
     {
-      DataLoading.LoadEntries();
-      Loading.FromFile();
+      FileLoading.ReloadAll();
       DataStorage.LoadSavedData();
     }, true);
   }
