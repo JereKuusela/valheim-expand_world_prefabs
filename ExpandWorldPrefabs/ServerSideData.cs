@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using Data;
 using HarmonyLib;
 using Service;
@@ -229,25 +230,102 @@ public static class ServerSideData
   public static bool TryGetString(ZDOID id, int key, out string value) => TryGet(Strings, id, key, out value);
   public static bool TryGetFloat(ZDOID id, int key, out float value) => TryGet(Floats, id, key, out value);
   public static bool TryGetInt(ZDOID id, int key, out int value) => TryGet(Ints, id, key, out value);
+  public static bool TryGetInt(ZDO zdo, int key, out int value)
+  {
+    if (TryGetInt(zdo.m_uid, key, out value))
+      return true;
+    value = zdo.GetInt(key, 0);
+    return value != 0;
+  }
   public static bool TryGetLong(ZDOID id, int key, out long value) => TryGet(Longs, id, key, out value);
   public static bool TryGetVec(ZDOID id, int key, out Vector3 value) => TryGet(Vecs, id, key, out value);
   public static bool TryGetQuaternion(ZDOID id, int key, out Quaternion value) => TryGet(Quats, id, key, out value);
   public static bool TryGetBytes(ZDOID id, int key, out byte[] value) => TryGet(Bytes, id, key, out value);
 
-  public static void SetString(ZDO zdo, int key, string value) => Set(Strings, zdo.m_uid, key, value);
-  public static void SetFloat(ZDO zdo, int key, float value) => Set(Floats, zdo.m_uid, key, value);
-  public static void SetInt(ZDO zdo, int key, int value) => Set(Ints, zdo.m_uid, key, value);
-  public static void SetLong(ZDO zdo, int key, long value) => Set(Longs, zdo.m_uid, key, value);
-  public static void SetVec(ZDO zdo, int key, Vector3 value) => Set(Vecs, zdo.m_uid, key, value);
-  public static void SetQuaternion(ZDO zdo, int key, Quaternion value) => Set(Quats, zdo.m_uid, key, value);
-  public static void SetBytes(ZDO zdo, int key, byte[] value) => Set(Bytes, zdo.m_uid, key, value);
-  public static void RemoveString(ZDO zdo, int key) => RemoveFromStore(Strings, zdo.m_uid, key);
-  public static void RemoveFloat(ZDO zdo, int key) => RemoveFromStore(Floats, zdo.m_uid, key);
-  public static void RemoveInt(ZDO zdo, int key) => RemoveFromStore(Ints, zdo.m_uid, key);
-  public static void RemoveLong(ZDO zdo, int key) => RemoveFromStore(Longs, zdo.m_uid, key);
-  public static void RemoveVec(ZDO zdo, int key) => RemoveFromStore(Vecs, zdo.m_uid, key);
-  public static void RemoveQuaternion(ZDO zdo, int key) => RemoveFromStore(Quats, zdo.m_uid, key);
-  public static void RemoveBytes(ZDO zdo, int key) => RemoveFromStore(Bytes, zdo.m_uid, key);
+  public static void SetString(ZDO zdo, int key, string value)
+  {
+    if (Settings.ServerSideData)
+      Set(Strings, zdo.m_uid, key, value);
+    else
+      zdo.Set(key, value);
+  }
+  public static void SetFloat(ZDO zdo, int key, float value)
+  {
+    if (Settings.ServerSideData)
+      Set(Floats, zdo.m_uid, key, value);
+    else
+      zdo.Set(key, value);
+  }
+  public static void SetInt(ZDO zdo, int key, int value)
+  {
+    if (Settings.ServerSideData)
+      Set(Ints, zdo.m_uid, key, value);
+    else
+      zdo.Set(key, value);
+  }
+  public static void SetLong(ZDO zdo, int key, long value)
+  {
+    if (Settings.ServerSideData)
+      Set(Longs, zdo.m_uid, key, value);
+    else
+      zdo.Set(key, value);
+  }
+  public static void SetVec(ZDO zdo, int key, Vector3 value)
+  {
+    if (Settings.ServerSideData)
+      Set(Vecs, zdo.m_uid, key, value);
+    else
+      zdo.Set(key, value);
+  }
+  public static void SetQuaternion(ZDO zdo, int key, Quaternion value)
+  {
+    if (Settings.ServerSideData)
+      Set(Quats, zdo.m_uid, key, value);
+    else
+      zdo.Set(key, value);
+  }
+  public static void SetBytes(ZDO zdo, int key, byte[] value)
+  {
+    if (Settings.ServerSideData)
+      Set(Bytes, zdo.m_uid, key, value);
+    else
+      zdo.Set(key, value);
+  }
+  public static void RemoveString(ZDO zdo, int key)
+  {
+    RemoveFromStore(Strings, zdo.m_uid, key);
+    ZDOExtraData.s_strings.Remove(zdo.m_uid, key);
+  }
+  public static void RemoveFloat(ZDO zdo, int key)
+  {
+    RemoveFromStore(Floats, zdo.m_uid, key);
+    zdo.RemoveFloat(key);
+  }
+  public static void RemoveInt(ZDO zdo, int key)
+  {
+    RemoveFromStore(Ints, zdo.m_uid, key);
+    zdo.RemoveInt(key);
+  }
+  public static void RemoveLong(ZDO zdo, int key)
+  {
+    RemoveFromStore(Longs, zdo.m_uid, key);
+    zdo.RemoveLong(key);
+  }
+  public static void RemoveVec(ZDO zdo, int key)
+  {
+    RemoveFromStore(Vecs, zdo.m_uid, key);
+    zdo.RemoveVec3(key);
+  }
+  public static void RemoveQuaternion(ZDO zdo, int key)
+  {
+    RemoveFromStore(Quats, zdo.m_uid, key);
+    zdo.RemoveQuaternion(key);
+  }
+  public static void RemoveBytes(ZDO zdo, int key)
+  {
+    RemoveFromStore(Bytes, zdo.m_uid, key);
+    ZDOExtraData.s_byteArrays.Remove(zdo.m_uid, key);
+  }
   public static void CleanSyncedData(ZDO zdo)
   {
     var id = zdo.m_uid;

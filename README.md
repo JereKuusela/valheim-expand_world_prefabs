@@ -307,6 +307,7 @@ See object filtering [examples](examples_object_filtering.md).
     - All weights are summed and the probability is `weight / sum`.
     - Sum is at least 1, so with low weights there is a chance to not spawn anything.
   - delay: Delay in seconds for spawning.
+  - removeDelay: Delay in seconds before automatically removing the spawned object.
   - repeat (default: `0`): How many times the spawn is repeated.
   - repeatInterval (default: `0`): Interval in seconds between repeats.
   - repeatChance (default: `1`): Chance to spawn for each attempt (including the original).

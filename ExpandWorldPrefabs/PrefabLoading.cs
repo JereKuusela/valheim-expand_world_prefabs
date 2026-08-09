@@ -23,7 +23,7 @@ public class Loading
       Log.Warning($"Failed to load any prefab data.");
       return;
     }
-    Log.Info($"Reloading prefab rules ({data.Count} entries).");
+    Log.Info($"Loaded {data.Count} prefab rules.");
     var items = data.SelectMany(FromData).ToList();
     foreach (var item in items)
       InfoManager.Add(item);

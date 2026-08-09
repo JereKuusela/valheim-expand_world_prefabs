@@ -1,11 +1,15 @@
 
 - v1.57
   - Adds field `self` to object filters.
+  - Adds field `removeDelay` to spawns to allow automatic removal of spawned objects.
   - Adds new function `globalkey` to get global key values.
+  - Adds support for putting data entries to script yaml files.
   - Fixes server player broken by last update.
   - Fixes `bannedGlobalKeys` not lower casing function replacements automatically.
   - Fixes say commands happening twice when players are being created.
   - Fixes function `key` returning global key instead of custom data value.
+  - Fixes `Object attaching` not working for temporary objects like status effects.
+  - Optimizes file reloading to only reload the changed file.
 
 - v1.56
   - Fixes `Object attaching` affecting some normal effects like magic shield bubble.

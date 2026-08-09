@@ -339,6 +339,8 @@ public class SpawnData
   [DefaultValue(null)]
   public string? delay;
   [DefaultValue(null)]
+  public string? removeDelay;
+  [DefaultValue(null)]
   public string? repeat;
   [DefaultValue(null)]
   public string? repeatInterval;
@@ -368,6 +370,7 @@ public class Spawn
   public readonly IQuaternionValue? Rot;
   public readonly IStringValue? Data;
   public readonly IFloatValue? Delay;
+  public readonly IFloatValue? RemoveDelay;
   public readonly IIntValue? Repeat;
   public readonly IFloatValue? RepeatInterval;
   public readonly IFloatValue? RepeatChance;
@@ -387,6 +390,7 @@ public class Spawn
     Rot = data.rot != null ? DataValue.Quaternion(data.rot) : data.rotation != null ? DataValue.Quaternion(data.rotation) : null;
     Data = data.data == null ? null : DataValue.String(data.data);
     Delay = data.delay == null ? delay == null ? null : new SimpleFloatValue(delay.Value) : DataValue.Float(data.delay);
+    RemoveDelay = data.removeDelay == null ? null : DataValue.Float(data.removeDelay);
     Repeat = data.repeat == null ? null : DataValue.Int(data.repeat);
     RepeatInterval = data.repeatInterval == null ? null : DataValue.Float(data.repeatInterval);
     RepeatChance = data.repeatChance == null ? null : DataValue.Float(data.repeatChance);
@@ -411,6 +415,7 @@ public class Spawn
   public Spawn(string line, float? delay, bool? triggerRules)
   {
     Delay = delay == null ? null : new SimpleFloatValue(delay.Value);
+    RemoveDelay = null;
     Repeat = null;
     RepeatInterval = null;
     RepeatChance = null;

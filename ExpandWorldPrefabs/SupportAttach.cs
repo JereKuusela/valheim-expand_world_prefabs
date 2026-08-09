@@ -44,7 +44,7 @@ public class SupportAttach
 
   // Vanilla uses attaching when players on beds/ships/etc and also some effects like magic shield bubble (all are non-persistent).
   // Using custom data is most reliable but persistent check is used as backward compatibility.
-  public static bool IsAttached(ZDO zdo) => zdo.GetConnectionType() == ZDOExtraData.ConnectionType.SyncTransform && (zdo.Persistent || ServerSideData.TryGetInt(zdo.m_uid, EWPAttachedHash, out var attached) && attached == 1);
+  public static bool IsAttached(ZDO zdo) => zdo.GetConnectionType() == ZDOExtraData.ConnectionType.SyncTransform && (zdo.Persistent || ServerSideData.TryGetInt(zdo, EWPAttachedHash, out var attached) && attached == 1);
 
   public static readonly long HackOwner = 1;
 
@@ -90,7 +90,7 @@ public class SupportAttach
   private static readonly int HasFields = ZdoHelper.Hash("HasFields");
   private static readonly int HasFieldsZSyncTransform = ZdoHelper.Hash("HasFieldsZSyncTransform");
   private static readonly int ZSyncTransformCharacterParentSync = ZdoHelper.Hash("ZSyncTransform.m_characterParentSync");
-  private static readonly int EWPAttachedHash = ZdoHelper.Hash("EWP_attached");
+  private static readonly int EWPAttachedHash = ZdoHelper.Hash("ewp_attached");
   public static void Attach(ZdoEntry zdoEntry, ZDOID target)
   {
     zdoEntry.ConnectionType = ZDOExtraData.ConnectionType.SyncTransform;

@@ -2,7 +2,6 @@
 using System.Reflection;
 using BepInEx;
 using BepInEx.Bootstrap;
-using Data;
 using HarmonyLib;
 using Service;
 using UnityEngine;
@@ -13,7 +12,7 @@ public class EWP : BaseUnityPlugin
 {
   public const string GUID = "expand_world_prefabs";
   public const string NAME = "Expand World Prefabs";
-  public const string VERSION = "1.56.3";
+  public const string VERSION = "1.56.4";
 #nullable disable
   public static Harmony Harmony;
 #nullable enable

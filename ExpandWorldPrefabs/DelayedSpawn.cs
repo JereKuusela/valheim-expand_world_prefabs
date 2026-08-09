@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ExpandWorld.Prefab;
 
-public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
+public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules, float? removeDelay)
 {
   private static readonly List<DelayedSpawn> Spawns = [];
 
@@ -25,6 +25,7 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
       return;
 
     var delay = spawn.Delay?.Get(f) ?? 0f;
+    var removeDelay = spawn.RemoveDelay?.Get(f);
     var repeat = spawn.Repeat?.Get(f) ?? 0;
     var repeatInterval = spawn.RepeatInterval?.Get(f) ?? delay;
     var repeatChance = spawn.RepeatChance?.Get(f) ?? 1f;
@@ -32,12 +33,12 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
     if (delays != null)
     {
       foreach (var d in delays)
-        Add(spawn, originalZdo, data, f, d);
+        Add(spawn, originalZdo, data, f, d, removeDelay);
     }
     else
-      Add(spawn, originalZdo, data, f, delay);
+      Add(spawn, originalZdo, data, f, delay, removeDelay);
   }
-  private static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Functions f, float delay)
+  private static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Functions f, float delay, float? removeDelay)
   {
     var pos = originalZdo.m_position;
     var rotQuat = originalZdo.GetRotation();
@@ -61,16 +62,18 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
     var connect = spawn.Connect?.Get(f);
     if (connect.HasValue && connect.Value != ZDOID.None)
       SupportAttach.Connect(zdoEntry, connect.Value);
-    Add(delay, zdoEntry, spawn.TriggerRules?.GetBool(f) ?? false);
+    Add(delay, zdoEntry, spawn.TriggerRules?.GetBool(f) ?? false, removeDelay);
   }
-  private static void Add(float delay, ZdoEntry zdoEntry, bool triggerRules)
+  private static void Add(float delay, ZdoEntry zdoEntry, bool triggerRules, float? removeDelay)
   {
     if (delay <= 0f)
     {
-      CreateObject(zdoEntry, triggerRules);
+      var zdo = CreateObject(zdoEntry, triggerRules);
+      if (zdo != null && removeDelay.HasValue)
+        DelayedRemove.Add(removeDelay.Value, zdo.m_uid, triggerRules);
       return;
     }
-    Spawns.Add(new(delay, zdoEntry, triggerRules));
+    Spawns.Add(new(delay, zdoEntry, triggerRules, removeDelay));
   }
   public static void Execute(float dt)
   {
@@ -88,9 +91,12 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules)
   public float Delay = delay;
   private readonly ZdoEntry ZdoEntry = zdoEntry;
   private readonly bool TriggerRules = triggerRules;
+  private readonly float? RemoveDelay = removeDelay;
 
   public void Execute()
   {
-    CreateObject(ZdoEntry, TriggerRules);
+    var zdo = CreateObject(ZdoEntry, TriggerRules);
+    if (zdo != null && RemoveDelay.HasValue)
+      DelayedRemove.Add(RemoveDelay.Value, zdo.m_uid, TriggerRules);
   }
 }
