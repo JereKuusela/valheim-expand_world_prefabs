@@ -19,7 +19,7 @@ public class RestoreScale
   // Quality of life: Automatically applies m_syncScale for scaled objects that need it.
   public static void Check(ZDO zdo)
   {
-    if (!Settings.RestoreScale) return;
+    if (!Config.RestoreScale) return;
     if (SupportsInitialScaleSync(zdo)) return;
 
     if (ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vecs) && vecs.TryGetValue(ZDOVars.s_scaleHash, out var vecScale))

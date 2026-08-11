@@ -36,7 +36,7 @@ public static class ServerSideData
   private const ushort FlagStrings = 1 << 6;
   private const ushort FlagByteArrays = 1 << 7;
 
-  public static bool ShouldUse(int hash) => Settings.ServerSideData && ZdoHelper.IsServerSideHash(hash);
+  public static bool ShouldUse(int hash) => Config.ServerSideData && ZdoHelper.IsServerSideHash(hash);
 
   public static void Patch(Harmony harmony, bool shouldPatch)
   {
@@ -85,14 +85,14 @@ public static class ServerSideData
 
   private static void AfterLoad(ZDO __instance)
   {
-    if (!Settings.ServerSideData)
+    if (!Config.ServerSideData)
       return;
     Deserialize(__instance);
   }
 
   private static void BeforeSave(ZDO __instance)
   {
-    if (!Settings.ServerSideData)
+    if (!Config.ServerSideData)
       return;
     var payload = Serialize(__instance.m_uid);
     if (payload == null || payload.Length == 0)
@@ -105,7 +105,7 @@ public static class ServerSideData
 
   private static void AfterSave(ZDO __instance)
   {
-    if (!Settings.ServerSideData)
+    if (!Config.ServerSideData)
       return;
     RemovePayloadFromZdo(__instance);
   }
@@ -244,49 +244,49 @@ public static class ServerSideData
 
   public static void SetString(ZDO zdo, int key, string value)
   {
-    if (Settings.ServerSideData)
+    if (Config.ServerSideData)
       Set(Strings, zdo.m_uid, key, value);
     else
       zdo.Set(key, value);
   }
   public static void SetFloat(ZDO zdo, int key, float value)
   {
-    if (Settings.ServerSideData)
+    if (Config.ServerSideData)
       Set(Floats, zdo.m_uid, key, value);
     else
       zdo.Set(key, value);
   }
   public static void SetInt(ZDO zdo, int key, int value)
   {
-    if (Settings.ServerSideData)
+    if (Config.ServerSideData)
       Set(Ints, zdo.m_uid, key, value);
     else
       zdo.Set(key, value);
   }
   public static void SetLong(ZDO zdo, int key, long value)
   {
-    if (Settings.ServerSideData)
+    if (Config.ServerSideData)
       Set(Longs, zdo.m_uid, key, value);
     else
       zdo.Set(key, value);
   }
   public static void SetVec(ZDO zdo, int key, Vector3 value)
   {
-    if (Settings.ServerSideData)
+    if (Config.ServerSideData)
       Set(Vecs, zdo.m_uid, key, value);
     else
       zdo.Set(key, value);
   }
   public static void SetQuaternion(ZDO zdo, int key, Quaternion value)
   {
-    if (Settings.ServerSideData)
+    if (Config.ServerSideData)
       Set(Quats, zdo.m_uid, key, value);
     else
       zdo.Set(key, value);
   }
   public static void SetBytes(ZDO zdo, int key, byte[] value)
   {
-    if (Settings.ServerSideData)
+    if (Config.ServerSideData)
       Set(Bytes, zdo.m_uid, key, value);
     else
       zdo.Set(key, value);

@@ -676,7 +676,8 @@ public class DataEntry
   }
 
   private bool CheckCanBeInjected() =>
-    (Ints == null || !Ints.ContainsKey(HasFieldsHash))
+  // Level requires regeneration to refresh health.
+    (Ints == null || (!Ints.ContainsKey(HasFieldsHash) && !Ints.ContainsKey(ZDOVars.s_level)))
     && Components == null
     && Position == null
     && Rotation == null;

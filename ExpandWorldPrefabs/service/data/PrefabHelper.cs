@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Service;
+using UnityEngine;
 
 namespace Data;
 
@@ -71,11 +72,24 @@ public class PrefabHelper
   }
 
   private static Dictionary<string, int> PrefabCache = [];
+
+  private static void EnsurePrefabCache()
+  {
+    if (PrefabCache.Count != 0) return;
+
+    PrefabCache = ZNetScene.instance.m_namedPrefabs.ToDictionary(pair => pair.Value.name, pair => pair.Key);
+    foreach (var configuredPrefab in Parse.ToList(ExpandWorld.Prefab.Config.CustomPrefabNames))
+    {
+      if (string.IsNullOrWhiteSpace(configuredPrefab)) continue;
+      var trimmedPrefab = configuredPrefab.Trim();
+      PrefabCache[trimmedPrefab] = trimmedPrefab.GetStableHashCode();
+    }
+  }
+
   private static List<int>? ParsePrefabs(string prefab)
   {
     var p = prefab.ToLowerInvariant();
-    if (PrefabCache.Count == 0)
-      PrefabCache = ZNetScene.instance.m_namedPrefabs.ToDictionary(pair => pair.Value.name, pair => pair.Key);
+    EnsurePrefabCache();
     if (p == "*")
       return [.. PrefabCache.Values];
     if (p[0] == '*' && p[p.Length - 1] == '*')
@@ -113,4 +127,13 @@ public class PrefabHelper
   private static bool StartsWith(KeyValuePair<string, int> pair, string prefab) => pair.Key.StartsWith(prefab, StringComparison.OrdinalIgnoreCase);
   private static bool EndsWith(KeyValuePair<string, int> pair, string prefab) => pair.Key.EndsWith(prefab, StringComparison.OrdinalIgnoreCase);
   private static bool Contained(KeyValuePair<string, int> pair, string start, string end) => pair.Key.StartsWith(start, StringComparison.OrdinalIgnoreCase) && pair.Key.EndsWith(end, StringComparison.OrdinalIgnoreCase);
+
+  private static readonly Dictionary<int, bool> PrefabCharacterParentSync = [];
+  public static bool HasCharacterParentSync(int prefab)
+  {
+    if (!PrefabCharacterParentSync.TryGetValue(prefab, out var value))
+      return value;
+    PrefabCharacterParentSync[prefab] = ZNetScene.instance.GetPrefab(prefab)?.GetComponent<ZSyncTransform>()?.m_characterParentSync ?? false;
+    return PrefabCharacterParentSync[prefab];
+  }
 }

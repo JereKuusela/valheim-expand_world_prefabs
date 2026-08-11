@@ -6,7 +6,7 @@ Wiki has list of vanilla global keys: <https://valheim.fandom.com/wiki/Global_Ke
 
 On vanilla, global keys can enable extra night time spawn.
 
-`expand_prefab.yaml`: Fulings are removed on Meadows.
+Fulings are removed on Meadows.
 
 ```yaml
 - prefab: Goblin
@@ -19,18 +19,14 @@ Another option is to replace with another monster.
 
 ## Weaken night time spawns
 
-`expand_prefab.yaml`: Fulings are weakened on Meadows.
+Fulings are weakened on Meadows.
 
 ```yaml
 - prefab: Goblin
   type: create
   biomes: Meadows
   data: weak_fuling
-```
 
-`expand_data.yaml`: Halves damage dealt and removes hunt mode.
-
-```yaml
 - name: weak_fuling
   ints:
   - huntplayer, 0
@@ -57,7 +53,7 @@ Note: When swapping creatures, the spawn limit still checks the amount of origin
 
 This can be used to keep lower level areas challenging and give more loot.
 
-`expand_prefab.yaml`: Greydwarves become stronger after defeating Bonemass.
+Greydwarves become stronger after defeating Bonemass.
 
 ```yaml
 - prefab: Greydwarf
@@ -72,7 +68,7 @@ This custom key can then be used in other entries (for example farming, spawns o
 
 Custom keys are only saved in the server, so they don't cause network traffic.
 
-`expand_prefab.yaml`: 1% chance for a special wolf on tall mountains.
+1% chance for a special wolf on tall mountains.
 
 ```yaml
 - prefab: Wolf
@@ -97,11 +93,7 @@ Custom keys are only saved in the server, so they don't cause network traffic.
   exec: <save_defeatedSpecialWolf_true>
 # Global key version
 # command: setkey defeated_special_wolf
-```
 
-`expand_data.yaml`: 3 stars with boss UI.
-
-```yaml
 - name: special_wolf
   ints:
 # 3 stars for a lot more loot (not shown on UI).
@@ -118,7 +110,7 @@ Custom keys are only saved in the server, so they don't cause network traffic.
 
 This probably needs some lore or instructions to make sense.
 
-`expand_prefab.yaml`: Set a key when building a windmill on a tall mountain.
+Set a key when building a windmill on a tall mountain.
 
 ```yaml
 - prefab: windmill

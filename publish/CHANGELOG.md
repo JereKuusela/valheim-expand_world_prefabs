@@ -2,6 +2,7 @@
 - v1.57
   - Adds field `self` to object filters.
   - Adds field `removeDelay` to spawns to allow automatic removal of spawned objects.
+  - Adds new setting to allow processing custom prefab names even when server doesn't recognize them.
   - Adds new function `globalkey` to get global key values.
   - Adds support for putting data entries to script yaml files.
   - Fixes server player broken by last update.

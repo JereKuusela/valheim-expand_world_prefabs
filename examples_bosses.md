@@ -10,8 +10,6 @@ Unfortunately not visible because bosses have different UI.
 - prefab: Eikthyr, gd_king,Bonemass, Dragon, GoblinKing, SeekerQueen
   type: create
   data: int, level, 3
-# Inject must be false to refresh the boss health.
-  injectData: false
 ```
 
 ## Stronger bosses
@@ -21,14 +19,9 @@ Unfortunately not visible because bosses have different UI.
 ```yaml
 - prefab: Bonemass
   type: create
-# Inject is false on default for data entries.
   data: ultra_bonemass
   chance: 0.1
-```
 
-`expand_data.yaml`: Changes multiple stats as an example.
-
-```yaml
 - name: ultra_bonemass
 # Could use level here too.
   strings:
@@ -72,8 +65,6 @@ Unfortunately not visible because bosses have different UI.
   type: create
   chance: 0.5
   data: int, level, 2
-# Inject must be false to refresh the creature health.
-  injectData: false
   objects:
   - prefab: Bonemass
     maxDistance: 50

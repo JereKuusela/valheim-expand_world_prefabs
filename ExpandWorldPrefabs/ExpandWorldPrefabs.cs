@@ -12,21 +12,21 @@ public class EWP : BaseUnityPlugin
 {
   public const string GUID = "expand_world_prefabs";
   public const string NAME = "Expand World Prefabs";
-  public const string VERSION = "1.56.4";
+  public const string VERSION = "1.57";
 #nullable disable
   public static Harmony Harmony;
 #nullable enable
   public static Assembly? ExpandEvents;
   public void Awake()
   {
-    Settings.Init(Config);
+    Prefab.Config.Init(Config);
     Harmony = new(GUID);
     Harmony.PatchAll();
     Log.Init(Logger);
     Yaml.Init();
     try
     {
-      if (Settings.AutomaticReload)
+      if (Prefab.Config.AutomaticReload)
       {
         Yaml.SetupWatcher(Config);
         FileLoading.SetupWatchers(true);

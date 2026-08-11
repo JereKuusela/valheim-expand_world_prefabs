@@ -96,10 +96,12 @@ public class SupportAttach
     zdoEntry.ConnectionType = ZDOExtraData.ConnectionType.SyncTransform;
     zdoEntry.TargetConnectionId = target;
     zdoEntry.Ints ??= [];
+    zdoEntry.Ints[EWPAttachedHash] = 1;
+    if (PrefabHelper.HasCharacterParentSync(zdoEntry.Prefab))
+      return;
     zdoEntry.Ints[HasFields] = 1;
     zdoEntry.Ints[HasFieldsZSyncTransform] = 1;
     zdoEntry.Ints[ZSyncTransformCharacterParentSync] = 1;
-    zdoEntry.Ints[EWPAttachedHash] = 1;
   }
   public static void Connect(ZdoEntry zdoEntry, ZDOID target)
   {
@@ -121,9 +123,13 @@ public class SupportAttach
       return;
     }
     zdo.SetConnection(ZDOExtraData.ConnectionType.SyncTransform, target);
-    zdo.Set(HasFields, 1);
-    zdo.Set(HasFieldsZSyncTransform, 1);
-    zdo.Set(ZSyncTransformCharacterParentSync, 1);
+    if (!CanSync(zdo))
+    {
+      zdo.Set(HasFields, 1);
+      zdo.Set(HasFieldsZSyncTransform, 1);
+      zdo.Set(ZSyncTransformCharacterParentSync, 1);
+    }
+
     zdo.SetOwnerInternal(HackOwner);
     ServerSideData.SetInt(zdo, EWPAttachedHash, 1);
     zdo.OwnerRevision += 1;
@@ -200,5 +206,5 @@ public class SupportAttach
     return true;
   }
 
-  public static bool CanSync(ZDO zdo) => zdo.GetInt(ZSyncTransformCharacterParentSync) == 1;
+  public static bool CanSync(ZDO zdo) => zdo.GetInt(ZSyncTransformCharacterParentSync) == 1 || PrefabHelper.HasCharacterParentSync(zdo.GetPrefab());
 }
