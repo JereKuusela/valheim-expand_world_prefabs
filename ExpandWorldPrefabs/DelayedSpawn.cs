@@ -42,11 +42,12 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules, flo
   {
     var pos = originalZdo.m_position;
     var rotQuat = originalZdo.GetRotation();
-    pos += rotQuat * (spawn.Pos?.Get(f) ?? Vector3.zero);
+    var offset = rotQuat * (spawn.Pos?.Get(f) ?? Vector3.zero);
+    pos += offset;
     rotQuat *= spawn.Rot?.Get(f) ?? Quaternion.identity;
     var rot = rotQuat.eulerAngles;
     if (spawn.Snap?.GetBool(f) == true)
-      pos.y = WorldGenerator.instance.GetHeight(pos.x, pos.z);
+      pos.y = WorldGenerator.instance.GetHeight(pos.x, pos.z) + offset.y;
     data = DataHelper.Merge(data, DataHelper.Get(spawn.Data, f));
     var prefab = spawn.GetPrefab(f);
     if (prefab == 0) return;

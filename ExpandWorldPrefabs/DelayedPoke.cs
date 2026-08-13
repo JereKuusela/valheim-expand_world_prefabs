@@ -57,7 +57,8 @@ public class DelayedPoke
     var connected = poke.Connected?.GetBool(f) == true;
     if (poke.HasPrefab)
     {
-      var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(f) ?? 0, poke.Filter, pos, rot, f, zdo).ToList();
+      var random = poke.Random?.GetBool(f) == true;
+      var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(f) ?? 0, poke.Filter, pos, rot, f, zdo, random).ToList();
       if (connected)
       {
         var connectedZdos = new HashSet<ZDOID>(SupportAttach.GetConnnected(zdo));
@@ -107,7 +108,8 @@ public class DelayedPoke
   private static void AddGlobal(Poke poke, Vector3 pos, Quaternion rot, Functions f, float delay)
   {
     var args = poke.GetArgs(f);
-    var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(f) ?? 0, poke.Filter, pos, rot, f, null);
+    var random = poke.Random?.GetBool(f) == true;
+    var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(f) ?? 0, poke.Filter, pos, rot, f, null, random);
     Add(delay, zdos, args);
   }
   public static void Add(float delay, ZDOID[] zdos, string[] args)

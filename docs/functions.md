@@ -82,6 +82,7 @@ For missing object data, the default value can be set by adding `=value`. For ex
 - `<calcint_X>`: Evaluates the math expression X and returns an integer number.
 - `<ceil_X>`: Returns smallest integer greater than or equal to X.
 - `<cos_X>`: Returns cosine of X.
+  - Use suffix to set unit. For example `<cos_90deg>` or `<cos_1.5707964rad>`.
 - `<div_X_Y>`: Returns quotient of X and Y.
   - Supports any number of parameters.
 - `<eq_X_Y>`: Returns "true" if X equals Y, "false" otherwise.

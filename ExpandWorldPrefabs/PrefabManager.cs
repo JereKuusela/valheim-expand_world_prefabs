@@ -303,7 +303,7 @@ public class Manager
     var rot = zdo.GetRotation();
     if (info.LegacyPokes != null)
     {
-      var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, rot, f, zdo.m_uid);
+      var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, rot, f, zdo.m_uid, false);
       var pokeParameter = Prefab.Poke.PokeEvaluate(f.Replace(info.PokeParameter)).Split(' ');
       var delay = info.PokeDelay;
       DelayedPoke.Add(delay, zdos, pokeParameter);
@@ -320,7 +320,7 @@ public class Manager
   {
     if (info.LegacyPokes != null)
     {
-      var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, Quaternion.identity, f, null);
+      var zdos = ObjectsFiltering.GetNearby(info.PokeLimit, info.LegacyPokes, pos, Quaternion.identity, f, null, false);
       var pokeParameter = Prefab.Poke.PokeEvaluate(f.Replace(info.PokeParameter));
       var delay = info.PokeDelay;
       DelayedPoke.Add(delay, zdos, pokeParameter.Split(' '));

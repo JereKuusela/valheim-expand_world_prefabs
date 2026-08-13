@@ -121,6 +121,8 @@ public class DataValue
       }
       return new Vector3Value([.. combined]);
     }
+    if (Parse.TryDistanceAngle(split, out var polar))
+      return new SimpleVector3Value(polar);
     var parsed = Parse.VectorXZYNull(split);
     return new SimpleVector3Value(parsed.HasValue ? parsed.Value : UnityEngine.Vector3.zero);
   }

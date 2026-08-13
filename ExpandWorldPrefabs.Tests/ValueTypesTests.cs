@@ -1,4 +1,5 @@
 using Data;
+using ExpandWorld.Prefab;
 using NUnit.Framework;
 using Service;
 using System;
@@ -21,6 +22,57 @@ public class ValueTypesTests
   {
     Functions.ExecuteCode = _ => null;
     Functions.ExecuteCodeWithValue = (_, _) => null;
+  }
+
+  [Test]
+  public void TryAngleRadians_ParsesDegAndRadSuffixes()
+  {
+    Assert.That(Parse.TryAngleRadians("180deg", out var fromDeg), Is.True);
+    Assert.That(fromDeg, Is.EqualTo(Mathf.PI).Within(0.001f));
+
+    Assert.That(Parse.TryAngleRadians("3.1415927rad", out var fromRad), Is.True);
+    Assert.That(fromRad, Is.EqualTo(3.1415927f).Within(0.001f));
+  }
+
+  [Test]
+  public void TryAngleDegrees_ParsesDegAndRadSuffixes()
+  {
+    Assert.That(Parse.TryAngleDegrees("180deg", out var fromDeg), Is.True);
+    Assert.That(fromDeg, Is.EqualTo(180f).Within(0.001f));
+
+    Assert.That(Parse.TryAngleDegrees("3.1415927rad", out var fromRad), Is.True);
+    Assert.That(fromRad, Is.EqualTo(180f).Within(0.001f));
+  }
+
+  [Test]
+  public void CalculatorEvaluateVector3_ParsesDistanceAnglePolarFormat()
+  {
+    var vector = Calculator.EvaluateVector3("5,90deg");
+
+    Assert.That(vector.x, Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vector.z, Is.EqualTo(5f).Within(0.0001f));
+    Assert.That(vector.y, Is.EqualTo(0f).Within(0.0001f));
+  }
+
+  [Test]
+  public void TryDistanceAngle_ParsesPolarOffset()
+  {
+    Assert.That(Parse.TryDistanceAngle("5,90deg", out var vector), Is.True);
+    Assert.That(vector.x, Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vector.z, Is.EqualTo(5f).Within(0.0001f));
+    Assert.That(vector.y, Is.EqualTo(0f).Within(0.0001f));
+
+    Assert.That(Parse.TryDistanceAngle("3,1.5707964rad", out var vectorRad), Is.True);
+    Assert.That(vectorRad.x, Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vectorRad.z, Is.EqualTo(3f).Within(0.0001f));
+  }
+
+  [Test]
+  public void TryDistanceAngle_StringArrayOverload_ParsesPolarOffset()
+  {
+    Assert.That(Parse.TryDistanceAngle(["5", "90deg"], out var vector), Is.True);
+    Assert.That(vector.x, Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vector.z, Is.EqualTo(5f).Within(0.0001f));
   }
 
   private static Functions CreateFunctions()

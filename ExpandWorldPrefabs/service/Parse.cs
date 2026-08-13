@@ -84,6 +84,74 @@ public static class Parse
   {
     return float.TryParse(arg, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
   }
+  public static bool TryDistanceAngle(string arg, out Vector3 vector)
+  {
+    return TryDistanceAngle(Split(arg, true, ','), out vector);
+  }
+  public static bool TryDistanceAngle(string[] values, out Vector3 vector)
+  {
+    vector = Vector3.zero;
+    if (values.Length != 2) return false;
+    if (values[1] == null || !HasAngleSuffix(values[1].Trim())) return false;
+    return TryDistanceAngle(values[0], values[1], out vector);
+  }
+  private static bool TryDistanceAngle(string distanceValue, string angleValue, out Vector3 vector)
+  {
+    vector = Vector3.zero;
+    if (!TryFloat(distanceValue, out var distance)) return false;
+    if (!TryAngleRadians(angleValue, out var radians)) return false;
+    vector = new Vector3(Mathf.Cos(radians) * distance, 0f, Mathf.Sin(radians) * distance);
+    return true;
+  }
+  private static bool HasAngleSuffix(string arg)
+  {
+    return arg.EndsWith("deg", StringComparison.OrdinalIgnoreCase) || arg.EndsWith("rad", StringComparison.OrdinalIgnoreCase);
+  }
+  public static bool TryAngleRadians(string arg, out float radians)
+  {
+    radians = 0f;
+    if (arg == null) return false;
+
+    var value = arg.Trim();
+    if (value.EndsWith("deg", StringComparison.OrdinalIgnoreCase))
+    {
+      var degreesValue = value.Substring(0, value.Length - 3).Trim();
+      if (!TryFloat(degreesValue, out var degrees)) return false;
+      radians = degrees * Mathf.Deg2Rad;
+      return true;
+    }
+
+    if (value.EndsWith("rad", StringComparison.OrdinalIgnoreCase))
+    {
+      var radiansValue = value.Substring(0, value.Length - 3).Trim();
+      if (!TryFloat(radiansValue, out radians)) return false;
+      return true;
+    }
+
+    return TryFloat(value, out radians);
+  }
+  public static bool TryAngleDegrees(string arg, out float degrees)
+  {
+    degrees = 0f;
+    if (arg == null) return false;
+
+    var value = arg.Trim();
+    if (value.EndsWith("deg", StringComparison.OrdinalIgnoreCase))
+    {
+      var degreesValue = value.Substring(0, value.Length - 3).Trim();
+      return TryFloat(degreesValue, out degrees);
+    }
+
+    if (value.EndsWith("rad", StringComparison.OrdinalIgnoreCase))
+    {
+      var radiansValue = value.Substring(0, value.Length - 3).Trim();
+      if (!TryFloat(radiansValue, out var radians)) return false;
+      degrees = radians * Mathf.Rad2Deg;
+      return true;
+    }
+
+    return TryFloat(value, out degrees);
+  }
   public static bool TryBoolean(string arg, out bool result)
   {
     result = false;

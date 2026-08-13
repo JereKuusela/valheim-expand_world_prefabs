@@ -10,7 +10,7 @@ namespace ExpandWorld.Prefab;
 public class ObjectsFiltering
 {
   // Note: Can include the object itself.
-  public static ZDOID[] GetNearby(int limit, Object[] objects, Vector3 pos, Quaternion rot, Functions f, ZDOID? self)
+  public static ZDOID[] GetNearby(int limit, Object[] objects, Vector3 pos, Quaternion rot, Functions f, ZDOID? self, bool random)
   {
     if (objects.Length == 0) return [];
     foreach (var o in objects) o.Roll(f, pos, rot);
@@ -18,53 +18,49 @@ public class ObjectsFiltering
     if (maxRadius > 10000)
     {
       var zdos = ZDOMan.instance.m_objectsByID.Values;
-      return GetObjects(limit, zdos, objects, f, self);
+      return GetObjects(limit, zdos, objects, f, self, random);
     }
     var zdoLists = GetSectorIndices(objects);
-    return GetObjects(limit, zdoLists, objects, f, self);
+    return GetObjects(limit, zdoLists, objects, f, self, random);
   }
-  public static ZDOID[] GetNearby(int limit, Object objects, Vector3 pos, Quaternion rot, Functions f, ZDOID? self)
+  public static ZDOID[] GetNearby(int limit, Object objects, Vector3 pos, Quaternion rot, Functions f, ZDOID? self, bool random)
   {
     objects.Roll(f, pos, rot);
     var maxRadius = objects.MaxDistance;
     if (maxRadius > 10000)
     {
       var zdos = ZDOMan.instance.m_objectsByID.Values;
-      return GetObjects(limit, zdos, objects, f, self);
+      return GetObjects(limit, zdos, objects, f, self, random);
     }
     var zdoLists = GetSectorIndices(objects);
-    return GetObjects(limit, zdoLists, objects, f, self);
+    return GetObjects(limit, zdoLists, objects, f, self, random);
   }
-  private static ZDOID[] GetObjects(int limit, List<List<ZDO>> zdoLists, Object objects, Functions f, ZDOID? self)
+  private static ZDOID[] GetObjects(int limit, List<List<ZDO>> zdoLists, Object objects, Functions f, ZDOID? self, bool random)
   {
-    var zm = ZDOMan.instance;
     var query = zdoLists.SelectMany(z => z).Where(z => objects.IsValid(z, f, self));
     if (limit > 0)
-      query = query.OrderBy(z => Utils.DistanceXZ(z.m_position, objects.CachedPosition)).Take(limit);
+      query = random ? query.OrderBy(_ => Random.value).Take(limit) : query.OrderBy(z => Utils.DistanceXZ(z.m_position, objects.CachedPosition)).Take(limit);
     return [.. query.Select(z => z.m_uid)];
   }
-  private static ZDOID[] GetObjects(int limit, Dictionary<ZDOID, ZDO>.ValueCollection zdos, Object objects, Functions f, ZDOID? self)
+  private static ZDOID[] GetObjects(int limit, Dictionary<ZDOID, ZDO>.ValueCollection zdos, Object objects, Functions f, ZDOID? self, bool random)
   {
-    var zm = ZDOMan.instance;
     var query = zdos.Where(z => objects.IsValid(z, f, self));
     if (limit > 0)
-      query = query.OrderBy(z => Utils.DistanceXZ(z.m_position, objects.CachedPosition)).Take(limit);
+      query = random ? query.OrderBy(_ => Random.value).Take(limit) : query.OrderBy(z => Utils.DistanceXZ(z.m_position, objects.CachedPosition)).Take(limit);
     return [.. query.Select(z => z.m_uid)];
   }
-  private static ZDOID[] GetObjects(int limit, List<List<ZDO>> zdoLists, Object[] objects, Functions f, ZDOID? self)
+  private static ZDOID[] GetObjects(int limit, List<List<ZDO>> zdoLists, Object[] objects, Functions f, ZDOID? self, bool random)
   {
-    var zm = ZDOMan.instance;
     var query = zdoLists.SelectMany(z => z).Where(z => objects.Any(o => o.IsValid(z, f, self)));
     if (limit > 0)
-      query = query.OrderBy(z => Utils.DistanceXZ(z.m_position, objects[0].CachedPosition)).Take(limit);
+      query = random ? query.OrderBy(_ => Random.value).Take(limit) : query.OrderBy(z => Utils.DistanceXZ(z.m_position, objects[0].CachedPosition)).Take(limit);
     return [.. query.Select(z => z.m_uid)];
   }
-  private static ZDOID[] GetObjects(int limit, Dictionary<ZDOID, ZDO>.ValueCollection zdos, Object[] objects, Functions f, ZDOID? self)
+  private static ZDOID[] GetObjects(int limit, Dictionary<ZDOID, ZDO>.ValueCollection zdos, Object[] objects, Functions f, ZDOID? self, bool random)
   {
-    var zm = ZDOMan.instance;
     var query = zdos.Where(z => objects.Any(o => o.IsValid(z, f, self)));
     if (limit > 0)
-      query = query.OrderBy(z => Utils.DistanceXZ(z.m_position, objects[0].CachedPosition)).Take(limit);
+      query = random ? query.OrderBy(_ => Random.value).Take(limit) : query.OrderBy(z => Utils.DistanceXZ(z.m_position, objects[0].CachedPosition)).Take(limit);
     return [.. query.Select(z => z.m_uid)];
   }
 

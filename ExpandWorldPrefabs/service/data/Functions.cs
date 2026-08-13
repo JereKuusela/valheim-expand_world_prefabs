@@ -160,9 +160,9 @@ public class Functions(string prefab, string[] args, Vector3 pos)
      "ceil" => Parse.TryFloat(value, out var f) ? Mathf.Ceil(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "floor" => Parse.TryFloat(value, out var f) ? Mathf.Floor(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "abs" => Parse.TryFloat(value, out var f) ? Mathf.Abs(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "sin" => Parse.TryFloat(value, out var f) ? Mathf.Sin(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "cos" => Parse.TryFloat(value, out var f) ? Mathf.Cos(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
-     "tan" => Parse.TryFloat(value, out var f) ? Mathf.Tan(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
+     "sin" => Parse.TryAngleRadians(value, out var f) ? Mathf.Sin(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
+     "cos" => Parse.TryAngleRadians(value, out var f) ? Mathf.Cos(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
+     "tan" => Parse.TryAngleRadians(value, out var f) ? Mathf.Tan(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "asin" => Parse.TryFloat(value, out var f) ? Mathf.Asin(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "acos" => Parse.TryFloat(value, out var f) ? Mathf.Acos(f).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "rad2deg" => Rad2Deg(value) ?? defaultValue,
@@ -251,25 +251,25 @@ public class Functions(string prefab, string[] args, Vector3 pos)
 
   internal static string? Rad2Deg(string value)
   {
-    if (!Parse.TryFloat(value, out var radians)) return null;
+    if (!Parse.TryAngleRadians(value, out var radians)) return null;
     return (radians * Mathf.Rad2Deg).ToString(CultureInfo.InvariantCulture);
   }
 
   internal static string? Deg2Rad(string value)
   {
-    if (!Parse.TryFloat(value, out var degrees)) return null;
+    if (!Parse.TryAngleDegrees(value, out var degrees)) return null;
     return (degrees * Mathf.Deg2Rad).ToString(CultureInfo.InvariantCulture);
   }
 
   internal static string? Rad2Vec(string value)
   {
-    if (!Parse.TryFloat(value, out var radians)) return null;
+    if (!Parse.TryAngleRadians(value, out var radians)) return null;
     return Helper.FormatPos(new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)));
   }
 
   internal static string? Deg2Vec(string value)
   {
-    if (!Parse.TryFloat(value, out var degrees)) return null;
+    if (!Parse.TryAngleDegrees(value, out var degrees)) return null;
     var radians = degrees * Mathf.Deg2Rad;
     return Helper.FormatPos(new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)));
   }
@@ -278,14 +278,14 @@ public class Functions(string prefab, string[] args, Vector3 pos)
   {
     if (!Parse.TryKvp(value, out var kvp, Separator)) return null;
     if (!Parse.TryFloat(kvp.Key, out var x) || !Parse.TryFloat(kvp.Value, out var z)) return null;
-    return Mathf.Atan2(z, x).ToString(CultureInfo.InvariantCulture);
+    return (Mathf.Atan2(z, x) * Mathf.Rad2Deg).ToString(CultureInfo.InvariantCulture);
   }
 
   internal static string? Vec2Rad(string value)
   {
     if (!Parse.TryKvp(value, out var kvp, Separator)) return null;
     if (!Parse.TryFloat(kvp.Key, out var x) || !Parse.TryFloat(kvp.Value, out var z)) return null;
-    return (Mathf.Atan2(z, x) * Mathf.Deg2Rad).ToString(CultureInfo.InvariantCulture);
+    return Mathf.Atan2(z, x).ToString(CultureInfo.InvariantCulture);
   }
 
   private string HandleMin(string value, string defaultValue)

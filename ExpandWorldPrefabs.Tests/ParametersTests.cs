@@ -299,6 +299,16 @@ public class ParametersTests
   }
 
   [Test]
+  public void Rad2Deg_AcceptsDegreeSuffix()
+  {
+    var converted = Functions.Rad2Deg("180deg");
+    Assert.That(converted, Is.Not.Null);
+    var result = float.Parse(converted!, CultureInfo.InvariantCulture);
+
+    Assert.That(result, Is.EqualTo(180f).Within(0.001f));
+  }
+
+  [Test]
   public void Deg2Rad_ConvertsDegreesToRadians()
   {
     var converted = Functions.Deg2Rad("180");
@@ -309,23 +319,33 @@ public class ParametersTests
   }
 
   [Test]
-  public void Vec2Deg_ReturnsAtan2Result()
+  public void Deg2Rad_AcceptsRadianSuffix()
+  {
+    var converted = Functions.Deg2Rad("3.1415927rad");
+    Assert.That(converted, Is.Not.Null);
+    var result = float.Parse(converted!, CultureInfo.InvariantCulture);
+
+    Assert.That(result, Is.EqualTo(3.1415927f).Within(0.001f));
+  }
+
+  [Test]
+  public void Vec2Deg_ReturnsAtan2ResultInDegrees()
   {
     var converted = Functions.Vec2Deg("0_1");
     Assert.That(converted, Is.Not.Null);
     var result = float.Parse(converted!, CultureInfo.InvariantCulture);
 
-    Assert.That(result, Is.EqualTo(1.5707964f).Within(0.001f));
+    Assert.That(result, Is.EqualTo(90f).Within(0.001f));
   }
 
   [Test]
-  public void Vec2Rad_AppliesAdditionalDeg2RadFactor()
+  public void Vec2Rad_ReturnsAtan2ResultInRadians()
   {
     var converted = Functions.Vec2Rad("0_1");
     Assert.That(converted, Is.Not.Null);
     var result = float.Parse(converted!, CultureInfo.InvariantCulture);
 
-    Assert.That(result, Is.EqualTo(0.0274156f).Within(0.001f));
+    Assert.That(result, Is.EqualTo(1.5707964f).Within(0.001f));
   }
 
   [Test]
@@ -341,9 +361,33 @@ public class ParametersTests
   }
 
   [Test]
+  public void Rad2Vec_AcceptsDegreeSuffix()
+  {
+    var result = Functions.Rad2Vec("90deg");
+    Assert.That(result, Is.Not.Null);
+    var vec = ParseUnityVector(result!);
+
+    Assert.That(vec[0], Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vec[1], Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vec[2], Is.EqualTo(1f).Within(0.0001f));
+  }
+
+  [Test]
   public void Deg2Vec_ReturnsExpectedDirectionVector()
   {
     var result = Functions.Deg2Vec("90");
+    Assert.That(result, Is.Not.Null);
+    var vec = ParseUnityVector(result!);
+
+    Assert.That(vec[0], Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vec[1], Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vec[2], Is.EqualTo(1f).Within(0.0001f));
+  }
+
+  [Test]
+  public void Deg2Vec_AcceptsRadianSuffix()
+  {
+    var result = Functions.Deg2Vec("1.5707964rad");
     Assert.That(result, Is.Not.Null);
     var vec = ParseUnityVector(result!);
 

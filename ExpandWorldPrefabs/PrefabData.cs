@@ -468,6 +468,7 @@ public class Poke(PokeData data)
   private readonly string? Parameter = data.parameter;
   private readonly string[]? Parameters = data.pars == null ? null : Parse.ToArr(data.pars);
   public IIntValue? Limit = data.limit == null ? null : DataValue.Int(data.limit);
+  public IBoolValue? Random = data.random == null ? null : DataValue.Bool(data.random);
   public IFloatValue? Delay = data.delay == null ? null : DataValue.Float(data.delay);
   public IIntValue? Weight = data.weight == null ? null : DataValue.Int(data.weight);
   public IIntValue? Repeat = data.repeat == null ? null : DataValue.Int(data.repeat);
@@ -673,6 +674,8 @@ public class PokeData : ObjectData
   public string? pars;
   [DefaultValue(null)]
   public string? limit;
+  [DefaultValue(null)]
+  public string? random;
   [DefaultValue(null)]
   public string? evaluate;
 }

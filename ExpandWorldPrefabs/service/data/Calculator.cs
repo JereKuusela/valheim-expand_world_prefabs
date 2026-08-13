@@ -10,19 +10,14 @@ public class Calculator
 
   public static Vector3 EvaluateVector3(string expression)
   {
-    var vector = Vector3.zero;
     var s = Parse.Split(expression);
+    if (Parse.TryDistanceAngle(s, out var polar))
+      return polar;
+
+    var vector = Vector3.zero;
     vector.x = EvaluateFloat(s[0]) ?? 0f;
     if (s.Length > 1) vector.z = EvaluateFloat(s[1]) ?? 0f;
     if (s.Length > 2) vector.y = EvaluateFloat(s[2]) ?? 0f;
-    return vector;
-  }
-  public static Vector3 EvaluateVector3(string[] s, int index)
-  {
-    var vector = Vector3.zero;
-    if (s.Length > index) vector.x = EvaluateFloat(s[index]) ?? 0f;
-    if (s.Length > index + 1) vector.z = EvaluateFloat(s[index + 1]) ?? 0f;
-    if (s.Length > index + 2) vector.y = EvaluateFloat(s[index + 2]) ?? 0f;
     return vector;
   }
   public static Quaternion EvaluateQuaternion(string expression)
@@ -32,14 +27,6 @@ public class Calculator
     vector.y = EvaluateFloat(s[0]) ?? 0f;
     if (s.Length > 1) vector.x = EvaluateFloat(s[1]) ?? 0f;
     if (s.Length > 2) vector.z = EvaluateFloat(s[2]) ?? 0f;
-    return Quaternion.Euler(vector);
-  }
-  public static Quaternion EvaluateQuaternion(string[] s, int index)
-  {
-    var vector = Vector3.zero;
-    if (s.Length > index) vector.y = EvaluateFloat(s[index]) ?? 0f;
-    if (s.Length > index + 1) vector.x = EvaluateFloat(s[index + 1]) ?? 0f;
-    if (s.Length > index + 2) vector.z = EvaluateFloat(s[index + 2]) ?? 0f;
     return Quaternion.Euler(vector);
   }
   public static int? EvaluateInt(string expression)

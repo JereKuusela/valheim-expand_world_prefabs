@@ -279,7 +279,12 @@ See object filtering [examples](examples_object_filtering.md).
   - condition: Optional condition expression. Must evaluate to true for this spawn attempt.
   - data: Entry in the `data.yaml` to be used as initial data.
     - Supports `type, key, value` format to set a single data value.
-  - pos: Position offset in x,z,y from the original object.
+  - pos: Position offset in `x, z, y` from the original object.
+    - Polar format `distance, angle` is supported when angle ends with `deg` or `rad`.
+  - snap: If true, the spawned object is snapped to the original terrain height.
+    - Terrain modifications are not checked.
+    - Some objects don't have the origin point at the bottom, so they may appear slightly inside the terrain.
+    - Position offset can be used to move the object up or down after snap.
   - rot: Rotation offset in y,x,z from the original object.
   - triggerRules: If true, this spawn can trigger other entries.
   - chance (default: `1`): Chance to spawn the object.
@@ -334,6 +339,7 @@ Poking allows to trigger actions on other objects (or even on the original objec
   - repeatInterval (default: `0`): Interval in seconds between repeats.
   - repeatChance (default: `1`): Chance to poke for each attempt (including the original).
   - limit: Maximum amount of poked objects. If not set, all matching objects are poked.
+  - random: If true, the poked objects are selected randomly. If false, the closest objects are pokeda.
   - minDistance: Minimum distance from the poker.
   - maxDistance: Maximum distance from the poker. Default is 100 meters.
     - If you need to poke something far away, try to use `target`, `position` or `offset` instead.
