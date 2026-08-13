@@ -204,6 +204,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
      "modlong" => HandleModLong(value, defaultValue),
      "randf" => Parse.TryKvp(value, out var kvp, Separator) && Parse.TryFloat(kvp.Key, out var f1) && Parse.TryFloat(kvp.Value, out var f2) ? UnityEngine.Random.Range(f1, f2).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "randi" => Parse.TryKvp(value, out var kvp, Separator) && Parse.TryInt(kvp.Key, out var i1) && Parse.TryInt(kvp.Value, out var i2) ? UnityEngine.Random.Range(i1, i2).ToString(CultureInfo.InvariantCulture) : defaultValue,
+     "random" => HandleRandom(value, defaultValue),
      "randomfloat" => Parse.TryKvp(value, out var kvp, Separator) && Parse.TryFloat(kvp.Key, out var f1) && Parse.TryFloat(kvp.Value, out var f2) ? UnityEngine.Random.Range(f1, f2).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "randomint" => Parse.TryKvp(value, out var kvp, Separator) && Parse.TryInt(kvp.Key, out var i1) && Parse.TryInt(kvp.Value, out var i2) ? UnityEngine.Random.Range(i1, i2).ToString(CultureInfo.InvariantCulture) : defaultValue,
      "hashof" => ZdoHelper.Hash(value).ToString(),
@@ -809,6 +810,22 @@ public class Functions(string prefab, string[] args, Vector3 pos)
     }
     return result.ToString(CultureInfo.InvariantCulture);
   }
+
+  private string HandleRandom(string value, string defaultValue)
+  {
+    if (!Parse.TryKvp(value, out var kvp, Separator)) return defaultValue;
+
+    if (HasFractionalMarker(kvp.Key) || HasFractionalMarker(kvp.Value))
+    {
+      if (!Parse.TryFloat(kvp.Key, out var minFloat) || !Parse.TryFloat(kvp.Value, out var maxFloat)) return defaultValue;
+      return UnityEngine.Random.Range(minFloat, maxFloat).ToString(CultureInfo.InvariantCulture);
+    }
+
+    if (!Parse.TryInt(kvp.Key, out var minInt) || !Parse.TryInt(kvp.Value, out var maxInt)) return defaultValue;
+    return UnityEngine.Random.Range(minInt, maxInt).ToString(CultureInfo.InvariantCulture);
+  }
+
+  private static bool HasFractionalMarker(string value) => value.Contains('.');
 
   private string HandleLeft(string value, string defaultValue)
   {

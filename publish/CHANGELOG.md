@@ -1,5 +1,6 @@
 - v1.58
-  - Adds field `random` to pokes to allow randomizing affected objects.
+  - Adds new function `random` to get a random number between two values.
+  - Adds new field `random` to pokes to allow randomizing affected objects.
   - Adds support for specifying unit (deg or rad) for angle parameters.
   - Adds support for "distance, angle, y" format for vectors (requires using deg or rad for angle).
   - Fixes `pos` y coordinate offset not being applied when `snap` is true.

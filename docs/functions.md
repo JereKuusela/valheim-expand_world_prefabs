@@ -115,6 +115,8 @@ For missing object data, the default value can be set by adding `=value`. For ex
 - `<iter2_OP_MINI_MAXI_MINJ_MAXJ_TEMPLATE=default>`: Expands TEMPLATE over indexes `i` and `j`, then reduces results with OP.
   - `i` loops from MINI to MAXI and `j` loops from MINJ to MAXJ.
 - `<pow_X_Y>`: Returns X raised to the power of Y.
+- `<random_X_Y>`: Returns random a number between X and Y.
+  - If X and Y are integers, returns an integer. If either is decimal, returns a decimal.
 - `<randf_X_Y>`: Returns random decimal number between X and Y.
 - `<randi_X_Y>`: Returns random integer number between X and Y.
 - `<randomfloat_X_Y>`: Returns random decimal number between X and Y.
