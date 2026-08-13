@@ -91,9 +91,11 @@ public static class Parse
   public static bool TryDistanceAngle(string[] values, out Vector3 vector)
   {
     vector = Vector3.zero;
-    if (values.Length != 2) return false;
+    if (values.Length < 2 || values.Length > 3) return false;
     if (values[1] == null || !HasAngleSuffix(values[1].Trim())) return false;
-    return TryDistanceAngle(values[0], values[1], out vector);
+    if (!TryDistanceAngle(values[0], values[1], out vector)) return false;
+    if (values.Length > 2 && !TryFloat(values[2], out vector.y)) return false;
+    return true;
   }
   private static bool TryDistanceAngle(string distanceValue, string angleValue, out Vector3 vector)
   {
@@ -225,7 +227,11 @@ public static class Parse
   }
   public static string Name(string arg) => arg.Split(':')[0];
   public static Vector3 VectorXZY(string arg) => VectorXZY(arg, Vector3.zero);
-  public static Vector3 VectorXZY(string arg, Vector3 defaultValue) => VectorXZY(Split(arg), 0, defaultValue);
+  public static Vector3 VectorXZY(string arg, Vector3 defaultValue)
+  {
+    var split = Split(arg);
+    return TryDistanceAngle(split, out var polar) ? polar : VectorXZY(split, 0, defaultValue);
+  }
 
   ///<summary>Parses YXZ vector starting at given index. Zero is used for missing values.</summary>
   public static Vector3 VectorXZY(string[] args, int index) => VectorXZY(args, index, Vector3.zero);
@@ -318,6 +324,7 @@ public static class Parse
   public static Vector3? VectorXZYNull(string? arg) => arg == null ? null : VectorXZYNull(Split(arg));
   public static Vector3? VectorXZYNull(string[] args)
   {
+    if (TryDistanceAngle(args, out var polar)) return polar;
     var x = FloatNull(args, 0);
     var y = FloatNull(args, 2);
     var z = FloatNull(args, 1);

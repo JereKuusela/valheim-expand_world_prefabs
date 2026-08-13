@@ -1,7 +1,8 @@
 - v1.58
   - Adds field `random` to pokes to allow randomizing affected objects.
   - Adds support for specifying unit (deg or rad) for angle parameters.
-  - Adds support for "distance, angle" format for vector parameters (requires using angle unit). For example spawning.
+  - Adds support for "distance, angle, y" format for vectors (requires using deg or rad for angle).
+  - Fixes `pos` y coordinate offset not being applied when `snap` is true.
 
 - v1.57
   - Adds field `self` to object filters.

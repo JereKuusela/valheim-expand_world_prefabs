@@ -280,7 +280,7 @@ See object filtering [examples](examples_object_filtering.md).
   - data: Entry in the `data.yaml` to be used as initial data.
     - Supports `type, key, value` format to set a single data value.
   - pos: Position offset in `x, z, y` from the original object.
-    - Polar format `distance, angle` is supported when angle ends with `deg` or `rad`.
+    - Polar format `distance, angle, y` is supported when angle ends with `deg` or `rad`.
   - snap: If true, the spawned object is snapped to the original terrain height.
     - Terrain modifications are not checked.
     - Some objects don't have the origin point at the bottom, so they may appear slightly inside the terrain.

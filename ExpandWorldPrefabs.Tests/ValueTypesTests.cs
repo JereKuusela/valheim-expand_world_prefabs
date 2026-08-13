@@ -75,6 +75,56 @@ public class ValueTypesTests
     Assert.That(vector.z, Is.EqualTo(5f).Within(0.0001f));
   }
 
+  [Test]
+  public void TryDistanceAngle_StringArrayOverload_ParsesPolarOffsetWithY()
+  {
+    Assert.That(Parse.TryDistanceAngle(["5", "90deg", "2"], out var vector), Is.True);
+    Assert.That(vector.x, Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vector.z, Is.EqualTo(5f).Within(0.0001f));
+    Assert.That(vector.y, Is.EqualTo(2f).Within(0.0001f));
+  }
+
+  [Test]
+  public void VectorXZY_ParsesPolarOffset()
+  {
+    var vector = Parse.VectorXZY("5,90deg");
+
+    Assert.That(vector.x, Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vector.z, Is.EqualTo(5f).Within(0.0001f));
+    Assert.That(vector.y, Is.EqualTo(0f).Within(0.0001f));
+  }
+
+  [Test]
+  public void VectorXZY_ParsesPolarOffsetWithY()
+  {
+    var vector = Parse.VectorXZY("5,90deg,2");
+
+    Assert.That(vector.x, Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vector.z, Is.EqualTo(5f).Within(0.0001f));
+    Assert.That(vector.y, Is.EqualTo(2f).Within(0.0001f));
+  }
+
+  [Test]
+  public void VectorXZYNull_ParsesPolarOffset()
+  {
+    var vector = Parse.VectorXZYNull(["5", "90deg"]);
+
+    Assert.That(vector, Is.Not.Null);
+    Assert.That(vector!.Value.x, Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vector.Value.z, Is.EqualTo(5f).Within(0.0001f));
+  }
+
+  [Test]
+  public void VectorXZYNull_ParsesPolarOffsetWithY()
+  {
+    var vector = Parse.VectorXZYNull(["5", "90deg", "2"]);
+
+    Assert.That(vector, Is.Not.Null);
+    Assert.That(vector!.Value.x, Is.EqualTo(0f).Within(0.0001f));
+    Assert.That(vector.Value.z, Is.EqualTo(5f).Within(0.0001f));
+    Assert.That(vector.Value.y, Is.EqualTo(2f).Within(0.0001f));
+  }
+
   private static Functions CreateFunctions()
   {
 #pragma warning disable SYSLIB0050
