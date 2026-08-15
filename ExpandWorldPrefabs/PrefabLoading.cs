@@ -52,10 +52,10 @@ public class Loading
     HashSet<string>? bannedPlayerEvents = data.bannedPlayerEvents == null ? null : [.. Parse.ToList(data.bannedPlayerEvents)];
     HashSet<string>? groups = data.groups == null ? null : [.. Parse.ToList(data.groups)];
     HashSet<string>? bannedGroups = data.bannedGroups == null ? null : [.. Parse.ToList(data.bannedGroups)];
-    var objectsLimit = ParseObjectsLimit(data.objectsLimit);
+    var objectsLimit = data.objectsLimit == null ? null : DataValue.RangeInt(data.objectsLimit);
     var objects = data.objects == null ? null : ParseObjects(data.objects);
     var bannedObjects = data.bannedObjects == null ? null : ParseObjects(data.bannedObjects);
-    var bannedObjectsLimit = ParseObjectsLimit(data.bannedObjectsLimit);
+    var bannedObjectsLimit = data.bannedObjectsLimit == null ? null : DataValue.RangeInt(data.bannedObjectsLimit);
 
     var filters = data.filters == null && data.bannedFilters == null ? null : new Filters(data.filters, data.bannedFilters, data.filterLimit);
 
@@ -255,11 +255,6 @@ public class Loading
       weightedRpcs = null;
     return Tuple.Create(rpcs, weightedRpcs);
   }
-
-  private static Range<int>? ParseObjectsLimit(string? str) => str == null ?
-    null : int.TryParse(str, out var limit) ?
-      new Range<int>(limit, 0) : Parse.IntRange(str);
-
   private static DataEntry? HandleItems(string items)
   {
     var split = Parse.Kvp(items);

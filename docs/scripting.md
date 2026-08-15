@@ -68,6 +68,25 @@ If a filter is not specified, it's not checked and is always considered valid.
 
 All valid entries will be executed in unspecified order. Weight system can be used trigger only one entry.
 
+- condition: Free-form expression. Requires using [functions](functions.md) to retrieve values.
+  - Valid if resolves to non-empty and non-zero value.
+  - Versatile, allowing to combine many other filters.
+  - Logical operators can be used to compare values, returning either true or false.
+  - Operators must be separated by spaces to be recognized.
+  - Evaluation order can be changed with parentheses. For example `(a and b) or c`.
+  - Supported operators are:
+    - `and`: Checks if both sides are valid.
+    - `or`: Checks if at least one side is valid.
+    - `not`: Checks if the side is not valid.
+    - `xor`: Checks if exactly one side is valid.
+    - `in`: Checks if the left side is contained in the right side (comma separated list).
+    - `not in`: Checks if the left side is not contained in the right side (comma separated list).
+    - `=`: Checks if both sides are equal.
+    - `!=`: Checks if both sides are not equal.
+    - `>`: Checks if the left side is greater than the right side.
+    - `<`: Checks if the left side is less than the right side.
+    - `>=`: Checks if the left side is greater than or equal to the right side.
+    - `<=`: Checks if the left side is less than or equal to the right side.
 - admin: Checks if the object owner is an admin.
   - If true, the owner must be an admin.
   - If false, the owner must not be an admin.
@@ -84,10 +103,11 @@ All valid entries will be executed in unspecified order. Weight system can be us
 - maxZ: Maximum z coordinate.
 - minY: Minimum y coordinate.
 - maxY: Maximum y coordinate.
-- minAltitude: Minimum altitude (y coordinate + 30).
-- maxAltitude: Maximum altitude (y coordinate + 30).
-- minTerrainHeight: Minimum terrain height (y coordinate).
-- maxTerrainHeight: Maximum terrain height (y coordinate).
+- minAltitude: Minimum altitude. Same as minY but checked against ocean level (y=30).
+- maxAltitude: Maximum altitude. Same as maxY but checked against ocean level (y=30).
+- minTerrainHeight: Minimum original terrain height (y coordinate).
+  - Terrain modifications are not included.
+- maxTerrainHeight: Maximum original terrain height (y coordinate).
 - paint: Valid terrain paint color.
   - Supports values cultivated, dirt, grass, grass_dark, patches, paved, paved_dark, paved_dirt and paved_moss.
   - Supports numeric value r,g,b,a.
@@ -97,7 +117,7 @@ All valid entries will be executed in unspecified order. Weight system can be us
 - maxPaint: Maximum terrain paint color.
   - Each terrain color component must be same or lower.
 - environments: List of valid environments.
-- bannedEnvironments: List of  invalid environments.
+- bannedEnvironments: List of invalid environments.
 - globalKeys: List of global keys that must be set.
   - The values are converted to lower case because the game always uses lower case.
 - bannedGlobalKeys: List of global keys that must not be set.
@@ -138,6 +158,8 @@ Filtering can be done based on object's data.
 - bannedFilter: Data filter that must not match.
 
 Filters can be either data entries or single data values.
+
+This works for some cases, but if feels difficult can be more straight forward to use `condition`.
 
 Format for a single data value is `type, key, value`. Supported types are bool, float, hash, int, quat, string and vec.
 

@@ -259,9 +259,9 @@ public class Info
   public int PokeLimit = 0;
   public string PokeParameter = "";
   public float PokeDelay = 0f;
-  public Range<int>? ObjectsLimit;
+  public IRangeIntValue? ObjectsLimit;
   public Object[]? Objects;
-  public Range<int>? BannedObjectsLimit;
+  public IRangeIntValue? BannedObjectsLimit;
   public Object[]? BannedObjects;
   public HashSet<string>? Locations;
   public HashSet<string>? BannedLocations;

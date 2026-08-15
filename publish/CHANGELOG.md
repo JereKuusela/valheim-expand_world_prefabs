@@ -3,6 +3,7 @@
   - Adds new field `random` to pokes to allow randomizing affected objects.
   - Adds support for specifying unit (deg or rad) for angle parameters.
   - Adds support for "distance, angle, y" format for vectors (requires using deg or rad for angle).
+  - Adds dynamic value support to `objectsLimit` and `bannedObjectsLimit`.
   - Fixes `pos` y coordinate offset not being applied when `snap` is true.
 
 - v1.57
@@ -53,18 +54,3 @@
   - Fixes invalid `prefab` in pokes causing all objects to be poked (now doesn't poke anything).
   - Fixes field `owner` not working without using field `data`.
   - Fixes RPC ChatMessage not working.
-
-- v1.53
-  - BREAKING CHANGE: Removes basic arithmetic support from commands. Use parameters instead.
-  - Fixes state `leave` not working.
-  - Fixes parameters `<large>` and `<small>` not working properly. Thanks Kurios.ZeuS!
-  - Fixes poke limit not using offset, instead it was always based on object position.
-  - Improves parameters `<calci>`, `<calcf>` and `<calcl>` to support more complex calculations.
-
-- v1.52
-  - Adds new parameter `<cid>` to get the character id of the client that controls the object.
-  - Adds new parameter `<owner>` to spawn data to override the initial owner assignment.
-  - Adds new states `join`, `leave` and `respawn` to player triggers.
-  - Adds new fields `groups` and `bannedGroups` to filter based on player groups (requires Server Devcommands mod).
-  - Adds API for developers to register own parameter handlers and to use custom triggers.
-  - Obsoletes parameter `<pchar>` as it returned wrong information anyways.

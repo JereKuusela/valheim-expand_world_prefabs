@@ -66,34 +66,36 @@ public class ObjectsFiltering
 
 
 
-  public static bool HasNearby(Range<int>? limit, Object[] objects, ZDO zdo, Functions f)
+  public static bool HasNearby(IRangeIntValue? limit, Object[] objects, ZDO zdo, Functions f)
   {
     if (objects.Length == 0) return true;
     foreach (var o in objects) o.Roll(f, zdo.m_position, zdo.GetRotation());
+    var l = limit?.Get(f);
     var maxRadius = objects.Max(o => o.MaxDistance);
     if (maxRadius > 10000)
     {
       var zdos = ZDOMan.instance.m_objectsByID.Values;
-      if (limit == null)
+      if (l == null)
         return HasAllObjects(zdos, objects, zdo.m_uid, f);
       else
-        return HasLimitObjects(zdos, limit, objects, zdo.m_uid, f);
+        return HasLimitObjects(zdos, l, objects, zdo.m_uid, f);
     }
     var zdoLists = GetSectorIndices(objects);
-    if (limit == null)
+    if (l == null)
       return HasAllObjects(zdoLists, objects, zdo.m_uid, f);
     else
-      return HasLimitObjects(zdoLists, limit, objects, zdo.m_uid, f);
+      return HasLimitObjects(zdoLists, l, objects, zdo.m_uid, f);
   }
-  public static bool HasNotNearby(Range<int>? limit, Object[] objects, ZDO zdo, Functions f)
+  public static bool HasNotNearby(IRangeIntValue? limit, Object[] objects, ZDO zdo, Functions f)
   {
     if (objects.Length == 0) return true;
     foreach (var o in objects) o.Roll(f, zdo.m_position, zdo.GetRotation());
+    var l = limit?.Get(f);
     var zdoLists = GetSectorIndices(objects);
-    if (limit == null)
+    if (l == null)
       return !HasAllObjects(zdoLists, objects, zdo.m_uid, f);
     else
-      return !HasLimitObjects(zdoLists, limit, objects, zdo.m_uid, f);
+      return !HasLimitObjects(zdoLists, l, objects, zdo.m_uid, f);
   }
 
   private static bool HasAllObjects(List<List<ZDO>> zdoLists, Object[] objects, ZDOID? self, Functions f)

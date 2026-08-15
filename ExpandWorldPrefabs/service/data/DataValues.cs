@@ -35,6 +35,19 @@ public class DataValue
     return new IntValue(split);
   }
 
+  public static IRangeIntValue RangeInt(string values)
+  {
+    var split = SplitWithValues(values);
+    if (split.Length == 1 && !HasFunctions(split[0]))
+    {
+      if (int.TryParse(split[0], out var result))
+        return new SimpleRangeIntValue(new Range<int>(result, 0));
+      var range = Parse.IntRange(split[0]);
+      return new SimpleRangeIntValue(range);
+    }
+    return new RangeIntValue(split);
+  }
+
   public static IFloatValue Float(string values)
   {
     var split = SplitWithValues(values);

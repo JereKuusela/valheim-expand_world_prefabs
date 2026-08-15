@@ -178,6 +178,40 @@ public class ValueTypesTests
   }
 
   [Test]
+  public void DataValue_RangeInt_SingleValue_UsesMinAndOpenMax()
+  {
+    var value = DataValue.RangeInt("10");
+
+    var range = value.Get(CreateFunctions());
+
+    Assert.That(range, Is.Not.Null);
+    Assert.That(range!.Min, Is.EqualTo(10));
+    Assert.That(range.Max, Is.EqualTo(0));
+  }
+
+  [Test]
+  public void DataValue_RangeInt_RangeValue_ParsesMinAndMax()
+  {
+    var value = DataValue.RangeInt("2;5");
+
+    var range = value.Get(CreateFunctions());
+
+    Assert.That(range, Is.Not.Null);
+    Assert.That(range!.Min, Is.EqualTo(2));
+    Assert.That(range.Max, Is.EqualTo(5));
+  }
+
+  [Test]
+  public void RangeIntValue_Get_ReturnsNullWhenUnparseable()
+  {
+    var value = new RangeIntValue(["not-a-number"]);
+
+    var range = value.Get(CreateFunctions());
+
+    Assert.That(range, Is.Null);
+  }
+
+  [Test]
   public void SimpleFloatValue_TryGet_ReturnsTrueAndValue()
   {
     var value = new SimpleFloatValue(2.5f);
