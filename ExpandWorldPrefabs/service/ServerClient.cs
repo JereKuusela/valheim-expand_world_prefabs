@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection.Emit;
+using ExpandWorld.Prefab;
 using HarmonyLib;
 using Splatform;
 using UnityEngine;
@@ -26,8 +26,8 @@ public class ServerClient
     var patch = AccessTools.Method(typeof(ServerClient), nameof(RecognizeServerClient));
     harmony.Patch(method, postfix: new HarmonyMethod(patch));
     method = AccessTools.Method(typeof(ZNet), nameof(ZNet.SendPlayerList));
-    patch = AccessTools.Method(typeof(ServerClient), nameof(AddServerClient));
-    harmony.Patch(method, transpiler: new HarmonyMethod(patch));
+    patch = AccessTools.Method(typeof(ServerClient), nameof(SendPlayerListPrefix));
+    harmony.Patch(method, prefix: new HarmonyMethod(patch));
   }
 
   private static void DoUnpatch(Harmony harmony)
@@ -37,7 +37,7 @@ public class ServerClient
     var patch = AccessTools.Method(typeof(ServerClient), nameof(RecognizeServerClient));
     harmony.Unpatch(method, patch);
     method = AccessTools.Method(typeof(ZNet), nameof(ZNet.SendPlayerList));
-    patch = AccessTools.Method(typeof(ServerClient), nameof(AddServerClient));
+    patch = AccessTools.Method(typeof(ServerClient), nameof(SendPlayerListPrefix));
     harmony.Unpatch(method, patch);
   }
   // Server client is only sent to clients, so this is needed for the server to recognize it.
@@ -50,33 +50,58 @@ public class ServerClient
     return true;
   }
 
-  static IEnumerable<CodeInstruction> AddServerClient(IEnumerable<CodeInstruction> instructions)
+  static bool SendPlayerListPrefix(ZNet __instance)
   {
-    return new CodeMatcher(instructions).End().MatchStartBackwards(new CodeMatch(OpCodes.Ldfld, AccessTools.Field(typeof(ZNet), nameof(ZNet.m_players))))
-      .Advance(-1)
-      .InsertAndAdvance(new CodeInstruction(OpCodes.Ldarg_0))
-      .InsertAndAdvance(new CodeInstruction(OpCodes.Ldloc_0))
-      .InsertAndAdvance(new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(ServerClient), nameof(AddServer))))
-      .InstructionEnumeration();
+    __instance.UpdatePlayerList();
+    if (__instance.m_peers.Count <= 0)
+      return false;
+
+    foreach (var peer in __instance.m_peers)
+    {
+      if (!peer.IsReady())
+        continue;
+
+      var center = peer.m_refPos;
+      var zdo = ZDOMan.instance.GetZDO(peer.m_characterID);
+      if (zdo != null)
+        center = zdo.m_position;
+
+      var pkg = new ZPackage();
+      if (NPCManager.IsEnabled)
+      {
+        var npcProfiles = NPCManager.Search(center);
+        pkg.Write(__instance.m_players.Count + 1 + npcProfiles.Count);
+        foreach (var player in __instance.m_players)
+          WritePlayer(pkg, player);
+        Write(pkg);
+        if (npcProfiles.Count > 0)
+          NPCManager.WriteProfiles(pkg, npcProfiles);
+      }
+      else
+      {
+        pkg.Write(__instance.m_players.Count + 1);
+        foreach (var player in __instance.m_players)
+          WritePlayer(pkg, player);
+        Write(pkg);
+      }
+      peer.m_rpc.Invoke("PlayerList", pkg);
+    }
+
+    __instance.UpdatePlayerHistory();
+    return false;
   }
 
-  static void AddServer(ZNet net, ZPackage pkg)
+  static void WritePlayer(ZPackage pkg, ZNet.PlayerInfo player)
   {
-    // This is needed in case multiple mods are adding extra players.
-    var prev = pkg.GetPos();
-    pkg.SetPos(0);
-    if (IsExtraPlayerAdded(net, pkg.ReadInt()))
-    {
-      pkg.SetPos(prev);
-    }
-    else
-    {
-      pkg.SetPos(0);
-      pkg.Write(net.m_players.Count + 1);
-      Write(pkg);
-    }
+    pkg.Write(player.m_name);
+    pkg.Write(player.m_characterID);
+    pkg.Write(player.m_userInfo.m_id.ToString());
+    pkg.Write(player.m_userInfo.m_displayName);
+    pkg.Write(player.m_serverAssignedDisplayName);
+    pkg.Write(player.m_publicPosition);
+    if (player.m_publicPosition)
+      pkg.Write(player.m_position);
   }
-  static bool IsExtraPlayerAdded(ZNet net, int count) => count >= net.m_players.Count + 1;
 
 
   public static ZNet.PlayerInfo Client => client ??= CreatePlayerInfo();
@@ -107,9 +132,11 @@ public class ServerClient
     catch
     {
     }
-    if (ZNet.m_onlineBackend == OnlineBackendType.Steamworks)
-      return new PlatformUserID(ZNet.instance.m_steamPlatform, ZNet.instance.m_hostSocket.GetHostName());
-    return new PlatformUserID("playfab", ZPlayFabMatchmaking.m_instance.m_serverData.remotePlayerId);
+    if (ZNet.m_onlineBackend == OnlineBackendType.PlayFab)
+      return new PlatformUserID("playfab", ZPlayFabMatchmaking.m_instance.m_serverData.remotePlayerId);
+    else if (ZNet.instance.m_hostSocket == null)
+      return new PlatformUserID(ZNet.instance.m_steamPlatform, "Server");
+    return new PlatformUserID(ZNet.instance.m_steamPlatform, ZNet.instance.m_hostSocket.GetHostName());
   }
 
   public static void Write(ZPackage pkg)

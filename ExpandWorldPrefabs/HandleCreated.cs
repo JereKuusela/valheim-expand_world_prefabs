@@ -53,6 +53,7 @@ public class HandleCreated
       if (zdo == null) continue;
       PeerManager.HandlePlayerCreatedState(zdo);
       Manager.Handle(ActionType.Create, [], zdo);
+      NPCManager.Track(zdo);
     }
     ZNetView.m_ghostInit = true;
     for (var i = 0; i < GhostZDOs.Count; i++)
@@ -61,6 +62,7 @@ public class HandleCreated
       var zdo = ZDOMan.instance.GetZDO(uid);
       if (zdo == null) continue;
       Manager.Handle(ActionType.Create, [], zdo);
+      NPCManager.Track(zdo);
     }
     ZNetView.m_ghostInit = false;
     CreatedZDOs.Clear();

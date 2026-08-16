@@ -31,6 +31,7 @@ public class HandleDestroyed
   private static void Handle(ZDOID uid)
   {
     var zdo = ZDOMan.instance.GetZDO(uid);
+    NPCManager.Untrack(uid);
     if (zdo == null) return;
     Manager.Handle(ActionType.Destroy, [], zdo);
   }

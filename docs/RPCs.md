@@ -911,7 +911,6 @@ By default, the RPC is sent to the owner of the object.
 ### Talker
 
 ```yaml
-# Unusable.
   objectRpc:
   - name: Say
     target: all

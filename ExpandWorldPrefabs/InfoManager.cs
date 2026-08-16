@@ -98,14 +98,15 @@ public class InfoManager
     var shouldRestoreScale = canPatch && Config.RestoreScale;
     var shouldSupportAttach = canPatch && Config.SupportAttach;
     var shouldServerSideData = canPatch && Config.ServerSideData;
+    var shouldNpcPlayerList = canPatch && Config.NpcPlayerListRange > 0f;
     PersistPlayers.Patch(EWP.Harmony, shouldPersistPlayers);
     RestoreScale.Patch(EWP.Harmony, shouldRestoreScale);
     SupportAttach.Patch(EWP.Harmony, shouldSupportAttach);
     ServerSideData.Patch(EWP.Harmony, shouldServerSideData);
 
     var requiredStates = GetRequiredStates();
-    var shouldHandleCreated = canPatch && (CreateDatas.Exists || requiredStates.Contains("join") || requiredStates.Contains("respawn"));
-    var shouldHandleDestroyed = canPatch && RemoveDatas.Exists;
+    var shouldHandleCreated = canPatch && (shouldNpcPlayerList || CreateDatas.Exists || requiredStates.Contains("join") || requiredStates.Contains("respawn"));
+    var shouldHandleDestroyed = canPatch && (shouldNpcPlayerList || RemoveDatas.Exists);
     var shouldHandleRpc = canPatch && (StateDatas.Exists || SayDatas.Exists);
     var shouldHandleSay = canPatch && SayDatas.Exists;
     var shouldHandleGlobalKey = canPatch && GlobalKeyDatas.Exists;
@@ -123,6 +124,7 @@ public class InfoManager
       HandleRPC.SetRequiredStates(requiredStates);
 
     ServerClient.Patch(EWP.Harmony, shouldHandleSay);
+    NPCManager.Patch(EWP.Harmony, shouldNpcPlayerList);
     HandleGlobalKey.Patch(EWP.Harmony, shouldHandleGlobalKey);
     HandleEvent.Patch(EWP.Harmony, shouldHandleEvent);
     HandleChanged.Patch(EWP.Harmony, ChangeDatas, shouldTrackChanges);

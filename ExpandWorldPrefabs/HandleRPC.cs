@@ -77,7 +77,6 @@ public class HandleRPC
     if (zdo == null) return true;
 
     var cancel = false;
-
     if (Handlers.TryGetValue(data.m_methodHash, out var handler))
       cancel = handler(zdo, data);
 

@@ -180,11 +180,17 @@ public abstract class RpcInfo
     return parameters;
   }
 
-  private UserInfo GetInfo(string arg) => new()
+  private UserInfo GetInfo(string arg)
   {
-    Name = arg == "" ? ServerClient.Client.m_userInfo.m_displayName : arg,
-    UserId = ServerClient.Client.m_userInfo.m_id
-  };
+    if (NPCManager.TryGetUserInfo(arg, out var npcInfo))
+      return npcInfo;
+
+    return new UserInfo
+    {
+      Name = arg == "" ? ServerClient.Client.m_userInfo.m_displayName : arg,
+      UserId = ServerClient.Client.m_userInfo.m_id
+    };
+  }
 
   private object[] GetPackagedParameters(Functions f)
   {
