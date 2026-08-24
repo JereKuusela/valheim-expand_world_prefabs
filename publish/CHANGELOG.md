@@ -1,3 +1,6 @@
+- v1.59
+  - Adds server side position update for attached objects when a script triggers on them.
+
 - v1.58
   - Adds new function `random` to get a random number between two values.
   - Adds new field `random` to pokes to allow randomizing affected objects.

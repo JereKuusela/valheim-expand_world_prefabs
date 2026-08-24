@@ -140,10 +140,9 @@ public class SupportAttach
   private static readonly ZDOExtraData.ConnectionType InvalidType = unchecked((ZDOExtraData.ConnectionType)0x20);
   private static void Unattach(ZDO zdo)
   {
-    var connectionZdoId = zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform);
-    if (connectionZdoId.IsNone())
+    if (zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform).IsNone())
       return;
-    SyncAttachedWorldTransform(zdo, connectionZdoId);
+    SyncAttachedWorldTransform(zdo);
     zdo.SetConnection(InvalidType, ZDOID.None);
     ServerSideData.RemoveInt(zdo, EWPAttachedHash);
     zdo.DataRevision += 100;
@@ -154,35 +153,58 @@ public class SupportAttach
     }
   }
 
-  private static void SyncAttachedWorldTransform(ZDO zdo, ZDOID connectionZdoId)
+  public static bool SyncAttachedWorldTransform(ZDO zdo)
   {
+    if (!TryGetWorldTransform(zdo, [], out var worldPos, out var worldRot))
+      return false;
+
+    zdo.m_position = worldPos;
+    zdo.SetSector(ZoneSystem.GetZone(worldPos));
+    zdo.m_rotation = worldRot.eulerAngles;
+    return true;
+  }
+
+
+  private static bool TryGetWorldTransform(ZDO zdo, HashSet<ZDOID> visited, out Vector3 worldPos, out Quaternion worldRot)
+  {
+    worldPos = zdo.GetPosition();
+    worldRot = zdo.GetRotation();
+
+    if (!IsAttached(zdo))
+      return false;
+
+    if (!visited.Add(zdo.m_uid))
+      return false;
+
+    var connectionZdoId = zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform);
+    if (connectionZdoId.IsNone())
+      return false;
+
     var parentZdo = ZDOMan.instance.GetZDO(connectionZdoId);
     if (parentZdo == null)
-      return;
+      return false;
 
-    var parentPos = parentZdo.GetPosition();
-    var parentRot = parentZdo.GetRotation();
+    if (!TryGetWorldTransform(parentZdo, visited, out var parentPos, out var parentRot))
+    {
+      parentPos = parentZdo.GetPosition();
+      parentRot = parentZdo.GetRotation();
+    }
 
     var attachJoint = zdo.GetString(ZDOVars.s_attachJointHash, "");
     var relPos = zdo.GetVec3(ZDOVars.s_relPosHash, Vector3.zero);
     var relRot = zdo.GetQuaternion(ZDOVars.s_relRotHash, Quaternion.identity);
 
-    if (attachJoint.Length > 0 && TryGetJointWorldPosition(parentZdo, parentPos, parentRot, attachJoint, out var worldPos))
+    if (attachJoint.Length > 0 && TryGetJointWorldPosition(parentZdo, parentPos, parentRot, attachJoint, out var attachedPos))
     {
-      zdo.m_position = worldPos;
+      worldPos = attachedPos;
     }
     else
     {
-      // One-shot world position restore before detaching.
-      var relVel = zdo.GetVec3(ZDOVars.s_velHash, Vector3.zero);
-      relPos += relVel * Time.deltaTime;
       worldPos = parentPos + parentRot * relPos;
     }
 
-    var worldRot = parentRot * relRot;
-    zdo.m_position = worldPos;
-    zdo.SetSector(ZoneSystem.GetZone(worldPos));
-    zdo.m_rotation = worldRot.eulerAngles;
+    worldRot = parentRot * relRot;
+    return true;
   }
 
   private static bool TryGetJointWorldPosition(ZDO parentZdo, Vector3 parentPos, Quaternion parentRot, string attachJoint, out Vector3 worldPos)

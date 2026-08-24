@@ -56,6 +56,7 @@ public class Manager
     // Already destroyed before.
     if (ZDOMan.instance.m_deadZDOs.ContainsKey(zdo.m_uid)) return false;
     if (!ZNet.instance.IsServer()) return false;
+    SupportAttach.SyncAttachedWorldTransform(zdo);
     var name = ZNetScene.instance.GetPrefab(zdo.m_prefab)?.name ?? "";
     ObjectFunctions f = new(name, args, zdo);
     var info = InfoSelector.SelectWeighted(type, zdo, args, f);
@@ -160,6 +161,7 @@ public class Manager
   public static bool CheckCancel(ActionType type, string[] args, ZDO zdo)
   {
     if (!ZNet.instance.IsServer()) return false;
+    SupportAttach.SyncAttachedWorldTransform(zdo);
     var name = ZNetScene.instance.GetPrefab(zdo.m_prefab)?.name ?? "";
     ObjectFunctions f = new(name, args, zdo);
     var info = InfoSelector.SelectWeighted(type, zdo, args, f);
