@@ -27,6 +27,9 @@ Config file `expand_prefabs.cfg` is created automatically when the game is start
   - Server side data is just regular data, but prefixed with `ewp_`.
   - This reduces network traffic because the data is not sent to clients.
 - Persist spawned players: If disabled, EWP no longer supports persisting EWP spawned players.
+- NPC player list range: Maximum distance for NPC profiles to appear in the player list. Set to 0 to disable this feature.
+  - This is required for NPC chat, because clients only accept chat messages from players on the player list.
+  - Note that the player count also scales some boss drops.
 - Custom prefab names: Comma separated list of prefab names that are processed even when server doesn't recognize them.
   - This might be needed if there are modded prefabs that are not registered in ZNetScene.
   - The prefab names must be exact match, including capitalization.

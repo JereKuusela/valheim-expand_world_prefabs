@@ -179,3 +179,46 @@ This can be disabled by setting "Persist spawned players" to false in the settin
 EWP automatically makes EWP spawned players persistent. EWP also forces the player object to be owned by a non-existing client. This is needed because game clients automatically destroy non-controlled owned player objects.
 
 Examples will come later.
+
+## NPC chat (experimental)
+
+This is disabled by default. To enable it, set "NPC player list range" in the settings to how far away clients recognize NPCs (for example 250 meters).
+
+Game clients only accept chat messages from players that are on the player list. EWP works around this by adding nearby NPC players to the player list of each client. Only NPCs within the configured range are sent, which keeps the player list from getting cluttered. Note that the player count also scales some boss drops.
+
+NPCs are player objects spawned by EWP. They require `playerName` data, and currently also `triggerRules: true` so that they get added to the NPC list.
+
+Messages are sent with the `Say` object RPC. The `userinfo` value type converts a player name to the identity used by the client.
+
+```yaml
+# Say "!create Bob" to create a NPC named Bob.
+- prefab: Player
+  type: say, !create
+  spawn:
+  - prefab: Player
+# Player name is required for NPCs.
+    data: string, playerName, <par1>
+# Required for now to add it to the NPC list.
+    triggerRules: true
+
+# Say "!speak HELLO" to make the nearest Player say HELLO.
+# Also affects real players.
+- prefab: Player
+  type: say, !speak
+  poke:
+  - prefab: Player
+    pars: speak, <zdo>, <par1>
+    maxDistance: 100
+    limit: 1
+
+- prefab: Player
+  type: poke, speak
+  objectRpc:
+  - name: Say
+    target: <par1>
+# 0 = whisper, 1 = say, 2 = shout
+    1: int, 0
+# Player name is used to find the NPC identity.
+    2: userinfo, <string_playerName>
+    3: string, <par2>
+```
