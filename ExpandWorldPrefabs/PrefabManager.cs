@@ -142,15 +142,20 @@ public class Manager
       removeItems?.RemoveItems(f, zdo);
       addItems?.AddItems(f, zdo);
       var owner = info.Owner?.Get(f);
-      if (owner.HasValue)
+      if (info.OwnerServer)
+        ServerOwned.Mark(zdo);
+      else if (owner.HasValue)
+      {
+        ServerOwned.Unmark(zdo);
         zdo.SetOwner(owner.Value);
+      }
       if (attach.HasValue)
         SupportAttach.Attach(zdo, attach.Value);
       var connect = info.Connect?.Get(f);
       if (connect.HasValue)
         SupportAttach.Connect(zdo, connect.Value);
 
-      if (hasSyncedDataChanges || removeItems != null || addItems != null || attach.HasValue || connect.HasValue || owner.HasValue)
+      if (hasSyncedDataChanges || removeItems != null || addItems != null || attach.HasValue || connect.HasValue || owner.HasValue || info.OwnerServer)
         zdo.DataRevision += 100;
       HandleChanged.IgnoreZdo = ZDOID.None;
     }

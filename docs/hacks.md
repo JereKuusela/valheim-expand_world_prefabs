@@ -132,6 +132,38 @@ Infinity Hammer mod has a menu that shows objects by component, which allows eas
 
 Infinity Hammer mod also supports scaling these objects when enabled from its settings.
 
+## Server owned objects
+
+This can be disabled by setting "Server owned objects" to false in the settings.
+
+Most RPCs are routed only to the owning client (see [RPCs](RPCs.md)), so the server normally never sees them.
+
+Setting `owner: server` (instead of a player id) marks the object and forces its ZDO ownership to stay on the server itself, similar to how attaching forces ownership to a non-existing client. Setting a normal numeric `owner` afterwards clears the mark and releases ownership again.
+
+With the object server owned, owner-only RPCs become observable server side through the `clientstate` type. See [client states](client_states.md) for the full list of supported triggers.
+
+However object itself doesn't react to anything because there is no client processing it. On single player, might work bit weird.
+
+```yaml
+# Force the nearest Wolf to be owned by the server.
+- prefab: Player
+  type: say, !claim
+  poke:
+  - prefab: Wolf
+    maxDistance: 50
+    limit: 1
+    pars: claim
+
+- prefab: Wolf
+  type: poke, claim
+  owner: server
+
+# Only reachable because the Wolf above is server owned.
+- prefab: Wolf
+  type: clientstate, sleep
+  command: say <prefab> fell asleep
+```
+
 ## Server side data
 
 This can be disabled by setting "Server side data" to false in the settings.

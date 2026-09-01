@@ -57,6 +57,8 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules, flo
     var owner = spawn.Owner?.Get(f);
     if (owner.HasValue)
       zdoEntry.Owner = owner.Value;
+    if (spawn.OwnerServer)
+      ServerOwned.Mark(zdoEntry);
     var attach = spawn.Attach?.Get(f);
     if (attach.HasValue && attach.Value != ZDOID.None)
       SupportAttach.Attach(zdoEntry, attach.Value);

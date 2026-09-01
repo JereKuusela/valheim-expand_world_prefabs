@@ -311,6 +311,7 @@ public class Info
   public DataEntry? AddItems;
   public DataEntry? RemoveItems;
   public ILongValue? Owner;
+  public bool OwnerServer = false;
   public IZdoIdValue? Attach;
   public IZdoIdValue? Connect;
   public IBoolValue? Cancel;
@@ -377,6 +378,7 @@ public class Spawn
   public readonly IFloatValue? Chance;
   public readonly IFloatValue? Weight;
   public readonly ILongValue? Owner;
+  public readonly bool OwnerServer;
   public readonly IZdoIdValue? Attach;
   public readonly IZdoIdValue? Connect;
   public readonly IBoolValue? TriggerRules;
@@ -396,7 +398,8 @@ public class Spawn
     RepeatChance = data.repeatChance == null ? null : DataValue.Float(data.repeatChance);
     Chance = data.chance == null ? null : DataValue.Float(data.chance);
     Weight = data.weight == null ? null : DataValue.Float(data.weight);
-    Owner = data.owner == null ? null : DataValue.Long(data.owner);
+    OwnerServer = Helper.IsServerOwner(data.owner);
+    Owner = data.owner == null || OwnerServer ? null : DataValue.Long(data.owner);
     Attach = data.attach == null ? null : DataValue.ZdoId(data.attach);
     Connect = data.connect == null ? null : DataValue.ZdoId(data.connect);
     TriggerRules = data.triggerRules == null ? triggerRules == null ? null : new SimpleBoolValue(triggerRules.Value) : DataValue.Bool(data.triggerRules);

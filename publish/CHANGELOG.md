@@ -1,3 +1,6 @@
+- v1.60
+  - Adds experimental server owned object support.
+
 - v1.59
   - Adds server side position update for attached objects when a script triggers on them.
   - Adds experimental NPC chat support.

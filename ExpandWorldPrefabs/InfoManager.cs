@@ -20,13 +20,15 @@ public enum ActionType
   Key,
   Custom,
   Time,
-  RealTime
+  RealTime,
+  ClientState
 }
 public class InfoManager
 {
   public static readonly PrefabInfo CreateDatas = new();
   public static readonly PrefabInfo RemoveDatas = new();
   public static readonly PrefabInfo StateDatas = new();
+  public static readonly PrefabInfo ClientStateDatas = new();
   public static readonly PrefabInfo SayDatas = new();
   public static readonly PrefabInfo PokeDatas = new();
   public static readonly PrefabInfo ChangeDatas = new();
@@ -42,6 +44,7 @@ public class InfoManager
     CreateDatas.Clear();
     RemoveDatas.Clear();
     StateDatas.Clear();
+    ClientStateDatas.Clear();
     SayDatas.Clear();
     PokeDatas.Clear();
     GlobalKeyDatas.Clear();
@@ -98,16 +101,20 @@ public class InfoManager
     var shouldRestoreScale = canPatch && Config.RestoreScale;
     var shouldSupportAttach = canPatch && Config.SupportAttach;
     var shouldServerSideData = canPatch && Config.ServerSideData;
+    var shouldServerOwned = canPatch && Config.ServerOwned;
     var shouldNpcPlayerList = canPatch && Config.NpcPlayerListRange > 0f;
     PersistPlayers.Patch(EWP.Harmony, shouldPersistPlayers);
     RestoreScale.Patch(EWP.Harmony, shouldRestoreScale);
     SupportAttach.Patch(EWP.Harmony, shouldSupportAttach);
     ServerSideData.Patch(EWP.Harmony, shouldServerSideData);
+    ServerOwned.Patch(EWP.Harmony, shouldServerOwned);
 
     var requiredStates = GetRequiredStates();
+    var requiredClientStates = GetRequiredClientStates();
     var shouldHandleCreated = canPatch && (shouldNpcPlayerList || CreateDatas.Exists || requiredStates.Contains("join") || requiredStates.Contains("respawn"));
     var shouldHandleDestroyed = canPatch && (shouldNpcPlayerList || RemoveDatas.Exists);
     var shouldHandleRpc = canPatch && (StateDatas.Exists || SayDatas.Exists);
+    var shouldHandleClientRpc = canPatch && ClientStateDatas.Exists;
     var shouldHandleSay = canPatch && SayDatas.Exists;
     var shouldHandleGlobalKey = canPatch && GlobalKeyDatas.Exists;
     var shouldHandleEvent = canPatch && EventDatas.Exists;
@@ -122,6 +129,10 @@ public class InfoManager
     HandleRPC.Patch(EWP.Harmony, shouldHandleRpc);
     if (shouldHandleRpc)
       HandleRPC.SetRequiredStates(requiredStates);
+
+    HandleClientRPCs.Patch(EWP.Harmony, shouldHandleClientRpc);
+    if (shouldHandleClientRpc)
+      HandleClientRPCs.SetRequiredStates(requiredClientStates);
 
     ServerClient.Patch(EWP.Harmony, shouldHandleSay);
     NPCManager.Patch(EWP.Harmony, shouldNpcPlayerList);
@@ -159,7 +170,7 @@ public class InfoManager
 
   private static bool RequiresConnectionSwapTracking()
   {
-    return HasSwapRules(CreateDatas) || HasSwapRules(StateDatas) || HasSwapRules(SayDatas) || HasSwapRules(PokeDatas) || HasSwapRules(ChangeDatas);
+    return HasSwapRules(CreateDatas) || HasSwapRules(StateDatas) || HasSwapRules(ClientStateDatas) || HasSwapRules(SayDatas) || HasSwapRules(PokeDatas) || HasSwapRules(ChangeDatas);
   }
 
   private static bool HasSwapRules(PrefabInfo prefabInfo)
@@ -227,6 +238,40 @@ public class InfoManager
     return states;
   }
 
+  private static HashSet<string> GetRequiredClientStates()
+  {
+    var states = new HashSet<string>();
+
+    foreach (var infos in ClientStateDatas.Weighted.Values)
+    {
+      foreach (var info in infos)
+      {
+        if (info.Args.Length > 0)
+          states.Add(info.Args[0]);
+      }
+    }
+
+    foreach (var infos in ClientStateDatas.Fallback.Values)
+    {
+      foreach (var info in infos)
+      {
+        if (info.Args.Length > 0)
+          states.Add(info.Args[0]);
+      }
+    }
+
+    foreach (var infos in ClientStateDatas.Separate.Values)
+    {
+      foreach (var info in infos)
+      {
+        if (info.Args.Length > 0)
+          states.Add(info.Args[0]);
+      }
+    }
+
+    return states;
+  }
+
   private static void OnKeySet(string key, string value)
   {
     Manager.HandleGlobal(ActionType.Key, [key, value], Vector3.zero, value == "");
@@ -235,6 +280,7 @@ public class InfoManager
   {
     ActionType.Destroy => RemoveDatas,
     ActionType.State => StateDatas,
+    ActionType.ClientState => ClientStateDatas,
     ActionType.Say => SayDatas,
     ActionType.Poke => PokeDatas,
     ActionType.Create => CreateDatas,

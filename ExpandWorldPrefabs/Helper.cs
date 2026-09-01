@@ -60,6 +60,9 @@ public class Helper
   public static bool Approx(float a, float b) => Mathf.Abs(a - b) < 0.001f;
   public static bool ApproxBetween(float a, float min, float max) => min - 0.001f <= a && a <= max + 0.001f;
 
+  // Hardcoded "owner: server" keyword, as opposed to a normal numeric owner value.
+  public static bool IsServerOwner(string? owner) => owner != null && owner.Equals("server", StringComparison.OrdinalIgnoreCase);
+
   public static bool HasAnyGlobalKey(List<string> keys, Functions f)
   {
     foreach (var key in keys)
