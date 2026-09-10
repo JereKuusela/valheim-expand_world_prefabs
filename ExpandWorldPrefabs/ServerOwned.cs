@@ -41,13 +41,13 @@ public class ServerOwned
   {
     if (!IsMarked(__instance)) return;
     // Real players must stay in control of themselves.
-    if (PersistPlayers.IsRealPlayer(__instance)) return;
+    //if (PersistPlayers.IsRealPlayer(__instance)) return;
     uid = ZDOMan.instance.m_sessionID;
   }
 
   public static void Mark(ZDO zdo)
   {
-    if (PersistPlayers.IsRealPlayer(zdo)) return;
+    //if (PersistPlayers.IsRealPlayer(zdo)) return;
     ServerSideData.SetInt(zdo, EWPServerOwnedHash, 1);
     zdo.SetOwner(ZDOMan.instance.m_sessionID);
   }

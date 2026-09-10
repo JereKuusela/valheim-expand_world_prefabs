@@ -37,14 +37,14 @@ public class InfoSelector
   private static Info[]? SelectInfos(List<Info> data, Vector3 pos, ZDO zdo, string[] args, Functions f)
   {
     if (data.Count == 0) return null;
-    var biome = WorldGenerator.instance.GetBiome(pos);
+    var biome = WorldGenerator.instance.GetBiomeSector(pos);
     var distance = Utils.LengthXZ(pos);
     var day = EnvMan.IsDay();
     var waterY = pos.y - ZoneSystem.instance.m_waterLevel;
     var linq = data
       .Where(d => CheckArgs(d, args))
-      .Where(d => (d.Biomes & biome) == biome)
-      .Where(d => (d.BannedBiomes & biome) == 0)
+      .Where(d => (d.Biomes & biome.Biome) == biome.Biome)
+      .Where(d => (d.BannedBiomes & biome.Biome) == 0)
       .Where(d => d.Day?.GetBool(f) != false || !day)
       .Where(d => d.Night?.GetBool(f) != false || day)
       .Where(d => d.MinDistance == null || !d.MinDistance.TryGet(f, out var v) || v < distance)
@@ -155,8 +155,8 @@ public class InfoSelector
     if (d.Groups == null) return true;
     return d.Groups.Any(group => Api.IsInGroup(pid, cid, group));
   }
-  private static bool CheckLocations(Info d, Vector3 pos, Vector2i zone) => CheckBannedLocations(d, pos, zone) && CheckRequiredLocations(d, pos, zone);
-  private static bool CheckBannedLocations(Info d, Vector3 pos, Vector2i zone)
+  private static bool CheckLocations(Info d, Vector3 pos, Vector2s zone) => CheckBannedLocations(d, pos, zone) && CheckRequiredLocations(d, pos, zone);
+  private static bool CheckBannedLocations(Info d, Vector3 pos, Vector2s zone)
   {
     if (d.BannedLocations == null) return true;
     // +1 because the location can be at zone edge, so any distance can be on the next zone.
@@ -170,7 +170,7 @@ public class InfoSelector
     {
       for (int j = minJ; j <= maxJ; j++)
       {
-        var key = new Vector2i(i, j);
+        var key = new Vector2s(i, j);
         if (!ZoneSystem.instance.m_locationInstances.TryGetValue(key, out var loc)) continue;
         if (!d.BannedLocations.Contains(loc.m_location.m_prefabName)) continue;
         var dist = d.LocationDistance == 0 ? loc.m_location.m_exteriorRadius : d.LocationDistance;
@@ -179,7 +179,7 @@ public class InfoSelector
     }
     return true;
   }
-  private static bool CheckRequiredLocations(Info d, Vector3 pos, Vector2i zone)
+  private static bool CheckRequiredLocations(Info d, Vector3 pos, Vector2s zone)
   {
     if (d.Locations == null) return true;
     // +1 because the location can be at zone edge, so any distance can be on the next zone.
@@ -193,7 +193,7 @@ public class InfoSelector
     {
       for (int j = minJ; j <= maxJ; j++)
       {
-        var key = new Vector2i(i, j);
+        var key = new Vector2s(i, j);
         if (!ZoneSystem.instance.m_locationInstances.TryGetValue(key, out var loc)) continue;
         if (!d.Locations.Contains(loc.m_location.m_prefabName)) continue;
         var dist = d.LocationDistance == 0 ? loc.m_location.m_exteriorRadius : d.LocationDistance;
@@ -225,7 +225,7 @@ public class InfoSelector
     return true;
 
   }
-  private static string GetEnvironment(Heightmap.Biome biome)
+  private static string GetEnvironment(BiomeSector biome)
   {
     var em = EnvMan.instance;
     var availableEnvironments = em.GetAvailableEnvironments(biome);

@@ -119,4 +119,16 @@ public class Helper
     delays.Reverse();
     return delays;
   }
+
+  public static List<ZDO>? GetZDOsInSector(Vector3 pos)
+  {
+    var zone = ZoneSystem.GetZone(pos);
+    return GetZDOsInSector(zone);
+  }
+
+  public static List<ZDO>? GetZDOsInSector(Vector2s zone)
+  {
+    var index = ZoneSystem.SectorToIndex(zone).Sector;
+    return index >= ZDOMan.instance.m_objectsBySector.Length ? null : ZDOMan.instance.m_objectsBySector[index];
+  }
 }

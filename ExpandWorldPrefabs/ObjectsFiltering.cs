@@ -141,7 +141,7 @@ public class ObjectsFiltering
   private static List<List<ZDO>> GetSectorIndices(Object[] objects)
   {
     List<List<ZDO>> zdoLists = [];
-    HashSet<Vector2i> handled = [];
+    HashSet<Vector2s> handled = [];
     foreach (var o in objects)
       GetSectorIndices(o, zdoLists, handled);
 
@@ -151,12 +151,12 @@ public class ObjectsFiltering
   private static List<List<ZDO>> GetSectorIndices(Object objects)
   {
     List<List<ZDO>> zdoLists = [];
-    HashSet<Vector2i> handled = [];
+    HashSet<Vector2s> handled = [];
     GetSectorIndices(objects, zdoLists, handled);
     return zdoLists;
   }
 
-  private static void GetSectorIndices(Object o, List<List<ZDO>> zdoLists, HashSet<Vector2i> handled)
+  private static void GetSectorIndices(Object o, List<List<ZDO>> zdoLists, HashSet<Vector2s> handled)
   {
     float radius = o.MaxDistance;
     var corner1 = ZoneSystem.GetZone(o.CachedPosition + new Vector3(-radius, 0, -radius));
@@ -166,18 +166,12 @@ public class ObjectsFiltering
     {
       for (var y = corner1.y; y <= corner2.y; y++)
       {
-        var zone = new Vector2i(x, y);
+        var zone = new Vector2s(x, y);
         if (handled.Contains(zone)) continue;
         handled.Add(zone);
-        var index = zm.SectorToIndex(zone);
-        if (index < 0 || index >= zm.m_objectsBySector.Length)
-        {
-          if (zm.m_objectsByOutsideSector.TryGetValue(zone, out var list) && list != null)
-            zdoLists.Add(list);
-          continue;
-        }
-        if (zm.m_objectsBySector[index] != null)
-          zdoLists.Add(zm.m_objectsBySector[index]);
+        var zdos = Helper.GetZDOsInSector(zone);
+        if (zdos != null)
+          zdoLists.Add(zdos);
       }
     }
   }

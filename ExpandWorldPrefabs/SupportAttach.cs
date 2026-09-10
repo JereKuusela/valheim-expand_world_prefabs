@@ -115,8 +115,8 @@ public class SupportAttach
   public static void Attach(ZDO zdo, ZDOID target)
   {
     // Actual players can't be attached or they lose control.
-    if (PersistPlayers.IsRealPlayer(zdo))
-      return;
+    //if (PersistPlayers.IsRealPlayer(zdo))
+    //  return;
     if (target == ZDOID.None)
     {
       Unattach(zdo);
@@ -159,7 +159,7 @@ public class SupportAttach
       return false;
 
     zdo.m_position = worldPos;
-    zdo.SetSector(ZoneSystem.GetZone(worldPos));
+    zdo.SetSector(ZoneSystem.GetSectorIndex(worldPos));
     zdo.m_rotation = worldRot.eulerAngles;
     return true;
   }

@@ -239,7 +239,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
         zdo.Set(pair.Key, pair.Value);
     }
     zdo.m_position = Position;
-    zdo.SetSector(ZoneSystem.GetZone(Position));
+    zdo.SetSector(ZoneSystem.GetSectorIndex(Position));
     zdo.m_rotation = Rotation;
     if (Persistent.HasValue)
       zdo.Persistent = Persistent.Value;
