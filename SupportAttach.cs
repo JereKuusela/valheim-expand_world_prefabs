@@ -1,0 +1,232 @@
+
+using System.Collections.Generic;
+using HarmonyLib;
+using UnityEngine;
+using Data;
+using System.Linq;
+
+namespace ExpandWorld.Prefab;
+
+
+public class SupportAttach
+{
+  private static bool IsPatched = false;
+
+  public static void Patch(Harmony harmony, bool shouldPatch)
+  {
+    if (shouldPatch && !IsPatched)
+      DoPatch(harmony);
+    if (!shouldPatch && IsPatched)
+      DoUnpatch(harmony);
+  }
+
+  private static void DoPatch(Harmony harmony)
+  {
+    IsPatched = true;
+    var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.SetOwner));
+    var prefix = AccessTools.Method(typeof(SupportAttach), nameof(SetOwner));
+    harmony.Patch(original, prefix: new HarmonyMethod(prefix));
+    original = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.HandleDestroyedZDO), [typeof(ZDOID)]);
+    var postfix = AccessTools.Method(typeof(SupportAttach), nameof(HandleDestroyed));
+    harmony.Patch(original, postfix: new HarmonyMethod(postfix));
+  }
+
+  private static void DoUnpatch(Harmony harmony)
+  {
+    IsPatched = false;
+    var original = AccessTools.Method(typeof(ZDO), nameof(ZDO.SetOwner));
+    var prefix = AccessTools.Method(typeof(SupportAttach), nameof(SetOwner));
+    harmony.Unpatch(original, prefix);
+    original = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.HandleDestroyedZDO), [typeof(ZDOID)]);
+    var postfix = AccessTools.Method(typeof(SupportAttach), nameof(HandleDestroyed));
+    harmony.Unpatch(original, postfix);
+  }
+
+  // Vanilla uses attaching when players on beds/ships/etc and also some effects like magic shield bubble (all are non-persistent).
+  // Using custom data is most reliable but persistent check is used as backward compatibility.
+  public static bool IsAttached(ZDO zdo) => zdo.GetConnectionType() == ZDOExtraData.ConnectionType.SyncTransform && (zdo.Persistent || ServerSideData.TryGetInt(zdo, EWPAttachedHash, out var attached) && attached == 1);
+
+  public static readonly long HackOwner = 1;
+
+  // Cache to more quickly release attached objects if parent is destroyed.
+  // This also happens over time thtough SetOwner.
+  private static readonly HashSet<ZDOID> Parents = [];
+  static void SetOwner(ZDO __instance, ref long uid)
+  {
+    if (!IsAttached(__instance))
+      return;
+    var parent = __instance.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform);
+    var exists = ZDOMan.instance.GetZDO(parent) != null;
+    if (exists)
+    {
+      uid = HackOwner;
+      Parents.Add(parent);
+    }
+    else
+    {
+      Unattach(__instance);
+      Parents.Remove(parent);
+    }
+  }
+
+
+  static void HandleDestroyed(ZDOID uid)
+  {
+    if (!Parents.Contains(uid)) return;
+    var connected = GetConnnected(uid);
+    foreach (var id in connected)
+    {
+      var zdo = ZDOMan.instance.GetZDO(id);
+      if (zdo == null) continue;
+      Unattach(zdo);
+    }
+  }
+
+  public static List<ZDOID> GetConnnected(ZDOID uid) =>
+    [.. ZDOExtraData.s_connections.Where(pair => pair.Value != null && pair.Value.m_target == uid).Select(pair => pair.Key)];
+
+
+
+  private static readonly int HasFields = ZdoHelper.Hash("HasFields");
+  private static readonly int HasFieldsZSyncTransform = ZdoHelper.Hash("HasFieldsZSyncTransform");
+  private static readonly int ZSyncTransformCharacterParentSync = ZdoHelper.Hash("ZSyncTransform.m_characterParentSync");
+  private static readonly int EWPAttachedHash = ZdoHelper.Hash("ewp_attached");
+  public static void Attach(ZdoEntry zdoEntry, ZDOID target)
+  {
+    zdoEntry.ConnectionType = ZDOExtraData.ConnectionType.SyncTransform;
+    zdoEntry.TargetConnectionId = target;
+    zdoEntry.Ints ??= [];
+    zdoEntry.Ints[EWPAttachedHash] = 1;
+    if (PrefabHelper.HasCharacterParentSync(zdoEntry.Prefab))
+      return;
+    zdoEntry.Ints[HasFields] = 1;
+    zdoEntry.Ints[HasFieldsZSyncTransform] = 1;
+    zdoEntry.Ints[ZSyncTransformCharacterParentSync] = 1;
+  }
+  public static void Connect(ZdoEntry zdoEntry, ZDOID target)
+  {
+    zdoEntry.ConnectionType = InvalidType;
+    zdoEntry.TargetConnectionId = target;
+  }
+  public static void Connect(ZDO zdo, ZDOID target)
+  {
+    zdo.SetConnection(InvalidType, target);
+  }
+  public static void Attach(ZDO zdo, ZDOID target)
+  {
+    // Actual players can't be attached or they lose control.
+    if (PersistPlayers.IsRealPlayer(zdo))
+      return;
+    if (target == ZDOID.None)
+    {
+      Unattach(zdo);
+      return;
+    }
+    zdo.SetConnection(ZDOExtraData.ConnectionType.SyncTransform, target);
+    if (!CanSync(zdo))
+    {
+      zdo.Set(HasFields, 1);
+      zdo.Set(HasFieldsZSyncTransform, 1);
+      zdo.Set(ZSyncTransformCharacterParentSync, 1);
+    }
+
+    zdo.SetOwnerInternal(HackOwner);
+    ServerSideData.SetInt(zdo, EWPAttachedHash, 1);
+    zdo.OwnerRevision += 1;
+    Parents.Add(target);
+  }
+
+  // None type is not serialized, so have to use something else for clients to receive it.
+  private static readonly ZDOExtraData.ConnectionType InvalidType = unchecked((ZDOExtraData.ConnectionType)0x20);
+  private static void Unattach(ZDO zdo)
+  {
+    if (zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform).IsNone())
+      return;
+    SyncAttachedWorldTransform(zdo);
+    zdo.SetConnection(InvalidType, ZDOID.None);
+    ServerSideData.RemoveInt(zdo, EWPAttachedHash);
+    zdo.DataRevision += 100;
+    if (!PersistPlayers.IsNpc(zdo) && zdo.GetOwner() == HackOwner)
+    {
+      zdo.SetOwnerInternal(DelayedOwner.FindNearestOwner(zdo));
+      zdo.OwnerRevision += 1;
+    }
+  }
+
+  public static bool SyncAttachedWorldTransform(ZDO zdo)
+  {
+    if (!TryGetWorldTransform(zdo, [], out var worldPos, out var worldRot))
+      return false;
+
+    zdo.m_position = worldPos;
+    zdo.SetSector(ZoneSystem.GetSectorIndex(worldPos));
+    zdo.m_rotation = worldRot.eulerAngles;
+    return true;
+  }
+
+
+  private static bool TryGetWorldTransform(ZDO zdo, HashSet<ZDOID> visited, out Vector3 worldPos, out Quaternion worldRot)
+  {
+    worldPos = zdo.GetPosition();
+    worldRot = zdo.GetRotation();
+
+    if (!IsAttached(zdo))
+      return false;
+
+    if (!visited.Add(zdo.m_uid))
+      return false;
+
+    var connectionZdoId = zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.SyncTransform);
+    if (connectionZdoId.IsNone())
+      return false;
+
+    var parentZdo = ZDOMan.instance.GetZDO(connectionZdoId);
+    if (parentZdo == null)
+      return false;
+
+    if (!TryGetWorldTransform(parentZdo, visited, out var parentPos, out var parentRot))
+    {
+      parentPos = parentZdo.GetPosition();
+      parentRot = parentZdo.GetRotation();
+    }
+
+    var attachJoint = zdo.GetString(ZDOVars.s_attachJointHash, "");
+    var relPos = zdo.GetVec3(ZDOVars.s_relPosHash, Vector3.zero);
+    var relRot = zdo.GetQuaternion(ZDOVars.s_relRotHash, Quaternion.identity);
+
+    if (attachJoint.Length > 0 && TryGetJointWorldPosition(parentZdo, parentPos, parentRot, attachJoint, out var attachedPos))
+    {
+      worldPos = attachedPos;
+    }
+    else
+    {
+      worldPos = parentPos + parentRot * relPos;
+    }
+
+    worldRot = parentRot * relRot;
+    return true;
+  }
+
+  private static bool TryGetJointWorldPosition(ZDO parentZdo, Vector3 parentPos, Quaternion parentRot, string attachJoint, out Vector3 worldPos)
+  {
+    var parentPrefab = ZNetScene.instance.GetPrefab(parentZdo.GetPrefab());
+    if (!parentPrefab)
+    {
+      worldPos = Vector3.zero;
+      return false;
+    }
+
+    var joint = Utils.FindChild(parentPrefab.transform, attachJoint, Utils.IterativeSearchType.DepthFirst);
+    if (!joint)
+    {
+      worldPos = Vector3.zero;
+      return false;
+    }
+
+    var jointLocalPos = parentPrefab.transform.InverseTransformPoint(joint.position);
+    worldPos = parentPos + parentRot * jointLocalPos;
+    return true;
+  }
+
+  public static bool CanSync(ZDO zdo) => zdo.GetInt(ZSyncTransformCharacterParentSync) == 1 || PrefabHelper.HasCharacterParentSync(zdo.GetPrefab());
+}
