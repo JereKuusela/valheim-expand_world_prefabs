@@ -14,7 +14,7 @@ Endless possibilities:
 
 ## Configuration
 
-Config file `expand_world_prefabs.cfg` is created automatically when the game is started. It has advanced settings that don't have to be changed for normal usage.
+Config file `expand_prefabs.cfg` is created automatically when the game is started. It has advanced settings that don't have to be changed for normal usage.
 
 - Automatic file reload: If disabled, script files won't be automatically reloaded when changed.
   - This might be needed if the server host constantly triggers file changes.
@@ -26,12 +26,6 @@ Config file `expand_world_prefabs.cfg` is created automatically when the game is
 - Server side data: If disabled, EWP no longer supports server side only data.
   - Server side data is just regular data, but prefixed with `ewp_`.
   - This reduces network traffic because the data is not sent to clients.
-- Rule logging: If disabled, `log` actions stop adding records to `expand_world/ewp_log.txt`.
-  - Existing records are kept when the game is restarted.
-  - Records per second (default: `1000`): Maximum refill rate shared by all rules.
-  - Records per rule per second (default: `250`): Maximum refill rate for one rule, shared by all objects.
-  - Flush interval milliseconds (default: `1000`): How often pending records are flushed.
-  - Rate and flush settings require restarting the game. The enable setting can be changed while running.
 - Persist spawned players: If disabled, EWP no longer supports persisting EWP spawned players.
 - NPC player list range: Maximum distance for NPC profiles to appear in the player list. Set to 0 to disable this feature.
   - This is required for NPC chat, because clients only accept chat messages from players on the player list.
@@ -48,23 +42,6 @@ Script files support [data system](https://github.com/JereKuusela/valheim-world_
 
 Storage file `expand_world/ewp_data.yaml` is created automatically if custom keys are saved. This is meant work like global keys but these are never sent to clients.
 
-### Item data
-
-Item and container data use the Deep North save format. Existing item fields and inventory rules are converted automatically. See [Item data](docs/scripting.md#item-data) for details.
-
-Legacy `strings` entries for `items` and `<string_items>` snapshots remain supported. Use `bytes` for new serialized-inventory data. A blank legacy `items,` entry clears the inventory.
-
-### Biome filters
-
-`biomes` and `bannedBiomes` accept base and alternate biome names. Use command `ewp_biomes` after loading a world to list the alternate names. `<biome>` returns the alternate names at the object, or the base name when none are present. See [Filters](docs/scripting.md#filters) for details.
-
-```yaml
-- prefab: Player
-  type: create
-  biomes: Kalhygge Black Forest
-  log: "<biome>"
-```
-
 ### Scripting
 
 See [scripting](docs/scripting.md) to get started.
@@ -76,7 +53,6 @@ Other documentation:
   - [RPCs_mods](docs/rpcs_mods.md): Lists some RPCs from other mods.
 - [Functions](docs/functions.md): List of available functions.
   - Functions are used for dynamic values.
-- [Logging](docs/logging.md): Write rule events to a text file.
 - [Hacks](docs/hacks.md): Advanced explanation of some features and how they work.
 - [Legacy features](docs/legacy.md): Some legacy features explained.
 
