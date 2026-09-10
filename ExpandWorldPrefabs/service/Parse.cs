@@ -359,9 +359,18 @@ public static class Parse
   public static bool BooleanTrue(string arg) => arg.ToLowerInvariant() == "false";
   public static ZDOID ZdoId(string arg)
   {
-    var split = Split(arg, true, ':');
-    if (split.Length < 2) return ZDOID.None;
-    return new ZDOID(Long(split[0]), UInt(split[1]));
+    if (string.IsNullOrWhiteSpace(arg)) return ZDOID.None;
+    var normalized = arg.Trim().Trim('(', ')', '[', ']', '{', '}');
+    var split = normalized.Split([':', ','], StringSplitOptions.RemoveEmptyEntries)
+      .Select(value => value.Trim())
+      .ToArray();
+    if (split.Length < 2)
+    {
+      split = normalized.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+    }
+    if (split.Length < 2 || !long.TryParse(split[0], out var owner) || !uint.TryParse(split[1], out var id))
+      return ZDOID.None;
+    return new ZDOID(owner, id);
   }
   public static HitData Hit(ZDO? zdo, string arg)
   {

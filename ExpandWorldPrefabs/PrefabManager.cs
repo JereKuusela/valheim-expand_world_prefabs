@@ -34,6 +34,8 @@ public class Manager
       }
     }
 
+    if (info.LogSource != null && Config.RuleLogging)
+      RuleLog.Write(info.LogSource, f);
     info.Execute?.Get(f);
     if (info.Commands.Length > 0)
       Commands.Run(info, f);
@@ -86,6 +88,8 @@ public class Manager
       }
     }
 
+    if (info.LogSource != null && Config.RuleLogging)
+      RuleLog.Write(info.LogSource, f);
     info.Execute?.Get(f);
     if (info.Commands.Length > 0)
       Commands.Run(info, f);
@@ -343,12 +347,11 @@ public class Manager
     if (info.Terrains == null) return;
     var pos = zdo.m_position;
     var rot = Quaternion.Euler(zdo.m_rotation);
-    var source = zdo.GetOwner();
     foreach (var terrain in info.Terrains)
     {
       var delay = terrain.Delay?.Get(f) ?? 0f;
       terrain.Get(f, pos, rot, out var p, out var s, out var resetRadius, out var pkg);
-      DelayedTerrain.Add(delay, source, p, s, pkg, resetRadius);
+      DelayedTerrain.Add(delay, p, s, pkg, resetRadius);
     }
   }
 
@@ -367,7 +370,7 @@ public class Manager
     foreach (var i in info)
       i.InvokeGlobal(f);
   }
-  public static void ModifyTerrain(long source, Vector3 pos, float radius, ZPackage pkg, float resetRadius)
+  public static void ModifyTerrain(Vector3 pos, float radius, ZPackage pkg, float resetRadius)
   {
     // Terrain may have to be modified in multiple zones.
     var corner1 = pos + new Vector3(radius, 0, radius);
@@ -387,27 +390,25 @@ public class Manager
     {
       for (var j = startJ; j <= endJ; j++)
       {
-        var zone = new Vector2i(i, j);
+        var zone = new Vector2s(i, j);
         if (!ZoneSystem.instance.IsZoneGenerated(zone)) continue;
-        ModifyZoneTerrain(source, pos, zone, pkg, resetRadius);
+        ModifyZoneTerrain(pos, zone, pkg, resetRadius);
       }
     }
   }
-  private static readonly int TerrainActionHash = "ApplyOperation".GetStableHashCode();
-  private static void ModifyZoneTerrain(long source, Vector3 pos, Vector2i zone, ZPackage pkg, float resetRadius)
+  private static readonly int TerrainActionHash = "RPC_ApplyOperation".GetStableHashCode();
+  private static void ModifyZoneTerrain(Vector3 pos, Vector2s zone, ZPackage pkg, float resetRadius)
   {
     var compiler = FindTerrainCompiler(zone);
-    if (compiler != null && compiler.HasOwner())
-    {
-      if (resetRadius > 0f)
-        ResetTerrainInZdo(pos, resetRadius, zone, compiler);
-      else
-        Rpc(source, compiler.GetOwner(), compiler.m_uid, TerrainActionHash, [pkg]);
-    }
-    // Compiler should be already there.
+    if (compiler == null) return;
+    ServerOwned.Mark(compiler);
+    if (resetRadius > 0f)
+      ResetTerrainInZdo(pos, resetRadius, zone, compiler);
+    else
+      Rpc(ZDOMan.GetSessionID(), ZDOMan.GetSessionID(), compiler.m_uid, TerrainActionHash, [pkg]);
   }
 
-  public static bool GenerateTerrainCompilers(long source, Vector3 pos, float radius)
+  public static bool GenerateTerrainCompilers(Vector3 pos, float radius)
   {
     // Terrain may have to be modified in multiple zones.
     var corner1 = pos + new Vector3(radius, 0, radius);
@@ -428,14 +429,14 @@ public class Manager
     {
       for (var j = startJ; j <= endJ; j++)
       {
-        var zone = new Vector2i(i, j);
+        var zone = new Vector2s(i, j);
         if (!ZoneSystem.instance.IsZoneGenerated(zone)) continue;
-        created |= GenerateZoneTerrainCompiler(source, zone);
+        created |= GenerateZoneTerrainCompiler(zone);
       }
     }
     return created;
   }
-  private static void ResetTerrainInZdo(Vector3 pos, float radius, Vector2i zone, ZDO zdo)
+  private static void ResetTerrainInZdo(Vector3 pos, float radius, Vector2s zone, ZDO zdo)
   {
     var byteArray = zdo.GetByteArray(ZDOVars.s_TCData);
     if (byteArray == null) return;
@@ -517,31 +518,30 @@ public class Manager
     return pos;
   }
   private static readonly int TerrainCompilerHash = "_TerrainCompiler".GetStableHashCode();
-  private static bool GenerateZoneTerrainCompiler(long source, Vector2i zone)
+  private static bool GenerateZoneTerrainCompiler(Vector2s zone)
   {
     var compiler = FindTerrainCompiler(zone);
-    if (compiler != null && compiler.HasOwner())
-      return false;
-    if (compiler == null)
+    if (compiler != null)
     {
-      var zdo = ZDOMan.instance.CreateNewZDO(ZoneSystem.GetZonePos(zone), TerrainCompilerHash);
-      var view = ZNetScene.instance.GetPrefab(TerrainCompilerHash).GetComponent<ZNetView>();
-      zdo.m_prefab = TerrainCompilerHash;
-      zdo.Persistent = view.m_persistent;
-      zdo.Type = view.m_type;
-      zdo.Distant = view.m_distant;
-      zdo.SetOwnerInternal(source);
+      if (ServerOwned.IsMarked(compiler) && compiler.GetOwner() == ZDOMan.GetSessionID()) return false;
+      ServerOwned.Mark(compiler);
+      return true;
     }
+    var zdo = ZDOMan.instance.CreateNewZDO(ZoneSystem.GetZonePos(zone), TerrainCompilerHash);
+    var view = ZNetScene.instance.GetPrefab(TerrainCompilerHash).GetComponent<ZNetView>();
+    zdo.m_prefab = TerrainCompilerHash;
+    zdo.Persistent = view.m_persistent;
+    zdo.Type = view.m_type;
+    zdo.Distant = view.m_distant;
+    ServerOwned.Mark(zdo);
     return true;
   }
   // Terrain operations requires a terrain compiler in the zone.
   // These are only created when needed, so it might have to be added.
-  private static ZDO? FindTerrainCompiler(Vector2i zone)
+  private static ZDO? FindTerrainCompiler(Vector2s zone)
   {
-    var index = ZDOMan.instance.SectorToIndex(zone);
-    var zdos = index < 0 || index >= ZDOMan.instance.m_objectsBySector.Length
-      ? ZDOMan.instance.m_objectsByOutsideSector.TryGetValue(zone, out var list) ? list : null
-      : ZDOMan.instance.m_objectsBySector[index];
+    var index = ZoneSystem.SectorToIndex(zone);
+    var zdos = ZDOMan.instance.m_objectsBySector[index.Sector];
     return zdos?.FirstOrDefault(z => z.m_prefab == TerrainCompilerHash);
   }
 

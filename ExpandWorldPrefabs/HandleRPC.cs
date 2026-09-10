@@ -256,10 +256,10 @@ public class HandleRPC
     var pars = ZNetView.Deserialize(data.m_senderPeerID, ItemStandPars, data.m_parameters);
     data.m_parameters.SetPos(0);
     if (pars.Length < 4) return false;
-    var item = (string)pars[1];
+    var itemHash = (int)pars[1];
     var variant = (int)pars[2];
     var quality = (int)pars[3];
-    var state = item == "" ? "<none>" : item;
+    var state = itemHash == 0 ? "<none>" : ZdoHelper.ReverseHash(itemHash);
 
     return Manager.Handle(ActionType.State, ["item", state, variant.ToString(), quality.ToString()], zdo);
   }
@@ -273,9 +273,9 @@ public class HandleRPC
     data.m_parameters.SetPos(0);
     if (pars.Length < 4) return false;
     var slot = (int)pars[1];
-    var item = (string)pars[2];
+    var itemHash = (int)pars[2];
     var variant = (int)pars[3];
-    var state = item == "" ? "<none>" : item;
+    var state = itemHash == 0 ? "<none>" : ZdoHelper.ReverseHash(itemHash);
 
     return Manager.Handle(ActionType.State, ["item", state, variant.ToString(), slot.ToString()], zdo);
   }

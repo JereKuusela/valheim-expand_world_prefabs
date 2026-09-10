@@ -159,7 +159,7 @@ public class SupportAttach
       return false;
 
     zdo.m_position = worldPos;
-    zdo.SetSector(ZoneSystem.GetZone(worldPos));
+    zdo.SetSector(ZoneSystem.GetSectorIndex(worldPos));
     zdo.m_rotation = worldRot.eulerAngles;
     return true;
   }

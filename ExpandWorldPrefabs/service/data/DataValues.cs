@@ -82,6 +82,9 @@ public class DataValue
     return new BoolValue(split);
   }
 
+  internal static IBytesValue LegacyInventoryBytes(string values) =>
+    new BytesValue(SplitWithValues(values)) { EmptyInventory = true };
+
   public static IBytesValue Bytes(string values)
   {
     var split = SplitWithValues(values);
@@ -275,25 +278,22 @@ public class ItemValue(ItemData data)
   public static Inventory CreateInventory(ZDO zdo, int width = 100000, int height = 10000)
   {
     // Load only loads up to the inventory size, so the size must be large enough.
-    var inv = new Inventory("", null, width, height);
-    var str = zdo.GetString(ZDOVars.s_items);
-    if (str != "")
-    {
-      ZPackage pkg = new(str);
-      inv.Load(pkg);
-    }
-    return inv;
+    return InventoryStorage.Create(zdo, width, height);
   }
 
-  public static string LoadItems(Functions f, List<ItemValue> items, Vector2i size, int amount)
+  public static string LoadItems(Functions f, List<ItemValue> items, Vector2i size, int amount) =>
+    System.Convert.ToBase64String(LoadItemBytes(f, items, size, amount));
+
+  internal static byte[] LoadItemBytes(Functions f, List<ItemValue> items, Vector2i size, int amount)
   {
     ZPackage pkg = new();
-    pkg.Write(106);
+    pkg.Write(InventoryStorage.FormatVersion);
     items = Generate(f, items, size, amount);
-    pkg.Write(items.Count);
+    items = items.Where(item => item.CanWrite()).ToList();
+    pkg.Write((ushort)items.Count);
     foreach (var item in items)
       item.Write(f, pkg);
-    return pkg.GetBase64();
+    return pkg.GetArray();
   }
   public static List<ItemValue> Generate(Functions f, List<ItemValue> data, Vector2i size, int amount)
   {
@@ -387,39 +387,18 @@ public class ItemValue(ItemData data)
   }
   public bool RollChance() => Chance >= 1f || Random.value <= Chance;
   public bool Roll(Functions f) => RollChance() && RollPrefab(f);
+  private bool CanWrite()
+  {
+    var prefab = ObjectDB.instance.GetItemPrefab(RolledPrefab);
+    return prefab != null && prefab.TryGetComponent(out ItemDrop _);
+  }
   public void Write(Functions f, ZPackage pkg)
   {
     var prefab = ObjectDB.instance.GetItemPrefab(RolledPrefab);
-    pkg.Write(prefab?.name ?? "");
-    var quality = Quality?.Get(f) ?? 1;
-    var durability = Durability?.Get(f);
-    if (!durability.HasValue)
-    {
-      if (prefab != null && prefab.TryGetComponent(out ItemDrop drop))
-        durability = drop.m_itemData.GetMaxDurability(quality);
-      else
-        durability = 100f;
-    }
-    ;
-    pkg.Write(RolledStack);
-    pkg.Write(durability.Value);
-    pkg.Write(RolledPosition);
-    pkg.Write(Equipped?.GetBool(f) ?? false);
-    pkg.Write(quality);
-    pkg.Write(Variant?.Get(f) ?? 0);
-    pkg.Write(CrafterID?.Get(f) ?? 0L);
-    pkg.Write(CrafterName?.Get(f) ?? "");
-    pkg.Write(CustomData?.Count ?? 0);
-    if (CustomData != null)
-    {
-      foreach (var kvp in CustomData)
-      {
-        pkg.Write(kvp.Key);
-        pkg.Write(kvp.Value.Get(f));
-      }
-    }
-    pkg.Write(WorldLevel?.Get(f) ?? 0);
-    pkg.Write(PickedUp?.GetBool(f) ?? false);
+    if (prefab == null || !prefab.TryGetComponent(out ItemDrop _)) return;
+    var itemData = CreateItemData(f, prefab);
+    itemData.m_gridPos = RolledPosition;
+    itemData.Save(pkg);
   }
   public void Spawn(ZDO source, Functions f)
   {
@@ -434,25 +413,7 @@ public class ItemValue(ItemData data)
     {
       var zdo = ZdoEntry.Spawn(RolledPrefab, pos, Vector3.zero, source.GetOwner());
       if (zdo == null) return;
-      zdo.Set(ZDOVars.s_durability, Durability?.Get(f) ?? 100f);
-      zdo.Set(ZDOVars.s_stack, RolledStack);
-      zdo.Set(ZDOVars.s_quality, Quality?.Get(f) ?? 1);
-      zdo.Set(ZDOVars.s_variant, Variant?.Get(f) ?? 0);
-      zdo.Set(ZDOVars.s_crafterID, CrafterID?.Get(f) ?? 0L);
-      zdo.Set(ZDOVars.s_crafterName, CrafterName?.Get(f) ?? "");
-      zdo.Set(ZDOVars.s_dataCount, CustomData?.Count ?? 0);
-      int num = 0;
-      if (CustomData != null)
-      {
-        foreach (var kvp in CustomData)
-        {
-          zdo.Set(string.Format("data_{0}", num), kvp.Key);
-          zdo.Set(string.Format("data__{0}", num), kvp.Value.Get(f) ?? "");
-          num += 1;
-        }
-      }
-      zdo.Set(ZDOVars.s_worldLevel, WorldLevel?.Get(f) ?? 0);
-      zdo.Set(ZDOVars.s_pickedUp, PickedUp?.GetBool(f) ?? false);
+      ItemDrop.SaveToZDO(CreateItemData(f, prefab), zdo);
     }
     else
     {
@@ -469,6 +430,23 @@ public class ItemValue(ItemData data)
         }
       }
     }
+  }
+
+  private ItemDrop.ItemData CreateItemData(Functions f, GameObject prefab)
+  {
+    var customData = CustomData?.ToDictionary(x => x.Key, x => x.Value.Get(f) ?? "");
+    return ItemDataCompatibility.Create(
+      prefab,
+      RolledStack,
+      Durability?.Get(f),
+      Quality?.Get(f) ?? 1,
+      Variant?.Get(f) ?? 0,
+      CrafterID?.Get(f) ?? 0L,
+      CrafterName?.Get(f) ?? "",
+      WorldLevel?.Get(f) ?? 0,
+      PickedUp?.GetBool(f) ?? false,
+      Equipped?.GetBool(f) ?? false,
+      customData);
   }
   private void LoadCustomData(ZDO zdo, Functions f, KeyValuePair<string, IStringValue> kvp)
   {

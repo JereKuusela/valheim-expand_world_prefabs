@@ -31,7 +31,6 @@ public class DelayedMultiPoke(float delay, ZDOID[] zdos, string[] args) : Delaye
 
 public class DelayedPoke
 {
-  private static readonly List<IPokeable> Pokes = [];
   public static void Add(Poke poke, ZDOID zdo, Vector3 pos, Quaternion rot, Functions f)
   {
     var chance = poke.Chance?.Get(f) ?? 1f;
@@ -117,28 +116,16 @@ public class DelayedPoke
     if (delay <= 0f)
       Poke(zdos, args);
     else
-      Pokes.Add(new DelayedMultiPoke(delay, zdos, args));
+      PokeTimers.Add(delay, zdos, args);
   }
   private static void Add(float delay, ZDOID zdo, string[] args)
   {
     if (delay <= 0f)
       Poke(zdo, args);
     else
-      Pokes.Add(new DelayedSinglePoke(delay, zdo, args));
+      PokeTimers.Add(delay, [zdo], args);
   }
-  public static void Execute(float dt)
-  {
-    // Two loops to preserve order.
-    for (var i = 0; i < Pokes.Count; i++)
-    {
-      var poke = Pokes[i];
-      poke.Delay -= dt;
-      if (poke.Delay > -0.001) continue;
-      poke.Execute();
-      Pokes.RemoveAt(i);
-      i--;
-    }
-  }
+  public static void Execute(float dt) => PokeTimers.Execute(dt);
 
   protected static void Poke(ZDOID[] zdos, string[] args)
   {

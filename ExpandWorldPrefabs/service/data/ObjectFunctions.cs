@@ -49,12 +49,25 @@ public class ObjectFunctions(string prefab, string[] args, ZDO zdo) : Functions(
       "pvisible" => PeerManager.GetPVisible(zdo),
       "owner" => zdo.GetOwner().ToString(),
       "connected" => GetConnected(),
-      "biome" => WorldGenerator.instance.GetBiome(zdo.m_position).ToString(),
+      "biome" => GetBiome(),
       "joints" => GetJoints(),
       _ => null,
     };
 
   private string GetConnected() => (zdo.GetConnection()?.m_target ?? ZDOID.None).ToString();
+
+  private string GetBiome()
+  {
+    var generator = WorldGenerator.instance;
+    return GetBiomeName(generator.GetBiome(zdo.m_position), generator.GetBiomeSector(zdo.m_position).AltBiomes);
+  }
+
+  internal static string GetBiomeName(Heightmap.Biome biome, List<AltBiome> altBiomes)
+  {
+    if (altBiomes.Count == 0) return biome.ToString();
+    var names = altBiomes.Select(alt => alt.m_name).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct().OrderBy(name => name, StringComparer.Ordinal).ToArray();
+    return names.Length > 0 ? string.Join(", ", names) : biome.ToString();
+  }
 
 
   protected override string? GetValueFunction(string key, string value, string defaultValue) =>
@@ -85,7 +98,15 @@ public class ObjectFunctions(string prefab, string[] args, ZDO zdo) : Functions(
     var bytes = zdo.GetByteArray(value);
     return bytes == null ? defaultValue : Convert.ToBase64String(bytes);
   }
-  private string GetString(string value, string defaultValue) => ZdoHelper.GetString(zdo, value, defaultValue);
+  private string GetString(string value, string defaultValue)
+  {
+    var hash = ZdoHelper.Hash(value);
+    if (hash != ZDOVars.s_items) return ZdoHelper.GetString(zdo, value, defaultValue);
+    if (ZDOExtraData.s_strings.TryGetValue(zdo.m_uid, out var strings) && strings.TryGetValue(hash, out var legacy))
+      return legacy;
+    var bytes = zdo.GetByteArray(hash, null);
+    return bytes == null ? defaultValue : Convert.ToBase64String(bytes);
+  }
   private float GetFloat(string value, string defaultValue) => ZdoHelper.GetFloat(zdo, value, defaultValue);
   private int GetInt(string value, string defaultValue) => ZdoHelper.GetInt(zdo, value, defaultValue);
   private long GetLong(string value, string defaultValue) => ZdoHelper.GetLong(zdo, value, defaultValue);
@@ -228,10 +249,9 @@ public class ObjectFunctions(string prefab, string[] args, ZDO zdo) : Functions(
   private void LoadInventory()
   {
     if (inventory != null) return;
-    var currentItems = zdo.GetString(ZDOVars.s_items);
-    if (currentItems == "") return;
-    inventory = new("", null, 9999, 9999);
-    inventory.Load(new ZPackage(currentItems));
+    var loaded = new Inventory("", null, 9999, 9999);
+    if (!InventoryStorage.TryLoad(zdo, loaded)) return;
+    inventory = loaded;
   }
 
   private Vector3 GetPos(string value)

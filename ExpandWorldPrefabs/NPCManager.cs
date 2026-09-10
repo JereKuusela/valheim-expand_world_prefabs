@@ -159,9 +159,13 @@ public class NPCManager
     // Some ZDOID is required to appear on minimap.
     // But using real one causes duplicate received messages.
     pkg.Write(FakeZDOID);
-    pkg.Write(profile.Group.UserId.ToString());
-    pkg.Write(profile.Group.DisplayName);
-    pkg.Write(profile.Group.DisplayName);
+    new ZNet.CrossNetworkUserInfo
+    {
+      m_id = profile.Group.UserId,
+      m_displayName = profile.Group.DisplayName,
+      m_serverAssignedDisplayName = profile.Group.DisplayName,
+      m_playfabId = ""
+    }.Write(pkg);
     pkg.Write(true);
     pkg.Write(profile.Position);
   }

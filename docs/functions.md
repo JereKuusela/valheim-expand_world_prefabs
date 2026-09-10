@@ -6,7 +6,10 @@ Following functions are available to be used in the yaml file:
 - `<safeprefab>`: Original prefab id with underscores replaced by dashes.
   - This can be used as workaround because underscores split the prefab id as separate parameters.
 - `<zdo>`: Object id.
+  - Object id parameters accept `owner:id`, `(owner, id)` and `owner id`.
 - `<biome>`: Biome where the object is located.
+  - Returns the alternate biome name when present. Overlapping alternate names are separated by commas and sorted alphabetically.
+  - Returns the base biome name when no alternate biome is present. Use `ewp_biomes` to list the alternate names.
 - `<x>`, `<y>` and `<z>`: Object center point.
 - `<pos>`: Object center point as x,z,y.
 - `<i>` and `<j>`: Object zone indices.
@@ -18,6 +21,7 @@ Following functions are available to be used in the yaml file:
 - `<float_*>`: Decimal value from the object data.
 - `<long_*>`: Big integer value from the object data.
 - `<string_*>`: Text value from the object data.
+  - `<string_items>` returns the legacy inventory string if present. Otherwise it returns the byte-array inventory as Base64, or the default value if neither exists.
 - `<bool_*>`: Integer value from the object converted to true or false.
 - `<hash_*>`: Integer value from the object converted to prefab name.
 - `<vec_*>`: Vector3 value from the object converted to x,z,y.

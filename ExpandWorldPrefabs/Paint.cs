@@ -53,26 +53,13 @@ public static class Paint
   private static ZDO? GetCompiler(Vector3 pos)
   {
     var zone = ZoneSystem.GetZone(pos);
-    var index = ZDOMan.instance.SectorToIndex(zone);
-    if (index > -1)
+    var sector = ZoneSystem.SectorToIndex(zone);
+    var zdos = ZDOMan.instance.m_objectsBySector[sector.Sector];
+    if (zdos == null) return null;
+    foreach (var zdo in zdos)
     {
-      var zdos = ZDOMan.instance.m_objectsBySector[index];
-      if (zdos == null) return null;
-      foreach (var zdo in zdos)
-      {
-        if (zdo.m_prefab == TerrainCompilerHash)
-          return zdo;
-      }
-    }
-    else if (ZDOMan.instance.m_objectsByOutsideSector.ContainsKey(zone))
-    {
-      var zdos = ZDOMan.instance.m_objectsByOutsideSector[zone];
-      if (zdos == null) return null;
-      foreach (var zdo in zdos)
-      {
-        if (zdo.m_prefab == TerrainCompilerHash)
-          return zdo;
-      }
+      if (zdo.m_prefab == TerrainCompilerHash)
+        return zdo;
     }
     return null;
   }

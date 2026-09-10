@@ -92,7 +92,12 @@ All valid entries will be executed in unspecified order. Weight system can be us
   - If false, the owner must not be an admin.
   - If not set, nothing is checked.
 - biomes: List of valid biomes.
+  - Accepts base and alternate biome names, separated by commas. Names are case insensitive.
+  - A base biome includes its alternate biomes. An alternate name only matches sectors with that alternate biome.
+  - Multiple names match any listed biome. For example `biomes: Meadows, Kalhygge Black Forest`.
+  - Use command `ewp_biomes` after loading a world to list the exact alternate names. Use these names rather than translated map labels.
 - bannedBiomes: List of invalid biomes.
+  - Accepts the same names as `biomes`. Any matching base or alternate biome blocks the rule, including when another alternate biome also matches.
 - day: Valid during the day.
 - night: Valid during the night.
 - minDistance: Minimum distance from the world center.
@@ -260,6 +265,17 @@ See object filtering [examples](examples_object_filtering.md).
   - Functions are supported.
   - Using `say` command requires either Discord Control mod or Server Devcommands mod (with Server chat enabled).
 - commands: List of console commands to run.
+- log: Text appended as a new record in `BepInEx/config/expand_world/ewp_log.txt`.
+  - Functions and object substitutions are supported.
+  - Logging is server-authoritative and occurs after rule selection and chance checks, before other configured actions.
+  - Logging records that the rule reached its action phase; it does not prove that later actions succeeded.
+  - The file is never read, rewritten, sorted, or truncated by EWP.
+  - The `Rule logging` configuration setting can disable all `log` actions without changing scripts.
+  - One background worker buffers writes and flushes about every second or at 64 KiB; it never performs file I/O on the rule's caller.
+  - Rate, memory and record-size limits protect gameplay. Rejected records are counted in throttled gap summaries.
+  - An I/O failure disables logging until restart; a throwing formatter disables that rule's log action until YAML reload.
+  - EWP does not rotate or limit this file. Server operators are responsible for retention and disk usage.
+  - See [append-only rule logging](logging.md) for examples and operational notes.
 - data: Sets object data either with format `name` or `type, key, value`.
   - Format `name` can be used to set multiple values (entry name from `data.yaml`).
   - Format `type, key, value` is a shorthand to set a single data value.
@@ -409,17 +425,31 @@ RPC format:
 - 3: Third parameter.
 - ...: More parameters.
 
+### Item data
+
+Item and container data use the Deep North save format.
+
+- Item fields `durability`, `stack`, `quality`, `variant`, `crafterID`, `crafterName`, `worldLevel` and `pickedUp` continue to work through data entries and object functions.
+  - ItemDrop values are read from packed item data. Written legacy fields are converted to that format.
+  - A nonempty crafter name without a crafter ID receives ID `1` so the name remains visible. Explicit nonzero IDs are kept.
+- `items`, `addItems`, `removeItems` and inventory functions use the container's byte-array inventory.
+  - Older Base64 inventories can still be read. Writes use the current format and remove the old string value.
+  - Use `bytes: - items, <Base64 inventory>` for raw inventory data in new entries.
+  - Legacy `strings: - items, <Base64 inventory>` entries also replace the byte-array inventory. Values are evaluated before decoding.
+  - A blank legacy `strings: - items,` value clears the inventory using the current save format. Invalid Base64 values do not change the inventory.
+  - If both forms are set in the same data entry, `bytes` takes priority. Blank byte-array values keep their usual behavior and do not write anything.
+  - `<string_items>` returns an existing legacy string, including an empty string. Otherwise it returns the byte-array inventory as Base64, or the default value if neither exists.
+
 ### Terrain
 
-Terrain can be changed with RPC call ApplyOperation.
+Terrain can be changed with RPC call `RPC_ApplyOperation`.
 
-However this is very difficult to use because of the underlyting terrain compiler system.
-
-For this reason, terrrain changes have their own field.
+Use `terrain` for rule-based operations. It keeps the evaluated settings and handles the terrain compiler objects.
 
 - terrain: List of terrain operations.
   - Automatically creates missing _TerrainCompiler objects.
-  - When compiler object is created, the terrain change is delayed by 1 second.
+  - A new compiler or an ownership change gives the operation at least 1 second to initialize.
+  - Affected compilers are owned by the server so operations also work with unmodded clients.
   - Automatically affects all compilers within the radius.
   - Only works for zones that are loaded by some client.
     - For this reason, radius shouldn't exceed ~100 meters.
@@ -440,8 +470,8 @@ Terrain operation:
 - smoothPower: Power for the smooth change.
 - paintRadius: Radius for the paint change.
 - paintHeightCheck: If true, checks something.
-- paint: Terrain paint color. Supports values ClearVegetation, Cultivate, Dirt, Paved and Reset.
-  - Numeric values are not supported.
+- paint: Terrain paint color. Supports values ClearVegetation, Cultivate, Dirt, Paved, Reset and DeepSnow.
+  - Numeric enum values are also supported.
 
 ### States
 

@@ -35,12 +35,13 @@ public class DataStorage
     if (!UnsavedChanges) return;
     // Save every 10 seconds at most.
     if (LastSaveStopwatch.Elapsed.TotalSeconds < 10) return;
-    UnsavedChanges = false;
     LastSaveStopwatch.Restart();
     if (!Directory.Exists(Yaml.BaseDirectory))
       Directory.CreateDirectory(Yaml.BaseDirectory);
     var yaml = Yaml.SerializeData(Database);
     File.WriteAllText(SavedDataFile, yaml);
+    // A failed write must remain dirty so the existing save loop retries.
+    UnsavedChanges = false;
   }
   public static Action<string, string>? OnSet;
   public static string GetValue(string key, string defaultValue = "") => Database.TryGetValue(key.ToLowerInvariant(), out var value) ? value : defaultValue;

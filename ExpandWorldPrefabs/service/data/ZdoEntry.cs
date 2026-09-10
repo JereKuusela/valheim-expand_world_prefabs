@@ -234,12 +234,14 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     }
     if (ByteArrays != null)
     {
+      if (ByteArrays.ContainsKey(ZDOVars.s_items))
+        InventoryStorage.RemoveLegacy(zdo);
       ZDOHelper.Init(ZDOExtraData.s_byteArrays, id);
       foreach (var pair in ByteArrays)
         zdo.Set(pair.Key, pair.Value);
     }
     zdo.m_position = Position;
-    zdo.SetSector(ZoneSystem.GetZone(Position));
+    zdo.SetSector(ZoneSystem.GetSectorIndex(Position));
     zdo.m_rotation = Rotation;
     if (Persistent.HasValue)
       zdo.Persistent = Persistent.Value;
@@ -249,6 +251,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
       zdo.Type = Type.Value;
     HandleConnection(zdo);
     HandleHashConnection(zdo);
+    ItemDataCompatibility.ApplyLegacyOverrides(zdo);
     WriteServer(zdo);
   }
 

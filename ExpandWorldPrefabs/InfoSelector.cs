@@ -43,7 +43,7 @@ public class InfoSelector
     var waterY = pos.y - ZoneSystem.instance.m_waterLevel;
     var linq = data
       .Where(d => CheckArgs(d, args))
-      .Where(d => (d.Biomes & biome) == biome)
+      .Where(d => (d.Biomes & biome) == biome || d.AltBiomes != null)
       .Where(d => (d.BannedBiomes & biome) == 0)
       .Where(d => d.Day?.GetBool(f) != false || !day)
       .Where(d => d.Night?.GetBool(f) != false || day)
@@ -64,6 +64,11 @@ public class InfoSelector
       .Where(d => d.Condition == null || d.Condition.Evaluate(f));
     // Minor optimization to resolve simpler checks first (not measured).
     linq = [.. linq];
+    if (linq.Any(d => d.AltBiomes != null || d.BannedAltBiomes != null))
+    {
+      var altBiomes = WorldGenerator.instance.GetBiomeSector(pos).AltBiomes;
+      linq = [.. linq.Where(d => CheckBiomes(d, biome, altBiomes))];
+    }
     var checkEnvironments = linq.Any(d => d.Environments.Count > 0) || linq.Any(d => d.BannedEnvironments.Count > 0);
     var checkEvents = linq.Any(d => d.Events.Count > 0);
     var checkObjects = linq.Any(d => d.Objects != null);
@@ -85,7 +90,7 @@ public class InfoSelector
     }
     if (checkEnvironments)
     {
-      var environment = GetEnvironment(biome);
+      var environment = GetEnvironment(WorldGenerator.instance.GetBiomeSector(pos));
       linq = [.. linq
         .Where(d => d.Environments.Count == 0 || d.Environments.Contains(environment))
         .Where(d => !d.BannedEnvironments.Contains(environment))];
@@ -155,8 +160,8 @@ public class InfoSelector
     if (d.Groups == null) return true;
     return d.Groups.Any(group => Api.IsInGroup(pid, cid, group));
   }
-  private static bool CheckLocations(Info d, Vector3 pos, Vector2i zone) => CheckBannedLocations(d, pos, zone) && CheckRequiredLocations(d, pos, zone);
-  private static bool CheckBannedLocations(Info d, Vector3 pos, Vector2i zone)
+  private static bool CheckLocations(Info d, Vector3 pos, Vector2s zone) => CheckBannedLocations(d, pos, zone) && CheckRequiredLocations(d, pos, zone);
+  private static bool CheckBannedLocations(Info d, Vector3 pos, Vector2s zone)
   {
     if (d.BannedLocations == null) return true;
     // +1 because the location can be at zone edge, so any distance can be on the next zone.
@@ -170,7 +175,7 @@ public class InfoSelector
     {
       for (int j = minJ; j <= maxJ; j++)
       {
-        var key = new Vector2i(i, j);
+        var key = new Vector2s(i, j);
         if (!ZoneSystem.instance.m_locationInstances.TryGetValue(key, out var loc)) continue;
         if (!d.BannedLocations.Contains(loc.m_location.m_prefabName)) continue;
         var dist = d.LocationDistance == 0 ? loc.m_location.m_exteriorRadius : d.LocationDistance;
@@ -179,7 +184,7 @@ public class InfoSelector
     }
     return true;
   }
-  private static bool CheckRequiredLocations(Info d, Vector3 pos, Vector2i zone)
+  private static bool CheckRequiredLocations(Info d, Vector3 pos, Vector2s zone)
   {
     if (d.Locations == null) return true;
     // +1 because the location can be at zone edge, so any distance can be on the next zone.
@@ -193,7 +198,7 @@ public class InfoSelector
     {
       for (int j = minJ; j <= maxJ; j++)
       {
-        var key = new Vector2i(i, j);
+        var key = new Vector2s(i, j);
         if (!ZoneSystem.instance.m_locationInstances.TryGetValue(key, out var loc)) continue;
         if (!d.Locations.Contains(loc.m_location.m_prefabName)) continue;
         var dist = d.LocationDistance == 0 ? loc.m_location.m_exteriorRadius : d.LocationDistance;
@@ -225,7 +230,12 @@ public class InfoSelector
     return true;
 
   }
-  private static string GetEnvironment(Heightmap.Biome biome)
+  internal static bool CheckBiomes(Info data, Heightmap.Biome biome, List<AltBiome> altBiomes) =>
+    ((data.Biomes & biome) == biome || altBiomes.Any(alt => data.AltBiomes?.Contains(alt.m_name) == true))
+    && (data.BannedBiomes & biome) == 0
+    && !altBiomes.Any(alt => data.BannedAltBiomes?.Contains(alt.m_name) == true);
+
+  private static string GetEnvironment(BiomeSector biome)
   {
     var em = EnvMan.instance;
     var availableEnvironments = em.GetAvailableEnvironments(biome);

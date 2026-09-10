@@ -10,6 +10,15 @@ namespace ExpandWorldPrefabs.Tests;
 
 public class ValueTypesTests
 {
+  [TestCase(0L, "Overeager Jarl", 1L)]
+  [TestCase(0L, "", 0L)]
+  [TestCase(0L, "   ", 0L)]
+  [TestCase(123123123L, "Slayer Master Konar", 123123123L)]
+  public void EnsureVisibleCrafterId_AddsOnlyMissingVisibilityMarker(long input, string name, long expected)
+  {
+    Assert.That(ItemDataCompatibility.EnsureVisibleCrafterId(input, name), Is.EqualTo(expected));
+  }
+
   [SetUp]
   public void SetUp()
   {
@@ -22,6 +31,15 @@ public class ValueTypesTests
   {
     Functions.ExecuteCode = _ => null;
     Functions.ExecuteCodeWithValue = (_, _) => null;
+  }
+
+  [Test]
+  public void ZdoId_ParsesLegacyColonAndDeepNorthDisplayForms()
+  {
+    Assert.That(Parse.ZdoId("123:456"), Is.EqualTo(new ZDOID(123L, 456U)));
+    Assert.That(Parse.ZdoId("(123, 456)"), Is.EqualTo(new ZDOID(123L, 456U)));
+    Assert.That(Parse.ZdoId("123 456"), Is.EqualTo(new ZDOID(123L, 456U)));
+    Assert.That(Parse.ZdoId("not-an-id"), Is.EqualTo(ZDOID.None));
   }
 
   [Test]

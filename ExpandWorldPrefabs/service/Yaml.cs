@@ -203,34 +203,6 @@ public class Yaml
         result.Add("  swaps:");
         result.Add("  - " + line.Substring(8));
       }
-      else if (line.StartsWith("  filter:"))
-      {
-        // Convert to filters list.
-        result.Add("  filters:");
-        if (!line.Contains("#") && line.Trim().Length > 7)
-          result.Add("  - " + line.Substring(10));
-      }
-      else if (line.StartsWith("  bannedFilter:"))
-      {
-        // Convert to banned filters list.
-        result.Add("  bannedFilters:");
-        if (!line.Contains("#") && line.Trim().Length > 13)
-          result.Add("  - " + line.Substring(16));
-      }
-      else if (line.StartsWith("    filter:"))
-      {
-        // Convert to filters list.
-        result.Add("    filters:");
-        if (!line.Contains("#") && line.Trim().Length > 7)
-          result.Add("    - " + line.Substring(12));
-      }
-      else if (line.StartsWith("    bannedFilter: "))
-      {
-        // Convert to banned filters list.
-        result.Add("    bannedFilters:");
-        if (!line.Contains("#") && line.Trim().Length > 7)
-          result.Add("    - " + line.Substring(18));
-      }
       else if (line.StartsWith("  objects:") || line.StartsWith("  bannedObjects:"))
       {
         objectsMode = true;
@@ -238,7 +210,7 @@ public class Yaml
       }
       else result.Add(line);
     }
-    return string.Join("\n", result);
+    return FilterShorthand.Normalize(string.Join("\n", result));
   }
   private static void HandleObjects(List<string> result, string line)
   {
@@ -265,6 +237,29 @@ public class Yaml
     }
 
   }
+  internal static Heightmap.Biome ToBiomeFilter(string value, bool defaultAll, out HashSet<string>? altBiomes)
+  {
+    altBiomes = null;
+    List<string> biomes = [];
+    foreach (var name in Parse.Split(value))
+    {
+      if (Enum.TryParse<Heightmap.Biome>(name, true, out _))
+      {
+        biomes.Add(name);
+        continue;
+      }
+      var alt = AltBiomeList.m_altBiomes.FirstOrDefault(alt => string.Equals(alt.m_name, name, StringComparison.OrdinalIgnoreCase));
+      if (alt == null)
+        biomes.Add(name);
+      else
+      {
+        altBiomes ??= [];
+        altBiomes.Add(alt.m_name);
+      }
+    }
+    return ToBiomes(string.Join(",", biomes), defaultAll && altBiomes == null && value == "");
+  }
+
   public static Heightmap.Biome ToBiomes(string biomeStr, bool defaultAll)
   {
     Heightmap.Biome result = 0;
