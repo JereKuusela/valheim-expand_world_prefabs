@@ -1,3 +1,4 @@
+using System.Linq;
 using Data;
 using UnityEngine;
 
@@ -6,9 +7,9 @@ namespace ExpandWorld.Prefab;
 public static class Paint
 {
   private static readonly int TerrainCompilerHash = ZdoHelper.Hash("_TerrainCompiler");
-  public static Color GetPaint(Vector3 pos, Heightmap.Biome biome)
+  public static Color GetPaint(Vector3 pos, BiomeSector biome)
   {
-    WorldGenerator.instance.GetBiomeHeight(biome, pos.x, pos.z, out Color paint);
+    WorldGenerator.instance.GetBiomeHeight(biome.Biome, pos.x, pos.z, out Color paint);
     var zdo = GetCompiler(pos);
     if (zdo == null) return paint;
     var data = zdo.GetByteArray(ZDOVars.s_TCData, null);
@@ -52,15 +53,7 @@ public static class Paint
   }
   private static ZDO? GetCompiler(Vector3 pos)
   {
-    var zone = ZoneSystem.GetZone(pos);
-    var sector = ZoneSystem.SectorToIndex(zone);
-    var zdos = ZDOMan.instance.m_objectsBySector[sector.Sector];
-    if (zdos == null) return null;
-    foreach (var zdo in zdos)
-    {
-      if (zdo.m_prefab == TerrainCompilerHash)
-        return zdo;
-    }
-    return null;
+    var zdos = Helper.GetZDOsInSector(pos);
+    return zdos?.FirstOrDefault(z => z.m_prefab == TerrainCompilerHash);
   }
 }

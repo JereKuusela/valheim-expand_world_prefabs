@@ -115,8 +115,8 @@ public class SupportAttach
   public static void Attach(ZDO zdo, ZDOID target)
   {
     // Actual players can't be attached or they lose control.
-    if (PersistPlayers.IsRealPlayer(zdo))
-      return;
+    //if (PersistPlayers.IsRealPlayer(zdo))
+    //  return;
     if (target == ZDOID.None)
     {
       Unattach(zdo);

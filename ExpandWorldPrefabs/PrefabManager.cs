@@ -540,8 +540,7 @@ public class Manager
   // These are only created when needed, so it might have to be added.
   private static ZDO? FindTerrainCompiler(Vector2s zone)
   {
-    var index = ZoneSystem.SectorToIndex(zone);
-    var zdos = ZDOMan.instance.m_objectsBySector[index.Sector];
+    var zdos = Helper.GetZDOsInSector(zone);
     return zdos?.FirstOrDefault(z => z.m_prefab == TerrainCompilerHash);
   }
 

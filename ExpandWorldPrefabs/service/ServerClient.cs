@@ -133,8 +133,11 @@ public class ServerClient
     catch
     {
     }
-    if (ZNet.m_onlineBackend == OnlineBackendType.PlayFab)
-      return new PlatformUserID("playfab", ZPlayFabMatchmaking.m_instance.m_serverData.remotePlayerId);
+
+    // PlayFab may be selected while respawning locally, before matchmaking has server data.
+    var playFabId = ZPlayFabMatchmaking.m_instance?.m_serverData?.remotePlayerId;
+    if (ZNet.m_onlineBackend == OnlineBackendType.PlayFab && !string.IsNullOrEmpty(playFabId))
+      return new PlatformUserID("playfab", playFabId);
     else if (ZNet.instance.m_hostSocket == null)
       return new PlatformUserID(ZNet.instance.m_steamPlatform, "Server");
     return new PlatformUserID(ZNet.instance.m_steamPlatform, ZNet.instance.m_hostSocket.GetHostName());
