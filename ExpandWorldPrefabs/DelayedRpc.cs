@@ -4,6 +4,8 @@ namespace ExpandWorld.Prefab;
 public class DelayedRpc(float delay, long source, long target, ZDOID zdo, int hash, object[] parameters)
 {
   private static readonly List<DelayedRpc> Rpcs = [];
+  public static void Clear() => Rpcs.Clear();
+
   public static void Add(float delay, long source, long target, ZDOID zdo, int hash, object[] parameters, bool overwrite)
   {
     if (overwrite)

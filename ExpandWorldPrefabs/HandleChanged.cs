@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace ExpandWorld.Prefab;
 
-public partial class HandleChanged
+public class HandleChanged
 {
   private static bool IsPatched = false;
   public static void Patch(Harmony harmony, PrefabInfo changeDatas, bool shouldPatch)
@@ -22,66 +22,86 @@ public partial class HandleChanged
     ChangedZDOs.Clear();
     Index = 0;
     TrackedHashes.Clear();
-    TrackedPrefabs.Clear();
     AddTracks(changeDatas.Weighted);
     AddTracks(changeDatas.Fallback);
     AddTracks(changeDatas.Separate);
   }
   private static void DoPatch(Harmony harmony)
   {
-    var deserialize = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize), [typeof(ZPackage)]);
-    harmony.Patch(deserialize,
-      prefix: new HarmonyMethod(typeof(HandleChanged), nameof(BeforeDeserialize)),
-      postfix: new HarmonyMethod(typeof(HandleChanged), nameof(AfterDeserialize)));
     IsPatched = true;
     var method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(int)]);
     var patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleInt));
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(int)]);
+    harmony.Patch(method, prefix: new HarmonyMethod(patch));
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(float)]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleFloat));
+    harmony.Patch(method, prefix: new HarmonyMethod(patch));
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(float)]);
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(string)]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleString));
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(string)]);
+    harmony.Patch(method, prefix: new HarmonyMethod(patch));
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(long)]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleLong));
+    harmony.Patch(method, prefix: new HarmonyMethod(patch));
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(long)]);
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(Vector3)]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleVec));
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(Vector3)]);
+    harmony.Patch(method, prefix: new HarmonyMethod(patch));
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(Quaternion)]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleQuaternion));
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(Quaternion)]);
+    harmony.Patch(method, prefix: new HarmonyMethod(patch));
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(byte[])]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleByteArray));
+    harmony.Patch(method, prefix: new HarmonyMethod(patch));
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(byte[])]);
     harmony.Patch(method, prefix: new HarmonyMethod(patch));
   }
   private static void DoUnpatch(Harmony harmony)
   {
-    var deserialize = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize), [typeof(ZPackage)]);
-    harmony.Unpatch(deserialize, AccessTools.Method(typeof(HandleChanged), nameof(BeforeDeserialize)));
-    harmony.Unpatch(deserialize, AccessTools.Method(typeof(HandleChanged), nameof(AfterDeserialize)));
     IsPatched = false;
     var method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(int)]);
     var patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleInt));
     harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(int)]);
+    harmony.Unpatch(method, patch);
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(float)]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleFloat));
+    harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(float)]);
     harmony.Unpatch(method, patch);
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(string)]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleString));
     harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(string)]);
+    harmony.Unpatch(method, patch);
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(long)]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleLong));
+    harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(long)]);
     harmony.Unpatch(method, patch);
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(Vector3)]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleVec));
     harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(Vector3)]);
+    harmony.Unpatch(method, patch);
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(Quaternion)]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleQuaternion));
     harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(Quaternion)]);
+    harmony.Unpatch(method, patch);
     method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(byte[])]);
     patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleByteArray));
+    harmony.Unpatch(method, patch);
+    method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Add), [typeof(ZDOID), typeof(int), typeof(byte[])]);
     harmony.Unpatch(method, patch);
   }
 
@@ -96,8 +116,6 @@ public partial class HandleChanged
         var hash = ZdoHelper.Hash(info.Args[0]);
         if (!TrackedHashes.ContainsKey(hash)) TrackedHashes[hash] = [];
         TrackedHashes[hash].Add(prefab);
-        if (!TrackedPrefabs.TryGetValue(prefab, out var hashes)) TrackedPrefabs[prefab] = hashes = [];
-        hashes.Add(hash);
       }
     }
   }
@@ -105,6 +123,12 @@ public partial class HandleChanged
   private static readonly List<ChangedZdo> ChangedZDOs = [];
   private static int Index = 0;
   public static ZDOID IgnoreZdo = ZDOID.None;
+  public static void Clear()
+  {
+    ChangedZDOs.Clear();
+    Index = 0;
+    IgnoreZdo = ZDOID.None;
+  }
 
   public static void Execute()
   {

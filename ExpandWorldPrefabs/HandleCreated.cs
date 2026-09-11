@@ -44,6 +44,13 @@ public class HandleCreated
   // Ghost init must be handled separately to not assign ownership to clients.
   private static readonly List<ZDOID> GhostZDOs = [];
   public static bool Skip = false;
+  public static void Clear()
+  {
+    CreatedZDOs.Clear();
+    GhostZDOs.Clear();
+    Skip = false;
+  }
+
   public static void Execute()
   {
     try

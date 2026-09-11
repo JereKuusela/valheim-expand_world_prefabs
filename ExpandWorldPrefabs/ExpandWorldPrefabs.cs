@@ -88,3 +88,19 @@ public class EWP : BaseUnityPlugin
     return (RandomEvent)method.Invoke(null, [pos]);
   }
 }
+
+[HarmonyPatch(typeof(ZNet), nameof(ZNet.Shutdown))]
+public class CleanupOnShutdown
+{
+  static void Postfix()
+  {
+    HandleCreated.Clear();
+    HandleChanged.Clear();
+    DelayedSpawn.Clear();
+    DelayedRemove.Clear();
+    PokeTimers.Clear();
+    DelayedRpc.Clear();
+    DelayedTerrain.Clear();
+    DelayedOwner.Clear();
+  }
+}

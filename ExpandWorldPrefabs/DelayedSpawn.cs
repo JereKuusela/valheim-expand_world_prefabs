@@ -8,6 +8,8 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules, flo
 {
   private static readonly List<DelayedSpawn> Spawns = [];
 
+  public static void Clear() => Spawns.Clear();
+
   public static ZDO? CreateObject(ZdoEntry entry, bool triggerRules)
   {
     HandleCreated.Skip = !triggerRules;

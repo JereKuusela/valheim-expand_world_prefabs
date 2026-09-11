@@ -1,10 +1,11 @@
 using System.Collections.Generic;
-using Service;
 namespace ExpandWorld.Prefab;
 
-public class DelayedRemove(float delay, string zdo, bool triggerRules)
+public class DelayedRemove(float delay, ZDOID zdo, bool triggerRules)
 {
   private static readonly List<DelayedRemove> Removes = [];
+  public static void Clear() => Removes.Clear();
+
   public static void Add(float delay, ZDOID zdo, bool triggerRules)
   {
     if (delay <= 0f)
@@ -12,8 +13,7 @@ public class DelayedRemove(float delay, string zdo, bool triggerRules)
       Manager.RemoveZDO(zdo, triggerRules);
       return;
     }
-    // The compact owner index may change before the delay expires.
-    Removes.Add(new(delay, zdo.ToString(), triggerRules));
+    Removes.Add(new(delay, zdo, triggerRules));
   }
   public static void Execute(float dt)
   {
@@ -28,14 +28,12 @@ public class DelayedRemove(float delay, string zdo, bool triggerRules)
       i--;
     }
   }
-  private readonly string Zdo = zdo;
+  private readonly ZDOID Zdo = zdo;
   public float Delay = delay;
   private readonly bool TriggerRules = triggerRules;
 
   public void Execute()
   {
-    var zdo = Parse.ZdoId(Zdo);
-    if (zdo == ZDOID.None) return;
-    Manager.RemoveZDO(zdo, TriggerRules);
+    Manager.RemoveZDO(Zdo, TriggerRules);
   }
 }

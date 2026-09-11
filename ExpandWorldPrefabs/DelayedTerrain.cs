@@ -6,6 +6,8 @@ namespace ExpandWorld.Prefab;
 public class DelayedTerrain(float delay, Vector3 pos, float size, ZPackage pkg, float resetRadius)
 {
   private static readonly List<DelayedTerrain> Terrains = [];
+  public static void Clear() => Terrains.Clear();
+
   public static void Add(float delay, Vector3 pos, float size, ZPackage pkg, float resetRadius)
   {
     var created = Manager.GenerateTerrainCompilers(pos, size);

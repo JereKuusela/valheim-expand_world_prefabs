@@ -10,6 +10,8 @@ namespace ExpandWorld.Prefab;
 public class DelayedOwner(float delay, ZDOID zdo, long owner)
 {
   private static readonly List<DelayedOwner> Owners = [];
+  public static void Clear() => Owners.Clear();
+
   public static long FindNearestOwner(ZDO zdo)
   {
     // Some client should always be the owner so that creatures are initialized correctly (for example max health from stars).
