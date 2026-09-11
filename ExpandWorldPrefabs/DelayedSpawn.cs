@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ExpandWorld.Prefab;
 
-public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules, float? removeDelay)
+public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, float? removeDelay)
 {
   private static readonly List<DelayedSpawn> Spawns = [];
 
@@ -78,27 +78,25 @@ public class DelayedSpawn(float delay, ZdoEntry zdoEntry, bool triggerRules, flo
         DelayedRemove.Add(removeDelay.Value, zdo.m_uid, triggerRules);
       return;
     }
-    Spawns.Add(new(delay, zdoEntry, triggerRules, removeDelay));
+    Spawns.Add(new(ZNet.instance.m_netTime + delay, zdoEntry, triggerRules, removeDelay));
   }
-  public static void Execute(float dt)
+  public static void Execute()
   {
-    // Two loops to preserve order.
     for (var i = 0; i < Spawns.Count; i++)
     {
       var spawn = Spawns[i];
-      spawn.Delay -= dt;
-      if (spawn.Delay > -0.001) continue;
-      spawn.Execute();
+      if (spawn.Due > ZNet.instance.m_netTime) continue;
+      spawn.ExecuteAction();
       Spawns.RemoveAt(i);
       i--;
     }
   }
-  public float Delay = delay;
+  private readonly double Due = due;
   private readonly ZdoEntry ZdoEntry = zdoEntry;
   private readonly bool TriggerRules = triggerRules;
   private readonly float? RemoveDelay = removeDelay;
 
-  public void Execute()
+  private void ExecuteAction()
   {
     var zdo = CreateObject(ZdoEntry, TriggerRules);
     if (zdo != null && RemoveDelay.HasValue)

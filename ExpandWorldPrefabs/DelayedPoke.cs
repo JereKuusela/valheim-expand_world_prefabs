@@ -8,7 +8,7 @@ namespace ExpandWorld.Prefab;
 public interface IPokeable
 {
   public float Delay { get; set; }
-  void Execute();
+  void ExecuteAction();
 }
 public class DelayedSinglePoke(float delay, ZDOID zdo, string[] args) : DelayedPoke, IPokeable
 {
@@ -16,7 +16,7 @@ public class DelayedSinglePoke(float delay, ZDOID zdo, string[] args) : DelayedP
   private readonly string[] Args = args;
 
   float IPokeable.Delay { get => delay; set => delay = value; }
-  public void Execute() => Poke(Zdo, Args);
+  public void ExecuteAction() => Poke(Zdo, Args);
 
 }
 public class DelayedMultiPoke(float delay, ZDOID[] zdos, string[] args) : DelayedPoke, IPokeable
@@ -25,7 +25,7 @@ public class DelayedMultiPoke(float delay, ZDOID[] zdos, string[] args) : Delaye
   private readonly string[] Args = args;
 
   float IPokeable.Delay { get => delay; set => delay = value; }
-  public void Execute() => Poke(Zdos, Args);
+  public void ExecuteAction() => Poke(Zdos, Args);
 
 }
 
@@ -118,14 +118,7 @@ public class DelayedPoke
     else
       PokeTimers.Add(delay, zdos, args);
   }
-  private static void Add(float delay, ZDOID zdo, string[] args)
-  {
-    if (delay <= 0f)
-      Poke(zdo, args);
-    else
-      PokeTimers.Add(delay, [zdo], args);
-  }
-  public static void Execute(float dt) => PokeTimers.Execute(dt);
+  public static void Execute() => PokeTimers.Execute();
 
   protected static void Poke(ZDOID[] zdos, string[] args)
   {

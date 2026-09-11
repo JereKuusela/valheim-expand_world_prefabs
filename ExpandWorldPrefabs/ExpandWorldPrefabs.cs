@@ -22,6 +22,7 @@ public class EWP : BaseUnityPlugin
   public void Awake()
   {
     Prefab.Config.Init(Config);
+    PokeTimers.Initialize();
     Harmony = new(GUID);
     Harmony.PatchAll();
     Log.Init(Logger);
@@ -67,12 +68,12 @@ public class EWP : BaseUnityPlugin
     if (ZNet.instance == null) return;
     HandleCreated.Execute();
     HandleChanged.Execute();
-    DelayedSpawn.Execute(Time.deltaTime);
-    DelayedRemove.Execute(Time.deltaTime);
-    DelayedPoke.Execute(Time.deltaTime);
-    DelayedRpc.Execute(Time.deltaTime);
-    DelayedTerrain.Execute(Time.deltaTime);
-    DelayedOwner.Execute(Time.deltaTime);
+    DelayedSpawn.Execute();
+    DelayedRemove.Execute();
+    DelayedPoke.Execute();
+    DelayedRpc.Execute();
+    DelayedTerrain.Execute();
+    DelayedOwner.Execute();
     DataStorage.SaveSavedData();
   }
   public void OnDestroy()

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ExpandWorld.Prefab;
 
-public class DelayedTerrain(float delay, Vector3 pos, float size, ZPackage pkg, float resetRadius)
+public class DelayedTerrain(double due, Vector3 pos, float size, ZPackage pkg, float resetRadius)
 {
   private static readonly List<DelayedTerrain> Terrains = [];
   public static void Clear() => Terrains.Clear();
@@ -18,23 +18,21 @@ public class DelayedTerrain(float delay, Vector3 pos, float size, ZPackage pkg, 
       Manager.ModifyTerrain(pos, size, pkg, resetRadius);
       return;
     }
-    Terrains.Add(new(delay, pos, size, pkg, resetRadius));
+    Terrains.Add(new(ZNet.instance.m_netTime + delay, pos, size, pkg, resetRadius));
   }
-  public static void Execute(float dt)
+  public static void Execute()
   {
-    // Two loops to preserve order.
     for (var i = 0; i < Terrains.Count; i++)
     {
       var terrain = Terrains[i];
-      terrain.Delay -= dt;
-      if (terrain.Delay > -0.001) continue;
-      terrain.Execute();
+      if (terrain.Due > ZNet.instance.m_netTime) continue;
+      terrain.ExecuteAction();
       Terrains.RemoveAt(i);
       i--;
     }
   }
-  public float Delay = delay;
-  public void Execute()
+  private readonly double Due = due;
+  private void ExecuteAction()
   {
     Manager.ModifyTerrain(pos, size, pkg, resetRadius);
   }

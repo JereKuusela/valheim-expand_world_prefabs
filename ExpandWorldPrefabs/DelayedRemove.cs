@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 namespace ExpandWorld.Prefab;
 
-public class DelayedRemove(float delay, ZDOID zdo, bool triggerRules)
+public class DelayedRemove(double due, ZDOID zdo, bool triggerRules)
 {
   private static readonly List<DelayedRemove> Removes = [];
   public static void Clear() => Removes.Clear();
@@ -13,26 +13,24 @@ public class DelayedRemove(float delay, ZDOID zdo, bool triggerRules)
       Manager.RemoveZDO(zdo, triggerRules);
       return;
     }
-    Removes.Add(new(delay, zdo, triggerRules));
+    Removes.Add(new(ZNet.instance.m_netTime + delay, zdo, triggerRules));
   }
-  public static void Execute(float dt)
+  public static void Execute()
   {
-    // Two loops to preserve order.
     for (var i = 0; i < Removes.Count; i++)
     {
       var remove = Removes[i];
-      remove.Delay -= dt;
-      if (remove.Delay > -0.001) continue;
-      remove.Execute();
+      if (remove.Due > ZNet.instance.m_netTime) continue;
+      remove.ExecuteAction();
       Removes.RemoveAt(i);
       i--;
     }
   }
   private readonly ZDOID Zdo = zdo;
-  public float Delay = delay;
+  private readonly double Due = due;
   private readonly bool TriggerRules = triggerRules;
 
-  public void Execute()
+  private void ExecuteAction()
   {
     Manager.RemoveZDO(Zdo, TriggerRules);
   }

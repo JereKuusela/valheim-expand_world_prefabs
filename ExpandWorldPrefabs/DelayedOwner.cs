@@ -7,7 +7,7 @@ namespace ExpandWorld.Prefab;
 // The body is awakened when a client gets ownership of the object.
 // So for server spawned item drops (and boats), have to delay setting the owner.
 // Server itself would auto-assign ownership after 2 seconds, but this is bit too slow.
-public class DelayedOwner(float delay, ZDOID zdo, long owner)
+public class DelayedOwner(double due, ZDOID zdo, long owner)
 {
   private static readonly List<DelayedOwner> Owners = [];
   public static void Clear() => Owners.Clear();
@@ -52,28 +52,26 @@ public class DelayedOwner(float delay, ZDOID zdo, long owner)
       zdo.SetOwner(owner);
       return;
     }
-    Owners.Add(new(delay, zdo.m_uid, owner));
+    Owners.Add(new(ZNet.instance.m_netTime + delay, zdo.m_uid, owner));
   }
 
 
-  public static void Execute(float dt)
+  public static void Execute()
   {
-    // Two loops to preserve order.
     for (var i = 0; i < Owners.Count; i++)
     {
       var remove = Owners[i];
-      remove.Delay -= dt;
-      if (remove.Delay > -0.001) continue;
-      remove.Execute();
+      if (remove.Due > ZNet.instance.m_netTime) continue;
+      remove.ExecuteAction();
       Owners.RemoveAt(i);
       i--;
     }
   }
   private readonly ZDOID Zdo = zdo;
-  public float Delay = delay;
+  private readonly double Due = due;
   private readonly long Owner = owner;
 
-  public void Execute()
+  private void ExecuteAction()
   {
     var zdo = ZDOMan.instance.GetZDO(Zdo);
     if (zdo == null) return;

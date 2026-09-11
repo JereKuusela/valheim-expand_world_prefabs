@@ -35,6 +35,9 @@ public static class ServerSideData
   private const ushort FlagStrings = 1 << 6;
   private const ushort FlagByteArrays = 1 << 7;
 
+  public static event Action<ZDO>? Loaded;
+  public static event Action<ZDOID>? Destroyed;
+
   public static bool ShouldUse(int hash) => Config.ServerSideData && ZdoHelper.IsServerSideHash(hash);
 
   public static void Patch(Harmony harmony, bool shouldPatch)
@@ -112,6 +115,7 @@ public static class ServerSideData
   private static void AfterDestroyed(ZDOID uid)
   {
     Remove(uid);
+    Destroyed?.Invoke(uid);
   }
 
   private static byte[]? Serialize(ZDOID uid)
@@ -201,6 +205,7 @@ public static class ServerSideData
       if ((flags & FlagByteArrays) != 0)
         Bytes[zdo.m_uid] = ReadBytes(pkg);
       CleanSyncedData(zdo);
+      Loaded?.Invoke(zdo);
     }
     catch (Exception e)
     {
