@@ -91,6 +91,15 @@ public class ObjectsFiltering
     if (objects.Length == 0) return true;
     foreach (var o in objects) o.Roll(f, zdo.m_position, zdo.GetRotation());
     var l = limit?.Get(f);
+    // Match the broad-search strategy used by HasNearby and GetNearby.
+    // Large absence checks must not enumerate a square of empty sectors.
+    if (objects.Max(o => o.MaxDistance) > 10000)
+    {
+      var zdos = ZDOMan.instance.m_objectsByID.Values;
+      return l == null
+        ? !HasAllObjects(zdos, objects, zdo.m_uid, f)
+        : !HasLimitObjects(zdos, l, objects, zdo.m_uid, f);
+    }
     var zdoLists = GetSectorIndices(objects);
     if (l == null)
       return !HasAllObjects(zdoLists, objects, zdo.m_uid, f);
@@ -141,7 +150,7 @@ public class ObjectsFiltering
   private static List<List<ZDO>> GetSectorIndices(Object[] objects)
   {
     List<List<ZDO>> zdoLists = [];
-    HashSet<Vector2s> handled = [];
+    HashSet<ZoneSystem.SectorIndex> handled = [];
     foreach (var o in objects)
       GetSectorIndices(o, zdoLists, handled);
 
@@ -151,12 +160,12 @@ public class ObjectsFiltering
   private static List<List<ZDO>> GetSectorIndices(Object objects)
   {
     List<List<ZDO>> zdoLists = [];
-    HashSet<Vector2s> handled = [];
+    HashSet<ZoneSystem.SectorIndex> handled = [];
     GetSectorIndices(objects, zdoLists, handled);
     return zdoLists;
   }
 
-  private static void GetSectorIndices(Object o, List<List<ZDO>> zdoLists, HashSet<Vector2s> handled)
+  private static void GetSectorIndices(Object o, List<List<ZDO>> zdoLists, HashSet<ZoneSystem.SectorIndex> handled)
   {
     float radius = o.MaxDistance;
     var corner1 = ZoneSystem.GetZone(o.CachedPosition + new Vector3(-radius, 0, -radius));
@@ -166,12 +175,11 @@ public class ObjectsFiltering
     {
       for (var y = corner1.y; y <= corner2.y; y++)
       {
-        var zone = new Vector2s(x, y);
-        if (handled.Contains(zone)) continue;
-        handled.Add(zone);
-        var zdos = Helper.GetZDOsInSector(zone);
-        if (zdos != null)
-          zdoLists.Add(zdos);
+        var sector = ZoneSystem.SectorToIndex(new Vector2s(x, y));
+        if (!handled.Add(sector)) continue;
+        var list = zm.m_objectsBySector[sector.Sector];
+        if (list != null)
+          zdoLists.Add(list);
       }
     }
   }

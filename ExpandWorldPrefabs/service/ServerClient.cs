@@ -94,10 +94,7 @@ public class ServerClient
   {
     pkg.Write(player.m_name);
     pkg.Write(player.m_characterID);
-    pkg.Write(player.m_userInfo.m_id.ToString());
-    pkg.Write(player.m_userInfo.m_displayName);
-    pkg.Write(player.m_userInfo.m_serverAssignedDisplayName);
-    pkg.Write(player.m_userInfo.m_playfabId ?? string.Empty);
+    player.m_userInfo.Write(pkg);
     pkg.Write(player.m_publicPosition);
     if (player.m_publicPosition)
       pkg.Write(player.m_position);
@@ -112,7 +109,12 @@ public class ServerClient
     m_name = "Server",
     // Receiving chat messages requires a valid character ID.
     m_characterID = new ZDOID(ZDOMan.GetSessionID(), uint.MaxValue),
-    m_userInfo = new() { m_id = GetServerUserId(), m_displayName = "Server", m_serverAssignedDisplayName = "Server" },
+    m_userInfo = new()
+    {
+      m_id = GetServerUserId(),
+      m_displayName = "Server",
+      m_serverAssignedDisplayName = "Server"
+    },
     m_publicPosition = false,
     m_position = Vector3.zero,
   };

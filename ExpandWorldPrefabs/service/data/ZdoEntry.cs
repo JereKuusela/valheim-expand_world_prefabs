@@ -234,6 +234,8 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     }
     if (ByteArrays != null)
     {
+      if (ByteArrays.ContainsKey(ZDOVars.s_items))
+        InventoryStorage.RemoveLegacy(zdo);
       ZDOHelper.Init(ZDOExtraData.s_byteArrays, id);
       foreach (var pair in ByteArrays)
         zdo.Set(pair.Key, pair.Value);
@@ -249,6 +251,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
       zdo.Type = Type.Value;
     HandleConnection(zdo);
     HandleHashConnection(zdo);
+    ItemDataCompatibility.ApplyLegacyOverrides(zdo);
     WriteServer(zdo);
   }
 

@@ -334,6 +334,15 @@ public class DataEntry
         var hash = ZdoHelper.Hash(kvp.Key);
         if (Strings.ContainsKey(hash))
           Log.Warning($"Data {data.name}: Duplicate string key {kvp.Key}.");
+        // Legacy inventories must replace the current byte-array inventory too.
+        if (hash == ZDOVars.s_items)
+        {
+          ByteArrays ??= [];
+          if (ByteArrays.ContainsKey(hash))
+            Log.Warning($"Data {data.name}: Duplicate string key {kvp.Key}.");
+          ByteArrays[hash] = DataValue.LegacyInventoryBytes(kvp.Value);
+          continue;
+        }
         Strings[hash] = DataValue.String(kvp.Value);
       }
     }
@@ -687,9 +696,10 @@ public class DataEntry
     if (Items?.Count > 0)
     {
       var size = ContainerSize ?? ZdoHelper.GetInventorySize(this, f, zdo);
-      var encoded = ItemValue.LoadItems(f, Items, size, ItemAmount?.Get(f) ?? 0);
-      Strings ??= [];
-      Strings[ZDOVars.s_items] = DataValue.Simple(encoded);
+      var encoded = ItemValue.LoadItemBytes(f, Items, size, ItemAmount?.Get(f) ?? 0);
+      Strings?.Remove(ZDOVars.s_items);
+      ByteArrays ??= [];
+      ByteArrays[ZDOVars.s_items] = DataValue.Simple(encoded);
     }
   }
 
@@ -701,9 +711,7 @@ public class DataEntry
     var items = GenerateItems(f, size);
     foreach (var item in items)
       item.AddTo(f, inv);
-    ZPackage pkg = new();
-    inv.Save(pkg);
-    zdo.Set(ZDOVars.s_items, pkg.GetBase64());
+    InventoryStorage.Save(zdo, inv);
   }
   public void RemoveItems(Functions f, ZDO zdo)
   {
@@ -714,9 +722,7 @@ public class DataEntry
     var items = GenerateItems(f, new(10000, 10000));
     foreach (var item in items)
       item.RemoveFrom(f, inv);
-    ZPackage pkg = new();
-    inv.Save(pkg);
-    zdo.Set(ZDOVars.s_items, pkg.GetBase64());
+    InventoryStorage.Save(zdo, inv);
   }
   public List<ItemValue> GenerateItems(Functions f, Vector2i size)
   {

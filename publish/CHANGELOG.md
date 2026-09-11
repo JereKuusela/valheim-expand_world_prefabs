@@ -1,3 +1,12 @@
+## 1.59.3
+
+- Fix `filter:` and `bannedFilter:` shorthand in nested YAML mappings, including indented anchored object lists.
+- Preserve explicit filter lists, scalar text, and aliases during shorthand normalization.
+
+- v1.59.2 (Deep North prototype source handoff 21; 2026-09-09)
+  - Save pending pokes on persistent targets and resume their remaining delays after a world reload.
+  - Prevent stale session IDs and failed recipients from replaying delayed pokes.
+
 - v1.60
   - Adds experimental server owned object support.
 

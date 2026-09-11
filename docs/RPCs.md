@@ -505,7 +505,7 @@ By default, the RPC is sent to the owner of the object.
   objectRpc:
   - name: SetVisualItem
     target: all
-    1: string, "name of the item"
+    1: hash, "name of the item"
     2: int, "variant number of the item"
     3: int, "level of the item"
 ```
@@ -977,28 +977,9 @@ By default, the RPC is sent to the owner of the object.
 
 ### TerrainComp
 
-```yaml
-# Performs a terrain operation.
-  objectRpc:
-  - name: ApplyOperation
-    packaged: true
-    1: vec, "position"
-    2: float, "level offset"
-    3: bool, "is level"
-    4: float, "level radius"
-    5: bool, "is square"
-    6: bool, "is raise"
-    7: float, "raise radius"
-    8: float, "raise power"
-    9: float, "raise delta"
-    10: bool, "is smooth"
-    11: float, "smooth radius"
-    12: float, "smooth power"
-    13: bool, "is paint clear"
-    14: bool, "is paint height check"
-    15: enum_terrainpaint, Dirt/Cultivate/Paved/Reset/ClearVegetation # - int, 0/1/2/3/4
-    16: float, "paint radius"
-```
+Deep North uses `RPC_ApplyOperation` with a TerrainOp prefab hash instead of the old settings packet.
+
+Use the [terrain field](scripting.md#terrain) to set position, radius, height and paint from a rule. EWP sends its evaluated settings to the server-owned compiler. Native terrain packets keep their original behavior.
 
 ### Trap
 

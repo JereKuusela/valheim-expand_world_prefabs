@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using BepInEx;
 using BepInEx.Bootstrap;
@@ -24,6 +26,7 @@ public class EWP : BaseUnityPlugin
     Harmony.PatchAll();
     Log.Init(Logger);
     Yaml.Init();
+    RuleLog.Init(Path.Combine(Yaml.BaseDirectory, "ewp_log.txt"));
     try
     {
       if (Prefab.Config.AutomaticReload)
@@ -53,6 +56,11 @@ public class EWP : BaseUnityPlugin
       FileLoading.ReloadAll();
       DataStorage.LoadSavedData();
     }, true);
+    new Terminal.ConsoleCommand("ewp_biomes", "Lists alternate biome names for biomes and bannedBiomes.", (args) =>
+    {
+      var names = AltBiomeList.m_altBiomes.Select(alt => alt.m_name).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct().OrderBy(name => name, StringComparer.Ordinal).ToArray();
+      args.Context.AddString(names.Length > 0 ? string.Join("\n", names) : "No alternate biomes loaded. Enter a world and try again.");
+    });
   }
   public void LateUpdate()
   {
@@ -66,6 +74,10 @@ public class EWP : BaseUnityPlugin
     DelayedTerrain.Execute(Time.deltaTime);
     DelayedOwner.Execute(Time.deltaTime);
     DataStorage.SaveSavedData();
+  }
+  public void OnDestroy()
+  {
+    RuleLog.Close();
   }
 
   public static RandomEvent GetCurrentEvent(Vector3 pos)

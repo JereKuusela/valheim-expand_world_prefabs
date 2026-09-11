@@ -47,6 +47,8 @@ public class Data
   [DefaultValue(null)]
   public string[]? commands;
   [DefaultValue(null)]
+  public string? log;
+  [DefaultValue(null)]
   public string? day;
   [DefaultValue(null)]
   public string? night;
@@ -217,6 +219,7 @@ public class Info
   public IStringValue? Data;
   public bool? InjectData;
   public string[] Commands = [];
+  internal RuleLogSource? LogSource;
   public IBoolValue? Day;
   public IBoolValue? Night;
   public IFloatValue? MinDistance;
@@ -231,6 +234,8 @@ public class Info
   public IFloatValue? MaxAltitude;
   public Heightmap.Biome Biomes = Heightmap.Biome.None;
   public Heightmap.Biome BannedBiomes = Heightmap.Biome.None;
+  internal HashSet<string>? AltBiomes;
+  internal HashSet<string>? BannedAltBiomes;
   public float EventDistance = 0f;
   public HashSet<string> Events = [];
   public HashSet<string> Environments = [];
@@ -473,7 +478,7 @@ public class Poke(PokeData data)
   public IIntValue? Limit = data.limit == null ? null : DataValue.Int(data.limit);
   public IBoolValue? Random = data.random == null ? null : DataValue.Bool(data.random);
   public IFloatValue? Delay = data.delay == null ? null : DataValue.Float(data.delay);
-  public IIntValue? Weight = data.weight == null ? null : DataValue.Int(data.weight);
+  public IFloatValue? Weight = data.weight == null ? null : DataValue.Float(data.weight);
   public IIntValue? Repeat = data.repeat == null ? null : DataValue.Int(data.repeat);
   public IFloatValue? RepeatInterval = data.repeatInterval == null ? null : DataValue.Float(data.repeatInterval);
   public IFloatValue? RepeatChance = data.repeatChance == null ? null : DataValue.Float(data.repeatChance);
@@ -846,32 +851,34 @@ public class Terrain(TerrainData data)
   {
     pos = basePosition;
     pos += baseRotation * (Position?.Get(f) ?? Vector3.zero);
-    pkg = new ZPackage();
-    pkg.Write(pos);
-    pkg.Write(LevelOffset?.Get(f) ?? 0f);
     var levelRadius = LevelRadius?.Get(f) ?? 0f;
-    pkg.Write(levelRadius > 0f);
-    pkg.Write(levelRadius);
-    pkg.Write(Square?.GetBool(f) == true);
     var raiseRadius = RaiseRadius?.Get(f) ?? 0f;
-    pkg.Write(raiseRadius > 0f);
-    pkg.Write(raiseRadius);
-    pkg.Write(RaisePower?.Get(f) ?? 0f);
-    pkg.Write(RaiseDelta?.Get(f) ?? 0f);
     var smoothRadius = SmoothRadius?.Get(f) ?? 0f;
-    pkg.Write(smoothRadius > 0f);
-    pkg.Write(smoothRadius);
-    pkg.Write(SmoothPower?.Get(f) ?? 0f);
     var paintRadius = PaintRadius?.Get(f) ?? 0f;
-    pkg.Write(paintRadius > 0f);
-    pkg.Write(PaintHeightCheck?.GetBool(f) == true);
     var paint = Paint?.Get(f) ?? "Reset";
     var paintEnum =
       Enum.TryParse(paint, true, out TerrainModifier.PaintType paintType) ? paintType :
       int.TryParse(paint, out var paintInt) ? (TerrainModifier.PaintType)paintInt :
       TerrainModifier.PaintType.Reset;
-    pkg.Write((int)paintEnum);
-    pkg.Write(paintRadius);
+    var settings = new TerrainOp.Settings
+    {
+      m_levelOffset = LevelOffset?.Get(f) ?? 0f,
+      m_level = levelRadius > 0f,
+      m_levelRadius = levelRadius,
+      m_square = Square?.GetBool(f) == true,
+      m_raise = raiseRadius > 0f,
+      m_raiseRadius = raiseRadius,
+      m_raisePower = RaisePower?.Get(f) ?? 0f,
+      m_raiseDelta = RaiseDelta?.Get(f) ?? 0f,
+      m_smooth = smoothRadius > 0f,
+      m_smoothRadius = smoothRadius,
+      m_smoothPower = SmoothPower?.Get(f) ?? 0f,
+      m_paintCleared = paintRadius > 0f,
+      m_paintHeightCheck = PaintHeightCheck?.GetBool(f) == true,
+      m_paintType = paintEnum,
+      m_paintRadius = paintRadius
+    };
+    pkg = TerrainProtocol.Write(pos, settings);
     resetRadius = ResetRadius?.Get(f) ?? 0f;
     size = Mathf.Max(levelRadius, raiseRadius, smoothRadius, paintRadius, resetRadius);
   }

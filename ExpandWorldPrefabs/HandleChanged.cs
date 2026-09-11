@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace ExpandWorld.Prefab;
 
-public class HandleChanged
+public partial class HandleChanged
 {
   private static bool IsPatched = false;
   public static void Patch(Harmony harmony, PrefabInfo changeDatas, bool shouldPatch)
@@ -19,13 +19,20 @@ public class HandleChanged
     if (!shouldPatch && IsPatched)
       DoUnpatch(harmony);
 
+    ChangedZDOs.Clear();
+    Index = 0;
     TrackedHashes.Clear();
+    TrackedPrefabs.Clear();
     AddTracks(changeDatas.Weighted);
     AddTracks(changeDatas.Fallback);
     AddTracks(changeDatas.Separate);
   }
   private static void DoPatch(Harmony harmony)
   {
+    var deserialize = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize), [typeof(ZPackage)]);
+    harmony.Patch(deserialize,
+      prefix: new HarmonyMethod(typeof(HandleChanged), nameof(BeforeDeserialize)),
+      postfix: new HarmonyMethod(typeof(HandleChanged), nameof(AfterDeserialize)));
     IsPatched = true;
     var method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(int)]);
     var patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleInt));
@@ -51,6 +58,9 @@ public class HandleChanged
   }
   private static void DoUnpatch(Harmony harmony)
   {
+    var deserialize = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize), [typeof(ZPackage)]);
+    harmony.Unpatch(deserialize, AccessTools.Method(typeof(HandleChanged), nameof(BeforeDeserialize)));
+    harmony.Unpatch(deserialize, AccessTools.Method(typeof(HandleChanged), nameof(AfterDeserialize)));
     IsPatched = false;
     var method = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.Set), [typeof(ZDOID), typeof(int), typeof(int)]);
     var patch = AccessTools.Method(typeof(HandleChanged), nameof(HandleInt));
@@ -86,6 +96,8 @@ public class HandleChanged
         var hash = ZdoHelper.Hash(info.Args[0]);
         if (!TrackedHashes.ContainsKey(hash)) TrackedHashes[hash] = [];
         TrackedHashes[hash].Add(prefab);
+        if (!TrackedPrefabs.TryGetValue(prefab, out var hashes)) TrackedPrefabs[prefab] = hashes = [];
+        hashes.Add(hash);
       }
     }
   }
@@ -106,11 +118,14 @@ public class HandleChanged
     // Execution can trigger changes, so foreach can't be used.
     // Handling new changes next frame ensures that the data is fully changed.
     var count = ChangedZDOs.Count;
-    for (; Index < count; Index++)
+    while (Index < count)
     {
-      var changed = ChangedZDOs[Index];
-      var zdo = ZDOMan.instance.GetZDO(changed.Zdo);
-      if (zdo == null || !zdo.Valid) continue;
+      // Consume before dispatch: a failing rule must not replay every frame.
+      var changed = ChangedZDOs[Index++];
+      var manager = ZDOMan.instance;
+      if (manager == null || !ReferenceEquals(manager, changed.Manager)) continue;
+      if (!manager.m_objectsByID.TryGetValue(changed.Zdo, out var zdo) ||
+          !ReferenceEquals(zdo, changed.Target) || !zdo.Valid) continue;
       Manager.Handle(ActionType.Change, [changed.Key, changed.Value, changed.PreviousValue], zdo);
     }
     if (Index < ChangedZDOs.Count) return;
@@ -124,12 +139,15 @@ public class HandleChanged
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
     if (IgnoreZdo == zid) return;
-    var prev = zdo.GetInt(hash);
+    QueueInt(zdo, hash, zdo.GetInt(hash), value);
+  }
+  private static void QueueInt(ZDO zdo, int hash, int prev, int value)
+  {
     if (prev == value) return;
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), value.ToString(), prev.ToString()));
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), value != 0 ? "true" : "false", prev != 0 ? "true" : "false"));
-    var prefab = ZNetScene.instance.GetPrefab(value);
-    var prevPrefab = ZNetScene.instance.GetPrefab(prev);
+    var prefab = ZNetScene.instance ? ZNetScene.instance.GetPrefab(value) : null;
+    var prevPrefab = ZNetScene.instance ? ZNetScene.instance.GetPrefab(prev) : null;
     if (prefab || prevPrefab)
       ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), prefab?.name ?? "<none>", prevPrefab?.name ?? "<none>"));
   }
@@ -139,7 +157,10 @@ public class HandleChanged
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
     if (IgnoreZdo == zid) return;
-    var prev = zdo.GetFloat(hash);
+    QueueFloat(zdo, hash, zdo.GetFloat(hash), value);
+  }
+  private static void QueueFloat(ZDO zdo, int hash, float prev, float value)
+  {
     if (prev == value) return;
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), value.ToString(NumberFormatInfo.InvariantInfo), prev.ToString(NumberFormatInfo.InvariantInfo)));
   }
@@ -149,7 +170,10 @@ public class HandleChanged
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
     if (IgnoreZdo == zid) return;
-    var prev = zdo.GetString(hash);
+    QueueString(zdo, hash, zdo.GetString(hash), value);
+  }
+  private static void QueueString(ZDO zdo, int hash, string prev, string value)
+  {
     if (prev == value) return;
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), value == "" ? "<none>" : value, prev == "" ? "<none>" : prev));
   }
@@ -159,7 +183,10 @@ public class HandleChanged
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
     if (IgnoreZdo == zid) return;
-    var prev = zdo.GetLong(hash);
+    QueueLong(zdo, hash, zdo.GetLong(hash), value);
+  }
+  private static void QueueLong(ZDO zdo, int hash, long prev, long value)
+  {
     if (prev == value) return;
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), value.ToString(), prev.ToString()));
   }
@@ -169,7 +196,11 @@ public class HandleChanged
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
     if (IgnoreZdo == zid) return;
-    var prev = Helper.FormatPos2(zdo.GetVec3(hash, Vector3.zero));
+    QueueVec(zdo, hash, zdo.GetVec3(hash, Vector3.zero), value);
+  }
+  private static void QueueVec(ZDO zdo, int hash, Vector3 previous, Vector3 value)
+  {
+    var prev = Helper.FormatPos2(previous);
     var curr = Helper.FormatPos2(value);
     if (prev == curr) return;
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), curr, prev));
@@ -180,7 +211,11 @@ public class HandleChanged
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
     if (IgnoreZdo == zid) return;
-    var prev = Helper.FormatRot2(zdo.GetQuaternion(hash, Quaternion.identity).eulerAngles);
+    QueueQuaternion(zdo, hash, zdo.GetQuaternion(hash, Quaternion.identity), value);
+  }
+  private static void QueueQuaternion(ZDO zdo, int hash, Quaternion previous, Quaternion value)
+  {
+    var prev = Helper.FormatRot2(previous.eulerAngles);
     var curr = Helper.FormatRot2(value.eulerAngles);
     if (prev == curr) return;
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), curr, prev));
@@ -191,15 +226,20 @@ public class HandleChanged
     if (!ZDOMan.instance.m_objectsByID.TryGetValue(zid, out var zdo)) return;
     if (!tracked.Contains(zdo.m_prefab)) return;
     if (IgnoreZdo == zid) return;
-    var prev = zdo.GetByteArray(hash);
-    if (prev == null ? value == null : prev.SequenceEqual(value)) return;
+    QueueByteArray(zdo, hash, zdo.GetByteArray(hash), value);
+  }
+  private static void QueueByteArray(ZDO zdo, int hash, byte[] prev, byte[] value)
+  {
+    if (ReferenceEquals(prev, value) || (prev != null && value != null && prev.SequenceEqual(value))) return;
     ChangedZDOs.Add(new(zdo, ZdoHelper.ReverseHash(hash), value == null ? "" : Convert.ToBase64String(value), prev == null ? "" : Convert.ToBase64String(prev)));
   }
 }
 
 public class ChangedZdo(ZDO zdo, string key, string value, string previous)
 {
-  public ZDOID Zdo = zdo.m_uid;
+  public readonly ZDOMan Manager = ZDOMan.instance;
+  public readonly ZDO Target = zdo;
+  public readonly ZDOID Zdo = zdo.m_uid;
   public string Key = key;
   public string Value = value;
   public string PreviousValue = previous;

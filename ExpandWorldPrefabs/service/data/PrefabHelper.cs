@@ -22,6 +22,7 @@ public class PrefabHelper
   {
     ResultCache.Clear();
     PrefabCache.Clear();
+    PrefabCharacterParentSync.Clear();
   }
   public static List<int> GetPrefabs(string include, string exclude)
   {
@@ -131,7 +132,7 @@ public class PrefabHelper
   private static readonly Dictionary<int, bool> PrefabCharacterParentSync = [];
   public static bool HasCharacterParentSync(int prefab)
   {
-    if (!PrefabCharacterParentSync.TryGetValue(prefab, out var value))
+    if (PrefabCharacterParentSync.TryGetValue(prefab, out var value))
       return value;
     PrefabCharacterParentSync[prefab] = ZNetScene.instance.GetPrefab(prefab)?.GetComponent<ZSyncTransform>()?.m_characterParentSync ?? false;
     return PrefabCharacterParentSync[prefab];

@@ -106,4 +106,41 @@ public class DataStorageTests
     Assert.That(invalidStep, Is.False);
     Assert.That(nonNumeric, Is.False);
   }
+
+  [Test]
+  public void SaveSavedData_FailedWriteRemainsDirtyAndRetriesWithoutNewMutation()
+  {
+    var previousDirectory = Yaml.BaseDirectory;
+    var directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ewp-save-test-" + System.Guid.NewGuid());
+    var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static;
+    var dirty = typeof(DataStorage).GetField("UnsavedChanges", flags)!;
+    var stopwatch = (System.Diagnostics.Stopwatch)typeof(DataStorage).GetField("LastSaveStopwatch", flags)!.GetValue(null)!;
+    // Advance the private throttle without making this regression sleep ten seconds.
+    var elapsed = typeof(System.Diagnostics.Stopwatch).GetField("elapsed", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+      ?? typeof(System.Diagnostics.Stopwatch).GetField("_elapsed", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+    Assert.That(elapsed, Is.Not.Null, "Stopwatch layout requires a test-clock adapter on this runtime.");
+    try
+    {
+      System.IO.Directory.CreateDirectory(directory);
+      Yaml.BaseDirectory = directory;
+      var destination = System.IO.Path.Combine(directory, "ewp_data.yaml");
+      System.IO.Directory.CreateDirectory(destination); // Deterministic file-write failure.
+      DataStorage.SetValue("save-retry-receipt", "kept");
+      elapsed!.SetValue(stopwatch, System.Diagnostics.Stopwatch.Frequency * 11L);
+      Assert.Catch(() => DataStorage.SaveSavedData());
+      Assert.That(dirty.GetValue(null), Is.True);
+      System.IO.Directory.Delete(destination);
+      elapsed.SetValue(stopwatch, System.Diagnostics.Stopwatch.Frequency * 11L);
+      DataStorage.SaveSavedData();
+      Assert.That(System.IO.File.Exists(destination), Is.True);
+      Assert.That(System.IO.File.ReadAllText(destination), Does.Contain("save-retry-receipt"));
+      Assert.That(dirty.GetValue(null), Is.False);
+    }
+    finally
+    {
+      Yaml.BaseDirectory = previousDirectory;
+      stopwatch.Restart();
+      if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true);
+    }
+  }
 }
