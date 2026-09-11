@@ -437,35 +437,27 @@ RPC format:
 
 ### Terrain
 
-Terrain can be changed with RPC call `RPC_ApplyOperation`.
-
-Use `terrain` for rule-based operations. It keeps the evaluated settings and handles the terrain compiler objects.
-
 - terrain: List of terrain operations.
-  - Automatically creates missing _TerrainCompiler objects.
-  - A new compiler or an ownership change gives the operation at least 1 second to initialize.
-  - Affected compilers are owned by the server so operations also work with unmodded clients.
-  - Automatically affects all compilers within the radius.
-  - Only works for zones that are loaded by some client.
-    - For this reason, radius shouldn't exceed ~100 meters.
+  - Missing _TerrainCompiler objects are automatically created when needed.
+  - Doesn't apply to zones that are not already generated.
 
 Terrain operation:
 
-- delay: Delay in seconds for the terrain change.
-- pos: Position offset in x,z,y from the original object.
-- resetRadius: Radius for the terrain and paint reset.
+- delay (default: `0`): Delay in seconds for the terrain change.
+- pos (or `position`): Position offset in x,z,y from the original object. Default is no offset.
+- resetRadius (default: `0`): Radius for the terrain and paint reset.
   - This is purely done server side, so you can't use other operations with this.
-- square: If true, square shape is used.
-- levelRadius: Radius for the level change.
-- levelOffset: Offset for the level change.
-- raiseRadius: Radius for the raise change.
-- raisePower: Power for the raise change.
-- raiseDelta: Delta for the raise change.
-- smoothRadius: Radius for the smooth change.
-- smoothPower: Power for the smooth change.
-- paintRadius: Radius for the paint change.
-- paintHeightCheck: If true, checks something.
-- paint: Terrain paint color. Supports values ClearVegetation, Cultivate, Dirt, Paved, Reset and DeepSnow.
+- square (default: `false`): If true, uses a square shape for level, raise and smooth changes.
+- levelRadius (default: `0`): Radius for the level change. A positive value enables leveling.
+- levelOffset (default: `0`): Vertical offset for the level change.
+- raiseRadius (default: `0`): Radius for the raise change. A positive value enables raising.
+- raisePower (default: `0`): Power of the raise falloff.
+- raiseDelta (default: `0`): Delta for the raise change.
+- smoothRadius (default: `0`): Radius for the smooth change. A positive value enables smoothing.
+- smoothPower (default: `0`): Power of the smooth falloff.
+- paintRadius (default: `0`): Radius for the paint change. A positive value enables painting.
+- paintHeightCheck (default: `false`): If true, skips vertices whose current height is above the operation height.
+- paint (default: `Reset`): Terrain paint color. Supports values ClearVegetation, Cultivate, Dirt, Paved, Reset and DeepSnow.
   - Numeric enum values are also supported.
 
 ### States

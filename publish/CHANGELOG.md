@@ -1,11 +1,12 @@
-## 1.59.3
-
-- Fix `filter:` and `bannedFilter:` shorthand in nested YAML mappings, including indented anchored object lists.
-- Preserve explicit filter lists, scalar text, and aliases during shorthand normalization.
-
-- v1.59.2 (Deep North prototype source handoff 21; 2026-09-09)
-  - Save pending pokes on persistent targets and resume their remaining delays after a world reload.
-  - Prevent stale session IDs and failed recipients from replaying delayed pokes.
+- v1.60.1
+  - Fixes for the new game update (item data, terrain and many other things). Thanks JPValheim!
+  - Adds support for saving delayed pokes to object data (requires server side data to be enabled). Thanks JPValheim!
+  - Adds new field `log` to add custom log output. Thanks JPValheim!
+  - Adds new function `altbiome` to get alternative biome info. Thanks JPValheim!
+  - Changes field `biomes` and `bannedBiomes` to support alternative biomes. Thanks JPValheim!
+  - Fixes shorthand parsing of `filter` and `bannedFilter` failing in some cases. Thanks JPValheim!
+  - Fixes missing clean up on logout (possibly leaving stale data behind). Thanks JPValheim!
+  - Fixes poke `weight` being parsed as integer instead of decimal value. Thanks JPValheim!
 
 - v1.60
   - Adds experimental server owned object support.
