@@ -1,4 +1,5 @@
-- v1.60.1
+- v1.60
+  - Adds experimental server owned object support.
   - Fixes for the new game update (item data, terrain and many other things). Thanks JPValheim!
   - Adds support for saving delayed pokes to object data (requires server side data to be enabled). Thanks JPValheim!
   - Adds new field `log` to add custom log output. Thanks JPValheim!
@@ -7,9 +8,6 @@
   - Fixes shorthand parsing of `filter` and `bannedFilter` failing in some cases. Thanks JPValheim!
   - Fixes missing clean up on logout (possibly leaving stale data behind). Thanks JPValheim!
   - Fixes poke `weight` being parsed as integer instead of decimal value. Thanks JPValheim!
-
-- v1.60
-  - Adds experimental server owned object support.
 
 - v1.59
   - Adds server side position update for attached objects when a script triggers on them.
