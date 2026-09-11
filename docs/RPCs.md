@@ -99,7 +99,7 @@ By default, the RPC is sent to the owner of the object.
   - name: RPC_SetVisualItem
     target: all
     1: int, "index of the item slot"
-    2: string, "name of the item"
+    2: hash, "name of the item"
     3: int, "variant number of the item"
     4: int, "orientation of the item (0 = none, 1 = vertical, 2 = horizontal, 3 = all)"
 ```
@@ -1166,6 +1166,16 @@ This list all RPC calls that are not related to any object.
     3: string, "text"
     4: bool, "self damage"
 ```
+
+```yaml
+# Shows a damage text.
+  clientRpc:
+  - name: RPC_RegisterKill
+    1: string, "enemy name"
+    2: int, "boss number"
+    3: int, "modifiers" (0 = mixed, 1 = unarmed, 2 = magic, 3 = ranged, 4 = melee, 5 = none)
+    4: int, "attackers"
+    5: bool, "cheats used"
 
 ```yaml
 # Destroys an object.
