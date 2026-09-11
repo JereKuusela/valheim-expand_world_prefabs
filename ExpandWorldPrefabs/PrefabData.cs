@@ -847,7 +847,7 @@ public class Terrain(TerrainData data)
   public readonly IBoolValue? PaintHeightCheck = data.paintHeightCheck == null ? null : DataValue.Bool(data.paintHeightCheck);
   public readonly IStringValue? Paint = data.paint == null ? null : DataValue.String(data.paint);
 
-  public void Get(Functions f, Vector3 basePosition, Quaternion baseRotation, out Vector3 pos, out float size, out float resetRadius, out ZPackage pkg)
+  public void Get(Functions f, Vector3 basePosition, Quaternion baseRotation, out Vector3 pos, out float size, out float resetRadius, out TerrainOp.Settings settings)
   {
     pos = basePosition;
     pos += baseRotation * (Position?.Get(f) ?? Vector3.zero);
@@ -860,7 +860,7 @@ public class Terrain(TerrainData data)
       Enum.TryParse(paint, true, out TerrainModifier.PaintType paintType) ? paintType :
       int.TryParse(paint, out var paintInt) ? (TerrainModifier.PaintType)paintInt :
       TerrainModifier.PaintType.Reset;
-    var settings = new TerrainOp.Settings
+    settings = new TerrainOp.Settings
     {
       m_levelOffset = LevelOffset?.Get(f) ?? 0f,
       m_level = levelRadius > 0f,
@@ -878,7 +878,6 @@ public class Terrain(TerrainData data)
       m_paintType = paintEnum,
       m_paintRadius = paintRadius
     };
-    pkg = TerrainProtocol.Write(pos, settings);
     resetRadius = ResetRadius?.Get(f) ?? 0f;
     size = Mathf.Max(levelRadius, raiseRadius, smoothRadius, paintRadius, resetRadius);
   }
