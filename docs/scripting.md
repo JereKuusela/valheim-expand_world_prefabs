@@ -427,18 +427,13 @@ RPC format:
 
 ### Item data
 
-Item and container data use the Deep North save format.
-
-- Item fields `durability`, `stack`, `quality`, `variant`, `crafterID`, `crafterName`, `worldLevel` and `pickedUp` continue to work through data entries and object functions.
-  - ItemDrop values are read from packed item data. Written legacy fields are converted to that format.
-  - A nonempty crafter name without a crafter ID receives ID `1` so the name remains visible. Explicit nonzero IDs are kept.
-- `items`, `addItems`, `removeItems` and inventory functions use the container's byte-array inventory.
-  - Older Base64 inventories can still be read. Writes use the current format and remove the old string value.
-  - Use `bytes: - items, <Base64 inventory>` for raw inventory data in new entries.
-  - Legacy `strings: - items, <Base64 inventory>` entries also replace the byte-array inventory. Values are evaluated before decoding.
-  - A blank legacy `strings: - items,` value clears the inventory using the current save format. Invalid Base64 values do not change the inventory.
-  - If both forms are set in the same data entry, `bytes` takes priority. Blank byte-array values keep their usual behavior and do not write anything.
-  - `<string_items>` returns an existing legacy string, including an empty string. Otherwise it returns the byte-array inventory as Base64, or the default value if neither exists.
+- Container data is packed to `items` byte arrays.
+  - Old string based `items` data is automatically loaded from the byte array.
+- Item data is packed to `itemData` byte arrays.
+  - Old separate data values are automatically loaded from the packed item data.
+  - These include `durability`, `stack`, `quality`, `variant`, `crafterID`, `crafterName`, `worldLevel` and `pickedUp`.
+- Game only shows crafter name if crafter ID is nonzero.
+  - Crafter ID is automatically set to value `1` when only a crafter name is provided.
 
 ### Terrain
 

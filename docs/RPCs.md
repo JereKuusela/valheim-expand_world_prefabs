@@ -977,9 +977,18 @@ By default, the RPC is sent to the owner of the object.
 
 ### TerrainComp
 
-Deep North uses `RPC_ApplyOperation` with a TerrainOp prefab hash instead of the old settings packet.
+```yaml
+# Applies terrain operation.
+  objectRpc:
+  - name: RPC_ApplyOperation
+    packaged: true
+    1: vec, "position"
+    2: bool, "true if rotation is given"
+    3: vec, "rotation" # Omitted if 2 is false, then 3 is "TerrainOp prefab hash"
+    4: hash, "TerrainOp prefab hash"
+```
 
-Use the [terrain field](scripting.md#terrain) to set position, radius, height and paint from a rule. EWP sends its evaluated settings to the server-owned compiler. Native terrain packets keep their original behavior.
+Recommended to use the [terrain field](scripting.md#terrain) to set position, radius, height and paint from a rule. EWP sends its evaluated settings to the server-owned compiler.
 
 ### Trap
 

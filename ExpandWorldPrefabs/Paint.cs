@@ -7,9 +7,9 @@ namespace ExpandWorld.Prefab;
 public static class Paint
 {
   private static readonly int TerrainCompilerHash = ZdoHelper.Hash("_TerrainCompiler");
-  public static Color GetPaint(Vector3 pos, BiomeSector biome)
+  public static Color GetPaint(Vector3 pos, Heightmap.Biome biome)
   {
-    WorldGenerator.instance.GetBiomeHeight(biome.Biome, pos.x, pos.z, out Color paint);
+    WorldGenerator.instance.GetBiomeHeight(biome, pos.x, pos.z, out Color paint);
     var zdo = GetCompiler(pos);
     if (zdo == null) return paint;
     var data = zdo.GetByteArray(ZDOVars.s_TCData, null);

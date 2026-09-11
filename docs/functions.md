@@ -8,6 +8,7 @@ Following functions are available to be used in the yaml file:
 - `<zdo>`: Object id.
   - Object id parameters accept `owner:id`, `(owner, id)` and `owner id`.
 - `<biome>`: Biome where the object is located.
+- `<altbiome>`: Biome with alternative biome info.
   - Returns the alternate biome name when present. Overlapping alternate names are separated by commas and sorted alphabetically.
   - Returns the base biome name when no alternate biome is present. Use `ewp_biomes` to list the alternate names.
 - `<x>`, `<y>` and `<z>`: Object center point.

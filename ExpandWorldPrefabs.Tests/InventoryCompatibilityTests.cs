@@ -74,7 +74,6 @@ public class InventoryCompatibilityTests
   private void Populate()
   {
     ZDOExtraData.s_byteArrays[zdo.m_uid][ZDOVars.s_items] = [1, 2, 3];
-    ZDOExtraData.s_strings[zdo.m_uid][ZDOVars.s_items] = "old inventory";
   }
 
   private void Apply(DataData data)
@@ -95,65 +94,13 @@ public class InventoryCompatibilityTests
 
   [TestCase(false)]
   [TestCase(true)]
-  public void NamedInventory_ReplacesRawBytesAndRemovesLegacyString(bool explicitBytes)
+  public void NamedInventory_ReplacesRawBytes(bool explicitBytes)
   {
     Populate();
     var payload = ItemValue.LoadItemBytes(functions, [], new Vector2i(2, 2), 0);
     var value = "items, " + Convert.ToBase64String(payload);
     Apply(explicitBytes ? new DataData { bytes = [value] } : new DataData { strings = [value] });
     Assert.That(zdo.GetByteArray(ZDOVars.s_items), Is.EqualTo(payload));
-    Assert.That(ZDOExtraData.s_strings.TryGetValue(zdo.m_uid, out var values) && values.ContainsKey(ZDOVars.s_items), Is.False);
-  }
-
-  [TestCase("")]
-  [TestCase("<empty>")]
-  public void LegacyBlank_ReplacesInventoryWithCurrentEmptyPackage(string value)
-  {
-    Populate();
-    Functions.ExecuteCode = key => key == "empty" ? "" : null;
-    Apply(new DataData { strings = ["items, " + value] });
-    var package = new ZPackage(zdo.GetByteArray(ZDOVars.s_items));
-    Assert.That(package.ReadInt(), Is.EqualTo(InventoryStorage.FormatVersion));
-    Assert.That(package.ReadUShort(), Is.Zero);
-    Assert.That(package.GetPos(), Is.EqualTo(package.Size()));
-    Assert.That(ZDOExtraData.s_strings.TryGetValue(zdo.m_uid, out var values) && values.ContainsKey(ZDOVars.s_items), Is.False);
-  }
-
-  [Test]
-  public void LegacyDynamic_DecodesAfterFunctionExpansion()
-  {
-    Populate();
-    Functions.ExecuteCode = key => key == "snapshot" ? "BAUG" : null;
-    Apply(new DataData { strings = ["items, <snapshot>"] });
-    Assert.That(zdo.GetByteArray(ZDOVars.s_items), Is.EqualTo(new byte[] { 4, 5, 6 }));
-  }
-
-  [TestCase("not base64")]
-  [TestCase("<none>")]
-  public void LegacyInvalidOrNone_DoesNotClearInventory(string value)
-  {
-    Populate();
-    Apply(new DataData { strings = ["items, " + value] });
-    Assert.That(zdo.GetByteArray(ZDOVars.s_items), Is.EqualTo(new byte[] { 1, 2, 3 }));
-    Assert.That(Snapshot(), Is.EqualTo("old inventory"));
-  }
-
-  [TestCase("BAUG", new byte[] { 4, 5, 6 })]
-  [TestCase("", new byte[] { 1, 2, 3 })]
-  public void ExplicitBytes_TakesPriorityIncludingBlankNoOp(string value, byte[] expected)
-  {
-    Populate();
-    Apply(new DataData { strings = ["items, BwgJ"], bytes = ["items, " + value] });
-    Assert.That(zdo.GetByteArray(ZDOVars.s_items), Is.EqualTo(expected));
-  }
-
-  [TestCase("legacy")]
-  [TestCase("")]
-  public void Snapshot_PreservesPresentLegacyString(string value)
-  {
-    Populate();
-    ZDOExtraData.s_strings[zdo.m_uid][ZDOVars.s_items] = value;
-    Assert.That(Snapshot(), Is.EqualTo(value));
   }
 
   [Test]

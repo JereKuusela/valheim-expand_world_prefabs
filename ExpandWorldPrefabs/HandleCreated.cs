@@ -25,12 +25,6 @@ public class HandleCreated
     method = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.RPC_ZDOData));
     patch = AccessTools.Method(typeof(HandleCreated), nameof(RPC_ZDOData));
     harmony.Patch(method, transpiler: new HarmonyMethod(patch));
-    method = AccessTools.Method(typeof(ZNetView), nameof(ZNetView.StartGhostInit));
-    patch = AccessTools.Method(typeof(HandleCreated), nameof(OnGhostInitStarted));
-    harmony.Patch(method, postfix: new HarmonyMethod(patch));
-    method = AccessTools.Method(typeof(ZNetView), nameof(ZNetView.FinishGhostInit));
-    patch = AccessTools.Method(typeof(HandleCreated), nameof(OnGhostInitFinished));
-    harmony.Patch(method, postfix: new HarmonyMethod(patch));
   }
 
   private static void DoUnpatch(Harmony harmony)
@@ -42,13 +36,6 @@ public class HandleCreated
     method = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.RPC_ZDOData));
     patch = AccessTools.Method(typeof(HandleCreated), nameof(RPC_ZDOData));
     harmony.Unpatch(method, patch);
-    method = AccessTools.Method(typeof(ZNetView), nameof(ZNetView.StartGhostInit));
-    patch = AccessTools.Method(typeof(HandleCreated), nameof(OnGhostInitStarted));
-    harmony.Unpatch(method, patch);
-    method = AccessTools.Method(typeof(ZNetView), nameof(ZNetView.FinishGhostInit));
-    patch = AccessTools.Method(typeof(HandleCreated), nameof(OnGhostInitFinished));
-    harmony.Unpatch(method, patch);
-    GhostInitActive = false;
   }
 
   // Single player requires manual delay so that the initial data is loaded.
@@ -56,7 +43,6 @@ public class HandleCreated
   private static readonly List<ZDOID> CreatedZDOs = [];
   // Ghost init must be handled separately to not assign ownership to clients.
   private static readonly List<ZDOID> GhostZDOs = [];
-  internal static bool GhostInitActive { get; private set; }
   public static bool Skip = false;
   public static void Execute()
   {
@@ -72,24 +58,19 @@ public class HandleCreated
         NPCManager.Track(zdo);
       }
       ZNetView.StartGhostInit();
-      try
+      for (var i = 0; i < GhostZDOs.Count; i++)
       {
-        for (var i = 0; i < GhostZDOs.Count; i++)
-        {
-          var uid = GhostZDOs[i];
-          var zdo = ZDOMan.instance.GetZDO(uid);
-          if (zdo == null) continue;
-          Manager.Handle(ActionType.Create, [], zdo);
-          NPCManager.Track(zdo);
-        }
-      }
-      finally
-      {
-        ZNetView.FinishGhostInit();
+        var uid = GhostZDOs[i];
+        var zdo = ZDOMan.instance.GetZDO(uid);
+        if (zdo == null) continue;
+        Manager.Handle(ActionType.Create, [], zdo);
+        NPCManager.Track(zdo);
       }
     }
     finally
     {
+      // Important to clear ghost init, so that errors don't mess up world generation.
+      ZNetView.FinishGhostInit();
       CreatedZDOs.Clear();
       GhostZDOs.Clear();
     }
@@ -98,26 +79,20 @@ public class HandleCreated
   {
     if (Skip) return;
     if (prefabHash == 0) return;
-    if (GhostInitActive)
+    if (ZNetView.m_ghostInit)
       GhostZDOs.Add(__result.m_uid);
     else
       CreatedZDOs.Add(__result.m_uid);
   }
-  internal static void OnGhostInitStarted() => GhostInitActive = true;
-  internal static void OnGhostInitFinished() => GhostInitActive = false;
   private static IEnumerable<CodeInstruction> RPC_ZDOData(IEnumerable<CodeInstruction> instructions)
   {
-    var result = new List<CodeInstruction>(instructions);
-    var deserialize = AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize));
-    var index = result.FindIndex(instruction => instruction.opcode == OpCodes.Callvirt && instruction.operand as System.Reflection.MethodInfo == deserialize);
-    if (index < 0) return result;
-    result.InsertRange(index + 1,
-    [
-      new(OpCodes.Ldloc_S, 12),
-      new(OpCodes.Ldloc_S, 13),
-      new(OpCodes.Call, Transpilers.EmitDelegate(HandleClientCreated).operand)
-    ]);
-    return result;
+    return new CodeMatcher(instructions)
+       .MatchEndForward(new CodeMatch(OpCodes.Callvirt, AccessTools.Method(typeof(ZDO), nameof(ZDO.Deserialize))))
+       .Advance(1)
+       .InsertAndAdvance(new CodeInstruction(OpCodes.Ldloc_S, 12))
+       .InsertAndAdvance(new CodeInstruction(OpCodes.Ldloc_S, 13))
+       .InsertAndAdvance(new CodeInstruction(OpCodes.Call, Transpilers.EmitDelegate(HandleClientCreated).operand))
+       .InstructionEnumeration();
   }
   private static void HandleClientCreated(ZDO zdo, bool flag)
   {

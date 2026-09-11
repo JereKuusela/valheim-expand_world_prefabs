@@ -37,7 +37,7 @@ public class InfoSelector
   private static Info[]? SelectInfos(List<Info> data, Vector3 pos, ZDO zdo, string[] args, Functions f)
   {
     if (data.Count == 0) return null;
-    var biome = WorldGenerator.instance.GetBiomeSector(pos);
+    var biome = WorldGenerator.instance.GetBiome(pos);
     var distance = Utils.LengthXZ(pos);
     var day = EnvMan.IsDay();
     var waterY = pos.y - ZoneSystem.instance.m_waterLevel;
@@ -45,8 +45,6 @@ public class InfoSelector
       .Where(d => CheckArgs(d, args))
       .Where(d => (d.Biomes & biome) == biome || d.AltBiomes != null)
       .Where(d => (d.BannedBiomes & biome) == 0)
-      .Where(d => (d.Biomes & biome.Biome) == biome.Biome)
-      .Where(d => (d.BannedBiomes & biome.Biome) == 0)
       .Where(d => d.Day?.GetBool(f) != false || !day)
       .Where(d => d.Night?.GetBool(f) != false || day)
       .Where(d => d.MinDistance == null || !d.MinDistance.TryGet(f, out var v) || v < distance)

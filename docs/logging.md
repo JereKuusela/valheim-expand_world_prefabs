@@ -9,7 +9,6 @@ The `log` field adds text to `BepInEx/config/expand_world/ewp_log.txt` when a ru
 ```
 
 - Functions and object substitutions are supported.
-  - `<biome>` logs alternate biome names when present, or the base biome name otherwise. Overlapping alternate names are separated by commas.
 - Logging runs after rule selection and chance checks, before other actions.
   - A record means the rule started its actions. It does not confirm that later actions succeeded.
 - Only the server writes records. This includes single player and the host of a local server.

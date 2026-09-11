@@ -82,9 +82,6 @@ public class DataValue
     return new BoolValue(split);
   }
 
-  internal static IBytesValue LegacyInventoryBytes(string values) =>
-    new BytesValue(SplitWithValues(values)) { EmptyInventory = true };
-
   public static IBytesValue Bytes(string values)
   {
     var split = SplitWithValues(values);
@@ -289,7 +286,7 @@ public class ItemValue(ItemData data)
     ZPackage pkg = new();
     pkg.Write(InventoryStorage.FormatVersion);
     items = Generate(f, items, size, amount);
-    items = items.Where(item => item.CanWrite()).ToList();
+    items = [.. items.Where(item => item.CanWrite())];
     pkg.Write((ushort)items.Count);
     foreach (var item in items)
       item.Write(f, pkg);
@@ -435,7 +432,7 @@ public class ItemValue(ItemData data)
   private ItemDrop.ItemData CreateItemData(Functions f, GameObject prefab)
   {
     var customData = CustomData?.ToDictionary(x => x.Key, x => x.Value.Get(f) ?? "");
-    return ItemDataCompatibility.Create(
+    return ItemDataHelper.Create(
       prefab,
       RolledStack,
       Durability?.Get(f),

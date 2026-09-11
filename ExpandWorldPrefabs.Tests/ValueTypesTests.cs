@@ -16,7 +16,7 @@ public class ValueTypesTests
   [TestCase(123123123L, "Slayer Master Konar", 123123123L)]
   public void EnsureVisibleCrafterId_AddsOnlyMissingVisibilityMarker(long input, string name, long expected)
   {
-    Assert.That(ItemDataCompatibility.EnsureVisibleCrafterId(input, name), Is.EqualTo(expected));
+    Assert.That(ItemDataHelper.EnsureVisibleCrafterId(input, name), Is.EqualTo(expected));
   }
 
   [SetUp]

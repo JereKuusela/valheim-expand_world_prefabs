@@ -19,23 +19,13 @@ internal static class InventoryStorage
       inventory.Load(new ZPackage(bytes));
       return true;
     }
-
-    // Compatibility for containers saved before Deep North moved s_items
-    // from a Base64 string to a raw byte array.
-    var legacy = zdo.GetString(ZDOVars.s_items);
-    if (legacy == "") return false;
-    inventory.Load(new ZPackage(legacy));
-    return true;
+    return false;
   }
 
   public static void Save(ZDO zdo, Inventory inventory)
   {
     ZPackage package = new();
     inventory.Save(package);
-    RemoveLegacy(zdo);
     zdo.Set(ZDOVars.s_items, package.GetArray());
   }
-
-  public static void RemoveLegacy(ZDO zdo) =>
-    ZDOExtraData.s_strings.Remove(zdo.m_uid, ZDOVars.s_items);
 }

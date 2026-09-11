@@ -5,13 +5,9 @@ namespace Data;
 
 public class BytesValue(string[] values) : AnyValue(values), IBytesValue
 {
-  internal bool EmptyInventory;
-
   public byte[]? Get(Functions f)
   {
     var value = GetValue(f);
-    if (value == "" && EmptyInventory)
-      return ItemValue.LoadItemBytes(f, [], new Vector2i(0, 0), 0);
     if (value == null || value == "") return null;
     try
     {

@@ -332,17 +332,17 @@ public class DataEntry
         if (kvp.Key.Contains("."))
           componentsToAdd.Add(kvp.Key.Split('.')[0]);
         var hash = ZdoHelper.Hash(kvp.Key);
-        if (Strings.ContainsKey(hash))
-          Log.Warning($"Data {data.name}: Duplicate string key {kvp.Key}.");
-        // Legacy inventories must replace the current byte-array inventory too.
+        // Legacy inventories must replace the current byte-array inventory instead.
         if (hash == ZDOVars.s_items)
         {
           ByteArrays ??= [];
           if (ByteArrays.ContainsKey(hash))
             Log.Warning($"Data {data.name}: Duplicate string key {kvp.Key}.");
-          ByteArrays[hash] = DataValue.LegacyInventoryBytes(kvp.Value);
+          ByteArrays[hash] = DataValue.Bytes(kvp.Value);
           continue;
         }
+        if (Strings.ContainsKey(hash))
+          Log.Warning($"Data {data.name}: Duplicate string key {kvp.Key}.");
         Strings[hash] = DataValue.String(kvp.Value);
       }
     }
@@ -697,7 +697,6 @@ public class DataEntry
     {
       var size = ContainerSize ?? ZdoHelper.GetInventorySize(this, f, zdo);
       var encoded = ItemValue.LoadItemBytes(f, Items, size, ItemAmount?.Get(f) ?? 0);
-      Strings?.Remove(ZDOVars.s_items);
       ByteArrays ??= [];
       ByteArrays[ZDOVars.s_items] = DataValue.Simple(encoded);
     }
