@@ -108,9 +108,15 @@ public abstract class RpcInfo
     }
     var parameters = Packaged ? GetPackagedParameters(f) : GetParameters(zdo, f);
     if (Target == RpcTarget.Owner)
-      DelayedRpc.Add(delay, source, zdo.GetOwner(), GetId(zdo), Hash, parameters, overwrite);
+    {
+      if (TeleportManager.IsTeleport(Hash) && GetId(zdo) == ZDOID.None && zdo.GetOwner() == ZRoutedRpc.Everybody)
+      {
+        return;
+      }
+      DelayedRpc.Add(delay, source, zdo.GetOwner(), GetId(zdo), Hash, parameters, overwrite, zdo.m_uid);
+    }
     else if (Target == RpcTarget.All)
-      DelayedRpc.Add(delay, source, ZRoutedRpc.Everybody, GetId(zdo), Hash, parameters, overwrite);
+      DelayedRpc.Add(delay, source, ZRoutedRpc.Everybody, GetId(zdo), Hash, parameters, overwrite, GetId(zdo));
     else if (Target == RpcTarget.ZDO)
     {
       var targetParameter = TargetParameter?.Get(f);
@@ -118,8 +124,12 @@ public abstract class RpcInfo
       {
         var id = Parse.ZdoId(targetParameter);
         var peerId = ZDOMan.instance.GetZDO(id)?.GetOwner();
+        if (TeleportManager.IsTeleport(Hash) && GetId(zdo) == ZDOID.None && peerId == ZRoutedRpc.Everybody)
+        {
+          return;
+        }
         if (peerId.HasValue)
-          DelayedRpc.Add(delay, source, peerId.Value, GetId(zdo), Hash, parameters, overwrite);
+          DelayedRpc.Add(delay, source, peerId.Value, GetId(zdo), Hash, parameters, overwrite, GetId(zdo) == ZDOID.None ? id : zdo.m_uid);
       }
     }
   }

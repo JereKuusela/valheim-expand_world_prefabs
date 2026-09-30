@@ -94,7 +94,7 @@ public static class ServerSideData
 
   private static void BeforeSave(ZDO __instance)
   {
-    if (!Config.ServerSideData)
+    if (!Config.ServerSideData || TeleportManager.IsPlayerWriteQuarantined(__instance.m_uid))
       return;
     var payload = Serialize(__instance.m_uid);
     if (payload == null || payload.Length == 0)

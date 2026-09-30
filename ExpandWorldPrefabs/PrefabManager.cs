@@ -59,6 +59,10 @@ public class Manager
     // Already destroyed before.
     if (ZDOMan.instance.m_deadZDOs.ContainsKey(zdo.m_uid)) return false;
     if (!ZNet.instance.IsServer()) return false;
+    // Queue the complete event while a client-owned Player ZDO may still hold
+    // its pre-teleport position. This protects every rule action, not only
+    // rules triggered by resetcloth.
+    if (TeleportManager.TryDeferPlayerEvent(type, args, zdo)) return false;
     SupportAttach.SyncAttachedWorldTransform(zdo);
     var name = ZNetScene.instance.GetPrefab(zdo.m_prefab)?.name ?? "";
     ObjectFunctions f = new(name, args, zdo);
@@ -174,6 +178,7 @@ public class Manager
   public static bool CheckCancel(ActionType type, string[] args, ZDO zdo)
   {
     if (!ZNet.instance.IsServer()) return false;
+    if (TeleportManager.IsPlayerWriteQuarantined(zdo.m_uid)) return false;
     SupportAttach.SyncAttachedWorldTransform(zdo);
     var name = ZNetScene.instance.GetPrefab(zdo.m_prefab)?.name ?? "";
     ObjectFunctions f = new(name, args, zdo);
@@ -376,6 +381,11 @@ public class Manager
   }
   public static void Rpc(long source, long target, ZDOID id, int hash, object[] parameters)
   {
+    Rpc(source, target, id, hash, parameters, id);
+  }
+
+  internal static void Rpc(long source, long target, ZDOID id, int hash, object[] parameters, ZDOID actor)
+  {
     var router = ZRoutedRpc.instance;
     ZRoutedRpc.RoutedRPCData routedRPCData = new()
     {
@@ -385,6 +395,7 @@ public class Manager
       m_targetZDO = id,
       m_methodHash = hash
     };
+    TeleportManager.Track(actor, hash, parameters);
     ZRpc.Serialize(parameters, ref routedRPCData.m_parameters);
     routedRPCData.m_parameters.SetPos(0);
     if (target == router.m_id || target == ZRoutedRpc.Everybody)
