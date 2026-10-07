@@ -5,6 +5,7 @@ using System.Linq;
 using Data;
 using Service;
 using UnityEngine;
+using Common;
 
 namespace ExpandWorld.Prefab;
 
@@ -147,7 +148,7 @@ public class Helper
   public static string Format(float value) => Formatting.Format(value);
   public static string Format(double value) => Formatting.Format(value);
   public static string FormatPos(Vector3 value) => Formatting.FormatPos(value);
-  public static string FormatRot(Vector3 value) => $"{Format(value.y)},{Format(value.x)},{Format(value.z)}";
+  public static string FormatRot(Vector3 value) => Formatting.FormatRot(value);
   public static string FormatPos2(Vector3 value) => $"{Format2(value.x)},{Format2(value.z)},{Format2(value.y)}";
   public static string FormatRot2(Vector3 value) => $"{Format2(value.y)},{Format2(value.x)},{Format2(value.z)}";
   public static string Format2(float value) => value.ToString("0.##", NumberFormatInfo.InvariantInfo);

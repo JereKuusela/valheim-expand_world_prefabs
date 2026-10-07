@@ -12,22 +12,22 @@ public partial class DataEntry
   {
     if (Items == null || Items.Count == 0) return;
     var size = ContainerSize ?? ZdoHelper.GetInventorySize(this, f, zdo);
-    var records = Service.ItemDataHelper.Load(zdo);
+    var records = ItemDataHelper.Load(zdo);
     var items = GenerateItems(f, size);
     foreach (var item in items)
       item.AddTo(f, records, size);
-    Service.ItemDataHelper.SaveTo(zdo, records);
+    ItemDataHelper.SaveTo(zdo, records);
   }
   public void RemoveItems(Functions f, ZDO zdo)
   {
     if (Items == null || Items.Count == 0) return;
-    var records = Service.ItemDataHelper.Load(zdo);
+    var records = ItemDataHelper.Load(zdo);
     if (records.Count == 0) return;
 
     var items = GenerateItems(f, new(10000, 10000));
     foreach (var item in items)
       item.RemoveFrom(f, records);
-    Service.ItemDataHelper.SaveTo(zdo, records);
+    ItemDataHelper.SaveTo(zdo, records);
   }
   public List<ItemValue> GenerateItems(Functions f, Vector2i size)
   {
@@ -43,43 +43,43 @@ public partial class DataEntry
     {
       Floats ??= [];
       foreach (var pair in serverFloats)
-        Floats[pair.Key] = DataValue.Simple(pair.Value);
+        Floats[pair.Key] = DataValue.Constant(pair.Value);
     }
     if (ExpandWorld.Prefab.ServerSideData.TryGetInts(id, out var serverInts))
     {
       Ints ??= [];
       foreach (var pair in serverInts)
-        Ints[pair.Key] = DataValue.Simple(pair.Value);
+        Ints[pair.Key] = DataValue.Constant(pair.Value);
     }
     if (ExpandWorld.Prefab.ServerSideData.TryGetLongs(id, out var serverLongs))
     {
       Longs ??= [];
       foreach (var pair in serverLongs)
-        Longs[pair.Key] = DataValue.Simple(pair.Value);
+        Longs[pair.Key] = DataValue.Constant(pair.Value);
     }
     if (ExpandWorld.Prefab.ServerSideData.TryGetStrings(id, out var serverStrings))
     {
       Strings ??= [];
       foreach (var pair in serverStrings)
-        Strings[pair.Key] = DataValue.Simple(pair.Value);
+        Strings[pair.Key] = DataValue.Constant(pair.Value);
     }
     if (ExpandWorld.Prefab.ServerSideData.TryGetVecs(id, out var serverVecs))
     {
       Vecs ??= [];
       foreach (var pair in serverVecs)
-        Vecs[pair.Key] = DataValue.Simple(pair.Value);
+        Vecs[pair.Key] = DataValue.Constant(pair.Value);
     }
     if (ExpandWorld.Prefab.ServerSideData.TryGetQuaternions(id, out var serverQuats))
     {
       Quats ??= [];
       foreach (var pair in serverQuats)
-        Quats[pair.Key] = DataValue.Simple(pair.Value);
+        Quats[pair.Key] = DataValue.Constant(pair.Value);
     }
     if (ExpandWorld.Prefab.ServerSideData.TryGetBytes(id, out var serverBytes))
     {
       ByteArrays ??= [];
       foreach (var pair in serverBytes)
-        ByteArrays[pair.Key] = DataValue.Simple(pair.Value);
+        ByteArrays[pair.Key] = DataValue.Constant(pair.Value);
     }
   }
 }

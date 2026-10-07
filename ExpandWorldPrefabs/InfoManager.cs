@@ -90,7 +90,7 @@ public class InfoManager
     }
     if (info.Type == ActionType.Command)
     {
-      info.Admin = new SimpleBoolValue(true);
+      info.Admin = new ConstantBoolValue(true);
       info.Type = ActionType.Say;
     }
     Select(info.Type).Add(info);

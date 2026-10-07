@@ -6,6 +6,7 @@ using System.Linq;
 using Data;
 using Service;
 using UnityEngine;
+using Common;
 
 namespace ExpandWorld.Prefab;
 
@@ -391,12 +392,12 @@ public class Spawn
 
   public Spawn(SpawnData data, float? delay, bool? triggerRules)
   {
-    Prefab = data.prefab == null ? new SimplePrefabValue(0) : DataValue.Prefab(data.prefab);
+    Prefab = data.prefab == null ? new ConstantPrefabValue(0) : DataValue.Prefab(data.prefab);
     Pos = data.pos != null ? DataValue.Vector3(data.pos) : data.position != null ? DataValue.Vector3(data.position) : null;
     Snap = data.snap == null ? null : DataValue.Bool(data.snap);
     Rot = data.rot != null ? DataValue.Quaternion(data.rot) : data.rotation != null ? DataValue.Quaternion(data.rotation) : null;
     Data = data.data == null ? null : DataValue.String(data.data);
-    Delay = data.delay == null ? delay == null ? null : new SimpleFloatValue(delay.Value) : DataValue.Float(data.delay);
+    Delay = data.delay == null ? delay == null ? null : new ConstantFloatValue(delay.Value) : DataValue.Float(data.delay);
     RemoveDelay = data.removeDelay == null ? null : DataValue.Float(data.removeDelay);
     Repeat = data.repeat == null ? null : DataValue.Int(data.repeat);
     RepeatInterval = data.repeatInterval == null ? null : DataValue.Float(data.repeatInterval);
@@ -407,7 +408,7 @@ public class Spawn
     Owner = data.owner == null || OwnerServer ? null : DataValue.Long(data.owner);
     Attach = data.attach == null ? null : DataValue.ZdoId(data.attach);
     Connect = data.connect == null ? null : DataValue.ZdoId(data.connect);
-    TriggerRules = data.triggerRules == null ? triggerRules == null ? null : new SimpleBoolValue(triggerRules.Value) : DataValue.Bool(data.triggerRules);
+    TriggerRules = data.triggerRules == null ? triggerRules == null ? null : new ConstantBoolValue(triggerRules.Value) : DataValue.Bool(data.triggerRules);
     if (data.condition != null)
     {
       if (Conditions.TryParse(data.condition, out var condition, out var error))
@@ -422,7 +423,7 @@ public class Spawn
 
   public Spawn(string line, float? delay, bool? triggerRules)
   {
-    Delay = delay == null ? null : new SimpleFloatValue(delay.Value);
+    Delay = delay == null ? null : new ConstantFloatValue(delay.Value);
     RemoveDelay = null;
     Repeat = null;
     RepeatInterval = null;
@@ -430,7 +431,7 @@ public class Spawn
     Chance = null;
     Weight = null;
     Owner = null;
-    TriggerRules = triggerRules == null ? null : new SimpleBoolValue(triggerRules.Value);
+    TriggerRules = triggerRules == null ? null : new ConstantBoolValue(triggerRules.Value);
     var split = Parse.ToList(line);
     Prefab = DataValue.Prefab(split[0]);
     var posParsed = false;
@@ -438,32 +439,32 @@ public class Spawn
     {
       var value = split[i];
       if (Parse.TryBoolean(value, out var boolean))
-        TriggerRules = new SimpleBoolValue(boolean);
+        TriggerRules = new ConstantBoolValue(boolean);
       else if (Parse.TryFloat(value, out var number1))
       {
         if (split.Count <= i + 2)
-          Delay = new SimpleFloatValue(number1);
+          Delay = new ConstantFloatValue(number1);
         else if (Parse.TryFloat(split[i + 1], out var number2))
         {
           var number3 = Parse.Float(split[i + 2]);
           if (posParsed)
           {
-            Rot = new SimpleQuaternionValue(Quaternion.Euler(number2, number1, number3));
+            Rot = new ConstantQuaternionValue(Quaternion.Euler(number2, number1, number3));
           }
           else
           {
-            Pos = new SimpleVector3Value(new Vector3(number1, number3, number2));
+            Pos = new ConstantVector3Value(new Vector3(number1, number3, number2));
             if (split[i + 2] == "snap")
-              Snap = new SimpleBoolValue(true);
+              Snap = new ConstantBoolValue(true);
             posParsed = true;
           }
           i += 2;
         }
         else
-          Delay = new SimpleFloatValue(number1);
+          Delay = new ConstantFloatValue(number1);
       }
       else
-        Data = new SimpleStringValue(value);
+        Data = new ConstantStringValue(value);
     }
 
   }
@@ -533,7 +534,7 @@ public class Object
   private readonly IVector3Value? OffsetValue;
   private readonly ConditionClause? Condition;
   private readonly Filters? filters;
-  private readonly IIntValue WeightValue = new SimpleIntValue(1);
+  private readonly IIntValue WeightValue = new ConstantIntValue(1);
   private readonly IBoolValue? IncludeSelfValue;
 
   public Object(ObjectData data)
@@ -546,7 +547,7 @@ public class Object
     if (data.maxDistance != null)
       MaxDistanceValue = DataValue.Float(data.maxDistance);
     else
-      MaxDistanceValue = new SimpleFloatValue(100);
+      MaxDistanceValue = new ConstantFloatValue(100);
     if (data.minHeight != null)
       MinHeightValue = DataValue.Float(data.minHeight);
     if (data.maxHeight != null)
@@ -579,7 +580,7 @@ public class Object
     var split = Parse.ToList(line);
     HasPrefabFilter = split.Count > 0 && !string.IsNullOrWhiteSpace(split[0]);
     PrefabsValue = DataValue.Prefab(split[0]);
-    MaxDistanceValue = new SimpleFloatValue(100f);
+    MaxDistanceValue = new ConstantFloatValue(100f);
 
     if (split.Count > 1)
     {
@@ -778,7 +779,7 @@ public class TerrainData
 public class Filters(string[]? filters, string[]? bannedFilters, string? filterLimit)
 {
   // Default limit is that all positive filters must match.
-  public readonly IFloatValue? Limit = filterLimit == null ? new SimpleFloatValue(filters?.Length ?? 0f) : DataValue.Float(filterLimit);
+  public readonly IFloatValue? Limit = filterLimit == null ? new ConstantFloatValue(filters?.Length ?? 0f) : DataValue.Float(filterLimit);
   public readonly Filter[] Values = [.. filters?.Select(f => new Filter(f, false)) ?? [], .. bannedFilters?.Select(f => new Filter(f, true)) ?? []];
 
   public bool Match(Functions f, ZDO zdo)
@@ -809,7 +810,7 @@ public class Filter
     }
     else
     {
-      Weight = banned ? new SimpleFloatValue(10000) : new SimpleFloatValue(1);
+      Weight = banned ? new ConstantFloatValue(10000) : new ConstantFloatValue(1);
     }
     Data = DataValue.String(filter);
     Banned = banned;

@@ -3,6 +3,7 @@ using System.Linq;
 using Data;
 using Service;
 using UnityEngine;
+using Common;
 
 namespace ExpandWorld.Prefab;
 
@@ -136,7 +137,7 @@ public class ObjectsFiltering
   {
     return objects.All(o => zdos.Any(z => o.IsValid(z, f, self)));
   }
-  private static bool HasLimitObjects(List<List<ZDO>> zdoLists, Range<int> limit, Object[] objects, ZDOID? self, Functions f)
+  private static bool HasLimitObjects(List<List<ZDO>> zdoLists, ValueRange<int> limit, Object[] objects, ZDOID? self, Functions f)
   {
     var counter = 0;
     var useMax = limit.Max > 0;
@@ -154,7 +155,7 @@ public class ObjectsFiltering
     return limit.Min <= counter && counter <= limit.Max;
   }
 
-  private static bool HasLimitObjects(Dictionary<ZDOID, ZDO>.ValueCollection zdos, Range<int> limit, Object[] objects, ZDOID? self, Functions f)
+  private static bool HasLimitObjects(Dictionary<ZDOID, ZDO>.ValueCollection zdos, ValueRange<int> limit, Object[] objects, ZDOID? self, Functions f)
   {
     var counter = 0;
     var useMax = limit.Max > 0;

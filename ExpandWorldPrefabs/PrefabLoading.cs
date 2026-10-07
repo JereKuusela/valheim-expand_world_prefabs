@@ -4,6 +4,7 @@ using System.Linq;
 using Data;
 using HarmonyLib;
 using Service;
+using Common;
 namespace ExpandWorld.Prefab;
 
 public class Loading
@@ -100,7 +101,7 @@ public class Loading
         Type = t.Type,
         Fallback = data.fallback,
         Args = t.Parameters,
-        Remove = remove == null ? data.remove == null ? null : DataValue.Bool(data.remove) : new SimpleBoolValue(remove.Value),
+        Remove = remove == null ? data.remove == null ? null : DataValue.Bool(data.remove) : new ConstantBoolValue(remove.Value),
         Regenerate = d != "" || data.addItems != "" || data.removeItems != "",
         RemoveDelay = data.removeDelay == null ? null : DataValue.Float(data.removeDelay),
         Drops =  data.drops == null ? null : DataValue.String(data.drops),
@@ -116,8 +117,8 @@ public class Loading
         Chance = data.chance == null ? null : DataValue.Float(data.chance),
         Day = data.day == null ? null : DataValue.Bool(data.day),
         Night = data.night == null ? null : DataValue.Bool(data.night),
-        MinDistance = data.minDistance == null ? null : Parse.TryFloat(data.minDistance, out var minDistance) ? minDistance < 1f ? new SimpleFloatValue(minDistance * 10000f) : new SimpleFloatValue(minDistance) : DataValue.Float(data.minDistance),
-        MaxDistance = data.maxDistance == null ? null : Parse.TryFloat(data.maxDistance, out var maxDistance) ? maxDistance < 1f ? new SimpleFloatValue(maxDistance * 10000f) : new SimpleFloatValue(maxDistance) : DataValue.Float(data.maxDistance),
+        MinDistance = data.minDistance == null ? null : Parse.TryFloat(data.minDistance, out var minDistance) ? minDistance < 1f ? new ConstantFloatValue(minDistance * 10000f) : new ConstantFloatValue(minDistance) : DataValue.Float(data.minDistance),
+        MaxDistance = data.maxDistance == null ? null : Parse.TryFloat(data.maxDistance, out var maxDistance) ? maxDistance < 1f ? new ConstantFloatValue(maxDistance * 10000f) : new ConstantFloatValue(maxDistance) : DataValue.Float(data.maxDistance),
         MinY = data.minY == null ? null : DataValue.Float(data.minY),
         MaxY = data.maxY == null ? null : DataValue.Float(data.maxY),
         MinX = data.minX == null ? null : DataValue.Float(data.minX),
@@ -268,7 +269,7 @@ public class Loading
     {
       Items = []
     };
-    ItemData itemData = new()
+    ItemYaml itemData = new()
     {
       prefab = split.Key,
       stack = split.Value

@@ -5,6 +5,7 @@ using Service;
 using System;
 using System.Runtime.Serialization;
 using UnityEngine;
+using Common;
 
 namespace ExpandWorldPrefabs.Tests;
 
@@ -153,7 +154,7 @@ public class ValueTypesTests
   [Test]
   public void SimpleLongValue_GetAndMatch_ReturnConstantValue()
   {
-    var value = new SimpleLongValue(42L);
+    var value = new ConstantLongValue(42L);
     var f = CreateFunctions();
 
     var result = value.Get(f);
@@ -232,7 +233,7 @@ public class ValueTypesTests
   [Test]
   public void SimpleFloatValue_TryGet_ReturnsTrueAndValue()
   {
-    var value = new SimpleFloatValue(2.5f);
+    var value = new ConstantFloatValue(2.5f);
 
     var ok = value.TryGet(CreateFunctions(), out var result);
 
@@ -326,7 +327,7 @@ public class ValueTypesTests
   public void SimpleQuaternionValue_GetAndMatch_UsesExactValue()
   {
     var expected = Quaternion.identity;
-    var value = new SimpleQuaternionValue(expected);
+    var value = new ConstantQuaternionValue(expected);
     var f = CreateFunctions();
 
     Assert.That(value.Get(f), Is.EqualTo(expected));

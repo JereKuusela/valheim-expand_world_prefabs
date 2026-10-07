@@ -11,7 +11,7 @@ public class Manager
   public static void HandleGlobal(ActionType type, string[] args, Vector3 pos, bool remove)
   {
     if (!ZNet.instance.IsServer()) return;
-    PrefabFunctions f = new("", args, pos);
+    Functions f = new("", args, pos);
     var info = InfoSelector.SelectGlobalWeighted(type, args, f, pos, remove);
     var infos = InfoSelector.SelectGlobalSeparate(type, args, f, pos, remove);
     if (info == null && infos == null)

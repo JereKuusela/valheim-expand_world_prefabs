@@ -15,7 +15,7 @@ public static class FileLoading
   public const string DataPattern = "expand_data*.yaml";
   public const string PrefabPattern = "expand_prefabs*.yaml";
   private static readonly Dictionary<string, List<global::ExpandWorld.Prefab.Data>> PrefabFileEntries = new(StringComparer.OrdinalIgnoreCase);
-  private static readonly Dictionary<string, List<global::Data.DataData>> DataFileEntries = new(StringComparer.OrdinalIgnoreCase);
+  private static readonly Dictionary<string, List<global::Data.DataYaml>> DataFileEntries = new(StringComparer.OrdinalIgnoreCase);
 
   public static string NormalizePath(string path)
   {
@@ -246,7 +246,7 @@ public static class FileLoading
     return Yaml.ReadMixedFile(file, migrateScripts).ScriptEntries;
   }
 
-  public static List<global::Data.DataData> ReadDataEntries(string file, bool migrateScripts = true)
+  public static List<global::Data.DataYaml> ReadDataEntries(string file, bool migrateScripts = true)
   {
     if (!File.Exists(file)) return [];
     return Yaml.ReadMixedFile(file, migrateScripts).DataEntries;

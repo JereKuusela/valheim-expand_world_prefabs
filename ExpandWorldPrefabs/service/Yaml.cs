@@ -6,6 +6,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using Common;
 
 namespace Service;
 
@@ -22,7 +23,7 @@ public class Yaml
   public class MixedFileEntries
   {
     public List<global::ExpandWorld.Prefab.Data> ScriptEntries = [];
-    public List<global::Data.DataData> DataEntries = [];
+    public List<global::Data.DataYaml> DataEntries = [];
   }
 
   public static string BaseDirectory = Path.Combine(Paths.ConfigPath, "expand_world");
@@ -83,7 +84,7 @@ public class Yaml
       if (split.DataLines.Count > 0)
       {
         var raw = string.Join("\n", split.DataLines);
-        result.DataEntries = Deserialize<global::Data.DataData>(raw, file);
+        result.DataEntries = Deserialize<global::Data.DataYaml>(raw, file);
       }
       return result;
     }

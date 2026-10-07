@@ -66,14 +66,6 @@ public class DataHelper
     return hash;
   }
 
-  public static List<string>? GetValuesFromGroup(string group)
-  {
-    var hash = group.ToLowerInvariant().GetStableHashCode();
-    if (DataLoading.ValueGroups.TryGetValue(hash, out var values))
-      return values;
-    return null;
-  }
-
   public static string GetGlobalKey(string key)
   {
     var lower = key.ToLowerInvariant();
