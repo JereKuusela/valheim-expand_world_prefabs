@@ -1,7 +1,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using ExpandWorld.Prefab;
 using Service;
 using UnityEngine;
 
@@ -226,6 +225,7 @@ public class DataValue
 public class AnyValue(string[] values)
 {
   protected readonly string[] Values = values;
+  public IReadOnlyList<string> RawValues => Values;
 
   private string? RollValue()
   {
@@ -254,7 +254,7 @@ public class AnyValue(string[] values)
     return string.Join(",", Values.Select(f.Replace));
   }
 }
-public class ItemValue(ItemData data)
+public partial class ItemValue(ItemData data)
 {
 
   public static bool Match(Functions f, List<ItemValue> data, ZDO zdo, IIntValue? amount)
@@ -270,6 +270,22 @@ public class ItemValue(ItemData data)
   {
     var records = ItemDataHelper.Load(zdo);
     return amount.Match(f, records.Count) == true;
+  }
+
+  // Item drop entity: prefab and position come from the ZDO itself.
+  public bool MatchSingle(Functions f, ZDO zdo)
+  {
+    var record = ItemDataHelper.LoadSingle(zdo);
+    if (record == null) return false;
+    if (Stack?.Match(f, record.Stack) == false) return false;
+    return MatchProperties(f, record);
+  }
+  public byte[]? Create(Functions f, ZDO zdo)
+  {
+    var prefab = ZNetScene.instance.GetPrefab(zdo.m_prefab);
+    if (prefab == null || !prefab.TryGetComponent(out ItemDrop _)) return null;
+    RolledStack = Stack?.Get(f) ?? 1;
+    return ItemDataHelper.Serialize(CreateItemData(f, prefab));
   }
 
   public static string LoadItems(Functions f, List<ItemValue> items, Vector2i size, int amount) =>
@@ -368,6 +384,7 @@ public class ItemValue(ItemData data)
   public Dictionary<string, IStringValue>? CustomData = data.customData?.ToDictionary(kvp => kvp.Key, kvp => DataValue.String(kvp.Value));
   public IIntValue? WorldLevel = data.worldLevel == null ? null : DataValue.Int(data.worldLevel);
   public IBoolValue? PickedUp = data.pickedUp == null ? null : DataValue.Bool(data.pickedUp);
+  public IBoolValue? Cheated = data.cheated == null ? null : DataValue.Bool(data.cheated);
   // Must know before writing is the prefab good, so it has to be rolled first.
   private int RolledPrefab = 0;
   private int RolledStack = 0;
@@ -392,37 +409,6 @@ public class ItemValue(ItemData data)
     itemData.m_gridPos = RolledPosition;
     itemData.Save(pkg);
   }
-  public void Spawn(ZDO source, Functions f)
-  {
-    var prefab = ZNetScene.instance.GetPrefab(RolledPrefab);
-    if (prefab == null)
-    {
-      Log.Error($"Can't spawn missing drop: {RolledPrefab}");
-      return;
-    }
-    var pos = source.m_position;
-    if (prefab.GetComponent<ItemDrop>())
-    {
-      var zdo = ZdoEntry.Spawn(RolledPrefab, pos, Vector3.zero, source.GetOwner());
-      if (zdo == null) return;
-      ItemDrop.SaveToZDO(CreateItemData(f, prefab), zdo);
-    }
-    else
-    {
-      for (var i = 0; i < RolledStack; ++i)
-      {
-        var zdo = ZdoEntry.Spawn(RolledPrefab, pos, Vector3.zero, source.GetOwner());
-        if (zdo == null) return;
-        if (prefab.GetComponent<Character>())
-          zdo.Set(ZDOVars.s_level, Quality?.Get(f) ?? 1);
-        if (CustomData != null)
-        {
-          foreach (var kvp in CustomData)
-            LoadCustomData(zdo, f, kvp);
-        }
-      }
-    }
-  }
 
   private ItemDrop.ItemData CreateItemData(Functions f, GameObject prefab)
   {
@@ -437,93 +423,9 @@ public class ItemValue(ItemData data)
       CrafterName?.Get(f) ?? "",
       WorldLevel?.Get(f) ?? 0,
       PickedUp?.GetBool(f) ?? false,
+      Cheated?.GetBool(f) ?? false,
       Equipped?.GetBool(f) ?? false,
       customData);
-  }
-  private void LoadCustomData(ZDO zdo, Functions f, KeyValuePair<string, IStringValue> kvp)
-  {
-    if (kvp.Key == "data")
-    {
-      var data = DataHelper.Get(kvp.Value.Get(f) ?? "");
-      if (data == null) return;
-      ZdoEntry entry = new(zdo);
-      entry.Load(data, f);
-      entry.Write(zdo);
-    }
-  }
-  public void AddTo(Functions f, List<ItemRecord> records, Vector2i size)
-  {
-    var stack = Stack?.Get(f) ?? 1;
-    stack = StackTo(f, stack, records);
-    InsertTo(f, stack, records, size);
-  }
-  private int StackTo(Functions f, int stack, List<ItemRecord> records)
-  {
-    foreach (var item in records)
-    {
-      if (!MatchItem(f, item)) continue;
-      var amount = Mathf.Min(ItemDataHelper.GetMaxStackSize(item.PrefabHash) - item.Stack, stack);
-      item.Stack += amount;
-      stack -= amount;
-      if (stack <= 0) break;
-    }
-    return stack;
-  }
-  private int InsertTo(Functions f, int stack, List<ItemRecord> records, Vector2i size)
-  {
-    while (stack > 0)
-    {
-      var prefab = Prefab.Get(f) ?? 0;
-      var item = ObjectDB.instance.GetItemPrefab(prefab);
-      if (item == null || !item.TryGetComponent(out ItemDrop drop)) return stack;
-      var quality = Quality?.Get(f) ?? 1;
-      var amount = Mathf.Min(drop.m_itemData.m_shared.m_maxStackSize, stack);
-      stack -= amount;
-
-      var record = new ItemRecord
-      {
-        PrefabHash = prefab,
-        PrefabName = item.name,
-        Stack = amount,
-        Durability = Durability?.Get(f) ?? drop.m_itemData.GetMaxDurability(quality),
-        Quality = quality,
-        Variant = Variant?.Get(f) ?? 0,
-        CrafterID = CrafterID?.Get(f) ?? 0L,
-        CrafterName = CrafterName?.Get(f) ?? "",
-        WorldLevel = WorldLevel?.Get(f) ?? 0,
-        Equipped = Equipped?.GetBool(f) ?? false,
-        PickedUp = PickedUp?.GetBool(f) ?? false,
-        CustomData = CustomData?.ToDictionary(x => x.Key, x => x.Value.Get(f) ?? "") ?? [],
-      };
-
-      if (Position == "")
-      {
-        var slot = ItemDataHelper.FindFreeSlot(records, size);
-        if (slot == null) return stack;
-        record.GridPos = slot.Value;
-      }
-      else
-      {
-        record.GridPos = RolledPosition;
-        records.RemoveAll(x => x.GridPos == RolledPosition);
-      }
-      records.Add(record);
-    }
-    return stack;
-  }
-  public void RemoveFrom(Functions f, List<ItemRecord> records)
-  {
-    var stack = Stack?.Get(f) ?? 1;
-    for (var i = records.Count - 1; i >= 0; --i)
-    {
-      var item = records[i];
-      if (!MatchItem(f, item)) continue;
-      var amount = Mathf.Min(item.Stack, stack);
-      item.Stack -= amount;
-      stack -= amount;
-      if (stack <= 0) break;
-    }
-    records.RemoveAll(x => x.Stack <= 0);
   }
 
   public bool Match(Functions f, List<ItemRecord> records)
@@ -553,6 +455,10 @@ public class ItemValue(ItemData data)
   private bool MatchItem(Functions f, ItemRecord item)
   {
     if (Prefab.Match(f, item.PrefabHash) == false) return false;
+    return MatchProperties(f, item);
+  }
+  private bool MatchProperties(Functions f, ItemRecord item)
+  {
     if (Durability?.Match(f, item.Durability) == false) return false;
     if (Equipped?.Match(f, item.Equipped) == false) return false;
     if (Quality?.Match(f, item.Quality) == false) return false;
@@ -561,6 +467,7 @@ public class ItemValue(ItemData data)
     if (CrafterName?.Match(f, item.CrafterName) == false) return false;
     if (WorldLevel?.Match(f, item.WorldLevel) == false) return false;
     if (PickedUp?.Match(f, item.PickedUp) == false) return false;
+    if (Cheated?.Match(f, item.Cheated) == false) return false;
     if (CustomData == null) return true;
     foreach (var kvp in CustomData)
     {

@@ -34,6 +34,8 @@ public class DataData
   [DefaultValue(null)]
   public ItemData[]? items;
   [DefaultValue(null)]
+  public ItemData? item;
+  [DefaultValue(null)]
   public string? containerSize;
   [DefaultValue(null)]
   public string? itemAmount;
@@ -68,5 +70,6 @@ public class ItemData
   public string? worldLevel;
   public string? equipped;
   public string? pickedUp;
+  public string? cheated;
   public Dictionary<string, string>? customData;
 }

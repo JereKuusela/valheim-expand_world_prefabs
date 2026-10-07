@@ -192,7 +192,7 @@ public static class ZdoHelper
 
   private static readonly int InventoryWidthHash = Hash("Container.m_width");
   private static readonly int InventoryHeightHash = Hash("Container.m_height");
-  public static Vector2i GetInventorySize(DataEntry entry, Functions f, ZDO zdo)
+  public static Vector2i GetInventorySize(DataEntry entry, Functions f, ZDO? zdo)
   {
     // Width and height can come from data entry, existing ZDO fields or directly from the prefab.
     int width = 0;
@@ -204,6 +204,9 @@ public static class ZdoHelper
       height = h.Get(f) ?? 0;
     if (width > 0 && height > 0)
       return new Vector2i(width, height);
+
+    if (zdo == null)
+      return new Vector2i(width > 0 ? width : 4, height > 0 ? height : 2);
 
     if (width <= 0)
       width = zdo.GetInt(InventoryWidthHash, 0);

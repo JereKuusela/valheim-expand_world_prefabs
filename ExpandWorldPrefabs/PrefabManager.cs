@@ -11,7 +11,7 @@ public class Manager
   public static void HandleGlobal(ActionType type, string[] args, Vector3 pos, bool remove)
   {
     if (!ZNet.instance.IsServer()) return;
-    Functions f = new("", args, pos);
+    PrefabFunctions f = new("", args, pos);
     var info = InfoSelector.SelectGlobalWeighted(type, args, f, pos, remove);
     var infos = InfoSelector.SelectGlobalSeparate(type, args, f, pos, remove);
     if (info == null && infos == null)
@@ -140,7 +140,7 @@ public class Manager
       if (data != null)
       {
         ZdoEntry entry = new(zdo);
-        entry.Load(data, f);
+        entry.Load(data, f, zdo);
         hasSyncedDataChanges = entry.HasSyncedChanges();
         if (hasSyncedDataChanges)
           entry.Write(zdo);
@@ -202,7 +202,9 @@ public class Manager
 
     var weightedSwap = info.GetWeightedSwap(f);
     if (info.Swaps == null && info.WeightedSwaps == null && !regenerateOriginal) return;
-    var data = DataHelper.Merge(new DataEntry(zdo), customData);
+    var current = new DataEntry(zdo);
+    current.LoadServerData(zdo);
+    var data = DataHelper.Merge(current, customData);
     if (weightedSwap != null)
       DelayedSpawn.Add(weightedSwap, zdo, data, f);
     if (info.Swaps != null)
@@ -214,7 +216,7 @@ public class Manager
       var addItems = info.AddItems;
       ZdoEntry entry = new(zdo);
       if (data != null)
-        entry.Load(data, f);
+        entry.Load(data, f, zdo);
       var attach = info.Attach?.Get(f);
       if (attach.HasValue)
         SupportAttach.Attach(entry, attach.Value);
@@ -305,7 +307,7 @@ public class Manager
   {
     var data = DataHelper.Get(dataName);
     if (data == null) return;
-    var items = data.GenerateItems(f, new(10000, 10000));
+    var items = data.GenerateItems(f, (Vector2i)new(10000, 10000));
     HandleCreated.Skip = true;
     foreach (var item in items)
       item.Spawn(zdo, f);

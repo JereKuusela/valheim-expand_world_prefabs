@@ -53,9 +53,9 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
     data = DataHelper.Merge(data, DataHelper.Get(spawn.Data, f));
     var prefab = spawn.GetPrefab(f);
     if (prefab == 0) return;
-    ZdoEntry zdoEntry = new(prefab, pos, rot, originalZdo);
+    ZdoEntry zdoEntry = new(prefab, pos, rot, originalZdo.GetOwner());
     if (data != null)
-      zdoEntry.Load(data, f);
+      zdoEntry.Load(data, f, originalZdo);
     var owner = spawn.Owner?.Get(f);
     if (owner.HasValue)
       zdoEntry.Owner = owner.Value;

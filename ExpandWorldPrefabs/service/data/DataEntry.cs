@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ExpandWorld.Prefab;
 using Service;
 using UnityEngine;
 
 namespace Data;
 
-// Replicates parametrized ZDO data from Valheim.
-public class DataEntry
+// Shared ZDO data implementation for EWD, EWP and WEC.
+public partial class DataEntry
 {
   public DataEntry()
   {
@@ -45,6 +44,7 @@ public class DataEntry
   public Dictionary<int, IQuaternionValue>? Quats;
   public Dictionary<int, IBytesValue>? ByteArrays;
   public List<ItemValue>? Items;
+  public ItemValue? Item;
   public Vector2i? ContainerSize;
   public IIntValue? ItemAmount;
   public ZDOExtraData.ConnectionType? ConnectionType;
@@ -67,48 +67,6 @@ public class DataEntry
     Vecs = ZDOExtraData.s_vec3.ContainsKey(id) ? ZDOExtraData.s_vec3[id].ToDictionary(kvp => kvp.Key, kvp => DataValue.Simple(kvp.Value)) : null;
     Quats = ZDOExtraData.s_quats.ContainsKey(id) ? ZDOExtraData.s_quats[id].ToDictionary(kvp => kvp.Key, kvp => DataValue.Simple(kvp.Value)) : null;
     ByteArrays = ZDOExtraData.s_byteArrays.ContainsKey(id) ? ZDOExtraData.s_byteArrays[id].ToDictionary(kvp => kvp.Key, kvp => DataValue.Simple(kvp.Value)) : null;
-    if (ServerSideData.TryGetFloats(id, out var serverFloats))
-    {
-      Floats ??= [];
-      foreach (var pair in serverFloats)
-        Floats[pair.Key] = DataValue.Simple(pair.Value);
-    }
-    if (ServerSideData.TryGetInts(id, out var serverInts))
-    {
-      Ints ??= [];
-      foreach (var pair in serverInts)
-        Ints[pair.Key] = DataValue.Simple(pair.Value);
-    }
-    if (ServerSideData.TryGetLongs(id, out var serverLongs))
-    {
-      Longs ??= [];
-      foreach (var pair in serverLongs)
-        Longs[pair.Key] = DataValue.Simple(pair.Value);
-    }
-    if (ServerSideData.TryGetStrings(id, out var serverStrings))
-    {
-      Strings ??= [];
-      foreach (var pair in serverStrings)
-        Strings[pair.Key] = DataValue.Simple(pair.Value);
-    }
-    if (ServerSideData.TryGetVecs(id, out var serverVecs))
-    {
-      Vecs ??= [];
-      foreach (var pair in serverVecs)
-        Vecs[pair.Key] = DataValue.Simple(pair.Value);
-    }
-    if (ServerSideData.TryGetQuaternions(id, out var serverQuats))
-    {
-      Quats ??= [];
-      foreach (var pair in serverQuats)
-        Quats[pair.Key] = DataValue.Simple(pair.Value);
-    }
-    if (ServerSideData.TryGetBytes(id, out var serverBytes))
-    {
-      ByteArrays ??= [];
-      foreach (var pair in serverBytes)
-        ByteArrays[pair.Key] = DataValue.Simple(pair.Value);
-    }
     if (ZDOExtraData.s_connectionsHashData.TryGetValue(id, out var conn))
     {
       ConnectionType = conn.m_type;
@@ -194,6 +152,8 @@ public class DataEntry
       foreach (var item in data.Items)
         Items.Add(item);
     }
+    if (data.Item != null)
+      Item = data.Item;
     if (data.ContainerSize != null)
       ContainerSize = data.ContainerSize;
     if (data.ItemAmount != null)
@@ -229,6 +189,7 @@ public class DataEntry
     Bools = null;
     Hashes = null;
     Items = null;
+    Item = null;
     Components = null;
     ContainerSize = null;
     ItemAmount = null;
@@ -395,6 +356,8 @@ public class DataEntry
     {
       Items = [.. data.items.Select(item => new ItemValue(item))];
     }
+    if (data.item != null)
+      Item = new ItemValue(data.item);
     if (!string.IsNullOrWhiteSpace(data.containerSize))
       ContainerSize = Parse.Vector2Int(data.containerSize!);
     if (!string.IsNullOrWhiteSpace(data.itemAmount))
@@ -596,6 +559,7 @@ public class DataEntry
     if (Persistent != null && Persistent.Match(f, zdo.Persistent) == false) return false;
     if (Distant != null && Distant.Match(f, zdo.Distant) == false) return false;
     if (Priority != null && Priority.Value != zdo.Type) return false;
+    if (Item != null && !Item.MatchSingle(f, zdo)) return false;
     if (Items != null) return ItemValue.Match(f, Items, zdo, ItemAmount);
     else if (ItemAmount != null) return ItemValue.Match(f, zdo, ItemAmount);
     if (ConnectionType.HasValue)
@@ -635,6 +599,7 @@ public class DataEntry
     if (Persistent != null && Persistent.Match(f, zdo.Persistent) == true) return false;
     if (Distant != null && Distant.Match(f, zdo.Distant) == true) return false;
     if (Priority != null && Priority.Value == zdo.Type) return false;
+    if (Item != null && Item.MatchSingle(f, zdo)) return false;
     if (Items != null) return !ItemValue.Match(f, Items, zdo, ItemAmount);
     else if (ItemAmount != null) return !ItemValue.Match(f, zdo, ItemAmount);
     if (ConnectionType.HasValue)
@@ -691,41 +656,12 @@ public class DataEntry
     && Position == null
     && Rotation == null;
 
-  public void RollItems(Functions f, ZDO zdo)
-  {
-    if (Items?.Count > 0)
-    {
-      var size = ContainerSize ?? ZdoHelper.GetInventorySize(this, f, zdo);
-      var encoded = ItemValue.LoadItemBytes(f, Items, size, ItemAmount?.Get(f) ?? 0);
-      ByteArrays ??= [];
-      ByteArrays[ZDOVars.s_items] = DataValue.Simple(encoded);
-    }
-  }
+  public byte[]? CreateItemData(Functions f, ZDO? zdo) => zdo == null ? null : Item?.Create(f, zdo);
 
-  public void AddItems(Functions f, ZDO zdo)
+  public byte[]? CreateInventory(Functions f, ZDO? zdo)
   {
-    if (Items == null || Items.Count == 0) return;
+    if (Items == null || Items.Count == 0) return null;
     var size = ContainerSize ?? ZdoHelper.GetInventorySize(this, f, zdo);
-    var records = ItemDataHelper.Load(zdo);
-    var items = GenerateItems(f, size);
-    foreach (var item in items)
-      item.AddTo(f, records, size);
-    ItemDataHelper.SaveTo(zdo, records);
-  }
-  public void RemoveItems(Functions f, ZDO zdo)
-  {
-    if (Items == null || Items.Count == 0) return;
-    var records = ItemDataHelper.Load(zdo);
-    if (records.Count == 0) return;
-
-    var items = GenerateItems(f, new(10000, 10000));
-    foreach (var item in items)
-      item.RemoveFrom(f, records);
-    ItemDataHelper.SaveTo(zdo, records);
-  }
-  public List<ItemValue> GenerateItems(Functions f, Vector2i size)
-  {
-    if (Items == null) throw new ArgumentNullException(nameof(Items));
-    return ItemValue.Generate(f, Items, size, ItemAmount?.Get(f) ?? 0);
+    return ItemValue.LoadItemBytes(f, Items, size, ItemAmount?.Get(f) ?? 0);
   }
 }

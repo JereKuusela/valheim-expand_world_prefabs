@@ -1,5 +1,4 @@
 using System.Globalization;
-using ExpandWorld.Prefab;
 using Service;
 using UnityEngine;
 
@@ -59,7 +58,7 @@ public class FloatValue(string[] values) : AnyValue(values), IFloatValue
         var parsed = Parse.FloatNull(v);
         if (parsed == null) continue;
         allNull = false;
-        if (Helper.Approx(parsed.Value, value))
+        if (FloatCompare.Approx(parsed.Value, value))
           return true;
         continue;
       }
@@ -74,7 +73,7 @@ public class FloatValue(string[] values) : AnyValue(values), IFloatValue
       if (split.Length < 3)
       {
         allNull = false;
-        if (Helper.ApproxBetween(value, min.Value, max.Value))
+        if (FloatCompare.ApproxBetween(value, min.Value, max.Value))
           return true;
       }
       // Case 3: Range with step.
@@ -88,7 +87,7 @@ public class FloatValue(string[] values) : AnyValue(values), IFloatValue
         for (var i = 0; i <= steps; ++i)
         {
           var roll = min.Value + i * step.Value;
-          if (Helper.Approx(roll, value))
+          if (FloatCompare.Approx(roll, value))
             return true;
         }
       }

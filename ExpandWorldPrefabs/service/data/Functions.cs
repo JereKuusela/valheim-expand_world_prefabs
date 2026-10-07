@@ -1,4 +1,3 @@
-using ExpandWorld.Prefab;
 using Service;
 using System;
 using System.Collections.Generic;
@@ -17,6 +16,13 @@ public class Functions(string prefab, string[] args, Vector3 pos)
   protected const char Separator = '_';
   public static Func<string, string?> ExecuteCode = key => null!;
   public static Func<string, string, string?> ExecuteCodeWithValue = (key, value) => null!;
+
+  // Hooks for features that only some hosts have.
+  protected virtual string? ResolveApiFunction(string key) => null;
+  protected virtual string? ResolveApiValueFunction(string key, string value) => null;
+  protected virtual string GetStoredValue(string key, string defaultValue) => defaultValue;
+  protected virtual string IncrementStoredValue(string key, long amount) => "";
+  protected virtual void SetStoredValue(string key, string value) { }
 
   private readonly double time = ZNet.instance.GetTimeSeconds();
 
@@ -114,7 +120,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
 
   protected virtual string? GetFunction(string key, string defaultValue)
   {
-    var value = Api.ResolveFunction(key);
+    var value = ResolveApiFunction(key);
     if (value != null) return value;
     value = ExecuteCode(key);
     if (value != null) return value;
@@ -125,7 +131,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
     key = keyArg.Key;
     var arg = keyArg.Value;
 
-    value = Api.ResolveValueFunction(key, arg);
+    value = ResolveApiValueFunction(key, arg);
     if (value != null) return value;
     value = ExecuteCodeWithValue(key, arg);
     if (value != null) return value;
@@ -150,12 +156,12 @@ public class Functions(string prefab, string[] args, Vector3 pos)
       "par9" => GetArg(9, defaultValue),
       "day" => EnvMan.instance.GetDay(time).ToString(),
       "ticks" => ((long)(time * 10000000.0)).ToString(),
-      "x" => Helper.Format(pos.x),
-      "y" => Helper.Format(pos.y),
-      "z" => Helper.Format(pos.z),
-      "snap" => Helper.Format(WorldGenerator.instance.GetHeight(pos.x, pos.z)),
+      "x" => Formatting.Format(pos.x),
+      "y" => Formatting.Format(pos.y),
+      "z" => Formatting.Format(pos.z),
+      "snap" => Formatting.Format(WorldGenerator.instance.GetHeight(pos.x, pos.z)),
       "pokecount" => args.Length < 2 ? Amount.ToString() : null,
-      "time" => Helper.Format(time),
+      "time" => Formatting.Format(time),
       "realtime" => DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
       _ => null,
     };
@@ -234,10 +240,10 @@ public class Functions(string prefab, string[] args, Vector3 pos)
      "calclong" => Calculator.EvaluateLong(value)?.ToString(CultureInfo.InvariantCulture) ?? defaultValue,
      "par" => Parse.TryInt(value, out var i) ? GetArg(i, defaultValue) : defaultValue,
      "rest" => Parse.TryInt(value, out var i) ? GetRest(i, defaultValue) : defaultValue,
-     "load" => DataStorage.GetValue(value, defaultValue),
+     "load" => GetStoredValue(value, defaultValue),
      "save" => SetValue(value),
-     "save++" => DataStorage.IncrementValue(value, 1),
-     "save--" => DataStorage.IncrementValue(value, -1),
+     "save++" => IncrementStoredValue(value, 1),
+     "save--" => IncrementStoredValue(value, -1),
      "clear" => RemoveValue(value),
      "rank" => HandleRank(value, defaultValue),
      "small" => HandleSmall(value, defaultValue),
@@ -254,7 +260,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
      "findlower" => HandleFindLower(value, defaultValue),
      "time" => HandleTime(value),
      "realtime" => HandleRealtime(value),
-     "key" => DataStorage.GetValue(value, defaultValue),
+     "key" => GetStoredValue(value, defaultValue),
      "globalkey" => ZoneSystem.instance.GetGlobalKey(value, out var globalKey) ? globalKey.ToString() : defaultValue,
      _ => null,
    };
@@ -300,14 +306,14 @@ public class Functions(string prefab, string[] args, Vector3 pos)
   internal static string? Rad2Vec(string value)
   {
     if (!Parse.TryAngleRadians(value, out var radians)) return null;
-    return Helper.FormatPos(new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)));
+    return Formatting.FormatPos(new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)));
   }
 
   internal static string? Deg2Vec(string value)
   {
     if (!Parse.TryAngleDegrees(value, out var degrees)) return null;
     var radians = degrees * Mathf.Deg2Rad;
-    return Helper.FormatPos(new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)));
+    return Formatting.FormatPos(new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians)));
   }
 
   internal static string? Vec2Deg(string value)
@@ -445,12 +451,12 @@ public class Functions(string prefab, string[] args, Vector3 pos)
   {
     var kvp = Parse.Kvp(value, Separator);
     if (kvp.Value == "") return "";
-    DataStorage.SetValue(kvp.Key, kvp.Value);
+    SetStoredValue(kvp.Key, kvp.Value);
     return kvp.Value;
   }
   private string RemoveValue(string value)
   {
-    DataStorage.SetValue(value, "");
+    SetStoredValue(value, "");
     return "";
   }
   private string GetRest(int index, string defaultValue = "")
@@ -489,13 +495,13 @@ public class Functions(string prefab, string[] args, Vector3 pos)
   private string HandleCross(string value, string defaultValue)
   {
     if (!TryGetTwoVectors(value, out var from, out var to)) return defaultValue;
-    return Helper.FormatPos(Vector3.Cross(from, to));
+    return Formatting.FormatPos(Vector3.Cross(from, to));
   }
 
   private string HandleNormalize(string value, string defaultValue)
   {
     if (!TryEvaluateVector3(value, out var vector)) return defaultValue;
-    return Helper.FormatPos(vector.normalized);
+    return Formatting.FormatPos(vector.normalized);
   }
 
   private string HandleMagnitude(string value, string defaultValue)
@@ -513,13 +519,13 @@ public class Functions(string prefab, string[] args, Vector3 pos)
   private string HandleProject(string value, string defaultValue)
   {
     if (!TryGetTwoVectors(value, out var vector, out var onNormal)) return defaultValue;
-    return Helper.FormatPos(Vector3.Project(vector, onNormal));
+    return Formatting.FormatPos(Vector3.Project(vector, onNormal));
   }
 
   private string HandleReflect(string value, string defaultValue)
   {
     if (!TryGetTwoVectors(value, out var inDirection, out var inNormal)) return defaultValue;
-    return Helper.FormatPos(Vector3.Reflect(inDirection, inNormal));
+    return Formatting.FormatPos(Vector3.Reflect(inDirection, inNormal));
   }
 
   private string HandleLerp(string value, string defaultValue)
@@ -530,7 +536,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
     if (!TryEvaluateVector3(parts[1], out var to)) return defaultValue;
     var t = Calculator.EvaluateFloat(parts[2]);
     if (t == null) return defaultValue;
-    return Helper.FormatPos(Vector3.LerpUnclamped(from, to, t.Value));
+    return Formatting.FormatPos(Vector3.LerpUnclamped(from, to, t.Value));
   }
 
   private string HandleVecX(string value, string defaultValue)
@@ -660,7 +666,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
         if (!TryGetVectorMathOperand(values[i], strictVectors[i], out var operand)) return defaultValue;
         vectorResult += operand;
       }
-      return Helper.FormatPos(vectorResult);
+      return Formatting.FormatPos(vectorResult);
     }
 
     float result = 0f;
@@ -684,7 +690,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
         if (!TryGetVectorMathOperand(values[i], strictVectors[i], out var operand)) return defaultValue;
         vectorResult -= operand;
       }
-      return Helper.FormatPos(vectorResult);
+      return Formatting.FormatPos(vectorResult);
     }
 
     float result = Parse.Float(values[0], 0f);
@@ -716,7 +722,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
         if (scalar == null) return defaultValue;
         vectorResult *= scalar.Value;
       }
-      return Helper.FormatPos(vectorResult);
+      return Formatting.FormatPos(vectorResult);
     }
 
     float result = 1f;
@@ -749,7 +755,7 @@ public class Functions(string prefab, string[] args, Vector3 pos)
         if (scalar == null || scalar.Value == 0f) return defaultValue;
         vectorResult /= scalar.Value;
       }
-      return Helper.FormatPos(vectorResult);
+      return Formatting.FormatPos(vectorResult);
     }
 
     float result = Parse.Float(values[0], 0f);

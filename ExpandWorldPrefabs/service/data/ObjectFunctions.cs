@@ -9,7 +9,7 @@ using PrefabObject = ExpandWorld.Prefab.Object;
 
 namespace Data;
 
-public class ObjectFunctions(string prefab, string[] args, ZDO zdo) : Functions(prefab, args, zdo.m_position)
+public class ObjectFunctions(string prefab, string[] args, ZDO zdo) : PrefabFunctions(prefab, args, zdo.m_position)
 {
   private Dictionary<string, int>? objectCounts;
   private PrefabObject[]? objects;

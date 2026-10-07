@@ -1,47 +1,36 @@
 using System.Collections.Generic;
+using System.Linq;
 using ExpandWorld.Prefab;
 using Service;
 using UnityEngine;
 
 namespace Data;
 
-// Replicates resolved ZDO data.
-// This is needed for delayed spawns since the original ZDO might be already destroyed.
-// This also helps to split code from DataEntry.
-// Technically lowers performance because of extra value copying but this is negligible.
-public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
+// Needed for delayed spawns since the original ZDO might be already destroyed.
+public class ZdoEntry : ResolvedDataEntry
 {
-  // Nulls add more code but should be more performant.
-  public int Prefab = Prefab;
-  public Dictionary<int, string>? Strings;
-  public Dictionary<int, string>? ServerStrings;
-  public Dictionary<int, float>? Floats;
-  public Dictionary<int, float>? ServerFloats;
-  public Dictionary<int, int>? Ints;
-  public Dictionary<int, int>? ServerInts;
-  public Dictionary<int, long>? Longs;
-  public Dictionary<int, long>? ServerLongs;
-  public Dictionary<int, Vector3>? Vecs;
-  public Dictionary<int, Vector3>? ServerVecs;
-  public Dictionary<int, Quaternion>? Quats;
-  public Dictionary<int, Quaternion>? ServerQuats;
-  public Dictionary<int, byte[]>? ByteArrays;
-  public Dictionary<int, byte[]>? ServerByteArrays;
-  public ZDOExtraData.ConnectionType? ConnectionType;
-  public int ConnectionHash = 0;
-  public ZDOID? OriginalId;
-  public ZDOID? TargetConnectionId;
-  public Vector3 Rotation = rotation;
-  public long Owner = zdo.GetOwner();
-  public bool? Persistent;
-  public bool? Distant;
-  public ZDO.ObjectType? Type;
+  public ZdoEntry(int prefab, Vector3 position, Vector3 rotation, long owner)
+  {
+    Prefab = prefab;
+    Position = position;
+    Rotation = rotation;
+    Owner = owner;
+  }
+  public ZdoEntry(ZDO zdo) : this(zdo.m_prefab, zdo.m_position, zdo.m_rotation, zdo.GetOwner()) { }
 
-  public ZdoEntry(ZDO zdo) : this(zdo.m_prefab, zdo.m_position, zdo.m_rotation, zdo) { }
+  public int Prefab;
+  public long Owner;
+  public Dictionary<int, string>? ServerStrings;
+  public Dictionary<int, float>? ServerFloats;
+  public Dictionary<int, int>? ServerInts;
+  public Dictionary<int, long>? ServerLongs;
+  public Dictionary<int, Vector3>? ServerVecs;
+  public Dictionary<int, Quaternion>? ServerQuats;
+  public Dictionary<int, byte[]>? ServerByteArrays;
 
   public ZDO? Create()
   {
-    var zdo = SpawnZDO(Prefab, Position, Rotation);
+    var zdo = SpawnZDO(Prefab, Position ?? Vector3.zero, Rotation ?? Vector3.zero);
     if (zdo == null) return null;
     Write(zdo);
     RestoreScale.Check(zdo);
@@ -85,137 +74,9 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     return zdo;
   }
 
-
-  public void Load(DataEntry data, Functions f)
+  public override void Write(ZDO zdo)
   {
-    data.RollItems(f, zdo);
-    if (data.Floats?.Count > 0)
-    {
-      foreach (var pair in data.Floats)
-      {
-        var value = pair.Value.Get(f);
-        if (value.HasValue)
-          AddFloat(pair.Key, value.Value);
-      }
-    }
-    if (data.Ints?.Count > 0)
-    {
-      foreach (var pair in data.Ints)
-      {
-        var value = pair.Value.Get(f);
-        if (value.HasValue)
-          AddInt(pair.Key, value.Value);
-      }
-    }
-    if (data.Longs?.Count > 0)
-    {
-      foreach (var pair in data.Longs)
-      {
-        var value = pair.Value.Get(f);
-        if (value.HasValue)
-          AddLong(pair.Key, value.Value);
-      }
-    }
-    if (data.Strings?.Count > 0)
-    {
-      foreach (var pair in data.Strings)
-      {
-        var value = pair.Value.Get(f);
-        if (value != null)
-          AddString(pair.Key, value);
-      }
-    }
-    if (data.Vecs?.Count > 0)
-    {
-      foreach (var pair in data.Vecs)
-      {
-        var value = pair.Value.Get(f);
-        if (value.HasValue)
-          AddVec(pair.Key, value.Value);
-      }
-    }
-    if (data.Quats?.Count > 0)
-    {
-      foreach (var pair in data.Quats)
-      {
-        var value = pair.Value.Get(f);
-        if (value.HasValue)
-          AddQuat(pair.Key, value.Value);
-      }
-    }
-    if (data.ByteArrays?.Count > 0)
-    {
-      foreach (var pair in data.ByteArrays)
-      {
-        var value = pair.Value.Get(f);
-        if (value != null)
-          AddByteArray(pair.Key, value);
-      }
-    }
-    if (data.Bools?.Count > 0)
-    {
-      foreach (var pair in data.Bools)
-      {
-        var value = pair.Value.GetInt(f);
-        if (value.HasValue)
-          AddInt(pair.Key, value.Value);
-      }
-    }
-    if (data.Hashes?.Count > 0)
-    {
-      foreach (var pair in data.Hashes)
-      {
-        var value = pair.Value.Get(f);
-        if (value.HasValue)
-          AddInt(pair.Key, value.Value);
-      }
-    }
-    if (data.Components != null)
-    {
-      foreach (var pair in data.Components)
-      {
-        var value = pair.Value.Get(f);
-        if (value.HasValue)
-          AddInt(pair.Key, value.Value);
-      }
-    }
-    ConnectionHash = data.ConnectionHash;
-    ConnectionType = data.ConnectionType;
-    if (data.OriginalId != null)
-      OriginalId = data.OriginalId.Get(f);
-    if (data.TargetConnectionId != null)
-      TargetConnectionId = data.TargetConnectionId.Get(f);
-    Distant = data.Distant?.GetBool(f);
-    Persistent = data.Persistent?.GetBool(f);
-    Type = data.Priority;
-    Position = data.Position?.Get(f) ?? Position;
-    Rotation = data.Rotation?.Get(f)?.eulerAngles ?? Rotation;
-  }
-
-  public void Write(ZDO zdo)
-  {
-    // Legacy loose item fields must be folded into a packed s_itemData before anything is written.
-    var resolved = new ResolvedDataEntry
-    {
-      Strings = Strings,
-      Floats = Floats,
-      Ints = Ints,
-      Longs = Longs,
-      Vecs = Vecs,
-      Quats = Quats,
-      ByteArrays = ByteArrays,
-      ConnectionType = ConnectionType ?? ZDOExtraData.ConnectionType.None,
-      ConnectionHash = ConnectionHash,
-      OriginalId = OriginalId ?? ZDOID.None,
-      TargetConnectionId = TargetConnectionId ?? ZDOID.None,
-      Distant = Distant,
-      Persistent = Persistent,
-      Priority = Type,
-      Position = Position,
-      Rotation = Quaternion.Euler(Rotation),
-    };
-    ItemDataHelper.ConvertAll(resolved);
-    resolved.Write(zdo);
+    base.Write(zdo);
     WriteServer(zdo);
   }
 
@@ -244,26 +105,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
         ServerSideData.SetBytes(zdo, pair.Key, pair.Value);
   }
 
-  public bool HasSyncedChanges()
-  {
-    if (Floats?.Count > 0) return true;
-    if (Ints?.Count > 0) return true;
-    if (Longs?.Count > 0) return true;
-    if (Strings?.Count > 0) return true;
-    if (Vecs?.Count > 0) return true;
-    if (Quats?.Count > 0) return true;
-    if (ByteArrays?.Count > 0) return true;
-    if (ConnectionType.HasValue) return true;
-    if (ConnectionHash != 0) return true;
-    if (OriginalId.HasValue) return true;
-    if (TargetConnectionId.HasValue) return true;
-    if (Persistent.HasValue) return true;
-    if (Distant.HasValue) return true;
-    if (Type.HasValue) return true;
-    return false;
-  }
-
-  private void AddString(int key, string value)
+  protected override void AddString(int key, string value)
   {
     if (ServerSideData.ShouldUse(key))
     {
@@ -274,7 +116,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     Strings ??= [];
     Strings[key] = value;
   }
-  private void AddFloat(int key, float value)
+  protected override void AddFloat(int key, float value)
   {
     if (ServerSideData.ShouldUse(key))
     {
@@ -285,7 +127,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     Floats ??= [];
     Floats[key] = value;
   }
-  private void AddInt(int key, int value)
+  protected override void AddInt(int key, int value)
   {
     if (ServerSideData.ShouldUse(key))
     {
@@ -296,7 +138,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     Ints ??= [];
     Ints[key] = value;
   }
-  private void AddLong(int key, long value)
+  protected override void AddLong(int key, long value)
   {
     if (ServerSideData.ShouldUse(key))
     {
@@ -307,7 +149,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     Longs ??= [];
     Longs[key] = value;
   }
-  private void AddVec(int key, Vector3 value)
+  protected override void AddVec(int key, Vector3 value)
   {
     if (ServerSideData.ShouldUse(key))
     {
@@ -318,7 +160,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     Vecs ??= [];
     Vecs[key] = value;
   }
-  private void AddQuat(int key, Quaternion value)
+  protected override void AddQuat(int key, Quaternion value)
   {
     if (ServerSideData.ShouldUse(key))
     {
@@ -329,7 +171,7 @@ public class ZdoEntry(int Prefab, Vector3 Position, Vector3 rotation, ZDO zdo)
     Quats ??= [];
     Quats[key] = value;
   }
-  private void AddByteArray(int key, byte[] value)
+  protected override void AddByteArray(int key, byte[] value)
   {
     if (ServerSideData.ShouldUse(key))
     {
