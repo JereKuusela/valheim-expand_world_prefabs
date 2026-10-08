@@ -27,7 +27,7 @@ public class EWP : BaseUnityPlugin
     Harmony.PatchAll();
     Log.Init(Logger);
     Yaml.Init();
-    RuleLog.Init(Path.Combine(Yaml.BaseDirectory, "ewp_log.txt"));
+    RuleLog.Init(Path.Combine(Yaml.BaseDirectory, "logs"));
     try
     {
       if (Prefab.Config.AutomaticReload)

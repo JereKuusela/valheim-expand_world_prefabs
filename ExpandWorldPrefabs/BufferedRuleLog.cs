@@ -2,20 +2,27 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
 namespace ExpandWorld.Prefab;
 
-// One instance per loaded rule, not per player, message or event. Recreated on YAML reload.
-internal sealed class RuleLogSource(string template)
+// Shared by every message/action type originating from one loaded YAML rule.
+internal sealed class RuleLogBudget
 {
-  internal readonly string Template = template;
-  internal readonly bool NeedsFormatting = template.IndexOf('<') >= 0;
-  internal volatile bool Disabled;
   internal double Tokens;
   internal long LastTick;
   internal bool Started;
+}
+
+internal sealed class RuleLogSource(string template, string[]? files = null, RuleLogBudget? budget = null)
+{
+  internal readonly string Template = template;
+  internal readonly bool NeedsFormatting = template.IndexOf('<') >= 0;
+  internal readonly string[] Files = files?.Distinct().ToArray() ?? [RuleLogFiles.DefaultName];
+  internal readonly RuleLogBudget Budget = budget ?? new();
+  internal volatile bool Disabled;
 }
 
 internal sealed class RuleLogOptions
@@ -38,43 +45,97 @@ internal sealed class RuleLogOptions
   }
 }
 
-// Pure BCL transport. Only the worker invokes the sink and diagnostics callbacks.
-// Producer locks protect small queue/accounting operations, never file I/O or formatting.
+// Only the worker invokes file writers and diagnostic callbacks. Producers
+// reserve bounded capacity before formatting; they never wait on filesystem I/O.
 internal sealed class BufferedRuleLog
 {
+  internal const int MaximumDestinations = 32;
+  private sealed class Destination(string name)
+  {
+    internal readonly string Name = name;
+    internal bool Configured, Failed;
+    internal int References, DirtyBytes;
+    internal long LastFlush = Stopwatch.GetTimestamp();
+    internal TextWriter? Writer;
+    internal long RateDrops, CapacityDrops, SizeDrops, FormatDrops;
+    internal string? FormatExample;
+  }
+  private sealed class Record(string message, Destination[] destinations)
+  {
+    internal readonly string Message = message;
+    internal readonly Destination[] Destinations = destinations;
+    internal int Charge => Message.Length * 2 + 64 + 8 * (Destinations.Length - 1);
+  }
+
   private readonly object Sync = new();
-  private readonly Queue<string> Queue;
+  private readonly Queue<Record> Queue;
+  private readonly Dictionary<string, Destination> Destinations = new(StringComparer.Ordinal);
   private readonly RuleLogOptions Options;
-  private readonly Func<TextWriter> Open;
+  private readonly Func<string, TextWriter> Open;
   private readonly Action<string> Report;
   private readonly Thread Worker;
-  private volatile bool Enabled = true;
-  private volatile bool Stopping;
-  private volatile bool Failed;
+  private volatile bool Enabled = true, Stopping;
   private long StopDeadline = long.MaxValue;
-  private int RetainedRecords;
-  private int RetainedBytes;
+  private int RetainedRecords, RetainedBytes;
   private double GlobalTokens;
   private long GlobalTick;
-  private long RateDrops, CapacityDrops, SizeDrops, FormatDrops;
-  private string? FormatExample;
 
   internal BufferedRuleLog(Func<TextWriter> open, RuleLogOptions options, Action<string> report)
+    : this(_ => open(), options, report) { }
+
+  internal BufferedRuleLog(Func<string, TextWriter> open, RuleLogOptions options, Action<string> report)
   {
     options.Validate();
-    Open = open;
-    Options = options;
-    Report = report;
-    Queue = new Queue<string>(options.MaxRecords);
+    Open = open; Options = options; Report = report;
+    Queue = new Queue<Record>(options.MaxRecords);
+    Destinations.Add(RuleLogFiles.DefaultName, new(RuleLogFiles.DefaultName) { Configured = true });
     GlobalTokens = Math.Min(100, options.GlobalRate);
     GlobalTick = Stopwatch.GetTimestamp();
     Worker = new Thread(Run) { IsBackground = true, Name = "EWP rule log" };
     Worker.Start();
   }
 
-  internal bool IsFailed => Failed;
+  internal bool IsFailed
+  {
+    get
+    {
+      lock (Sync)
+      {
+        bool any = false;
+        foreach (var d in Destinations.Values)
+        {
+          if (!d.Configured) continue;
+          any = true;
+          if (!d.Failed) return false;
+        }
+        return any;
+      }
+    }
+  }
   internal int PendingRecords { get { lock (Sync) return RetainedRecords; } }
   internal int PendingBytes { get { lock (Sync) return RetainedBytes; } }
+
+  // Keep failed states until restart, including across YAML reloads. The registry
+  // is bounded to 32 distinct names per process, not 32 extra threads/queues.
+  internal string[] SetDestinations(IEnumerable<string> names)
+  {
+    var rejected = new List<string>();
+    lock (Sync)
+    {
+      foreach (var destination in Destinations.Values) destination.Configured = false;
+      foreach (var name in names.Distinct())
+      {
+        if (!Destinations.TryGetValue(name, out var destination))
+        {
+          if (Destinations.Count >= MaximumDestinations) { rejected.Add(name); continue; }
+          Destinations.Add(name, destination = new(name));
+        }
+        destination.Configured = true;
+      }
+      Monitor.Pulse(Sync);
+    }
+    return rejected.ToArray();
+  }
 
   internal void SetEnabled(bool enabled)
   {
@@ -84,66 +145,97 @@ internal sealed class BufferedRuleLog
 
   internal bool TryWrite<T>(RuleLogSource source, T context, Func<string, T, string> format)
   {
-    if (!Enabled || Stopping || Failed) return false;
-    if (source.Disabled) { Interlocked.Increment(ref FormatDrops); return false; }
-    // Short bookkeeping lock only. Never wait for queue capacity or filesystem I/O.
-    int reservation = Options.MaxRecordChars * 2 + 64;
+    if (!Enabled || Stopping) return false;
+    Destination[] destinations;
+    int reservation;
     lock (Sync)
     {
-      if (!Enabled || Stopping || Failed) return false;
+      if (!Enabled || Stopping) return false;
+      int count = 0;
+      foreach (var name in source.Files)
+        if (Destinations.TryGetValue(name, out var d) && d.Configured && !d.Failed) count++;
+      if (count == 0) return false;
+      if (source.Disabled) { DropLocked(source.Files, 3); return false; }
+      reservation = Options.MaxRecordChars * 2 + 64 + 8 * (count - 1);
       if (RetainedRecords >= Options.MaxRecords || RetainedBytes > Options.MaxMemoryBytes - reservation)
-      { Interlocked.Increment(ref CapacityDrops); return false; }
+      { DropLocked(source.Files, 1); return false; }
       long now = Stopwatch.GetTimestamp();
-      if (!source.Started)
-      { source.Started = true; source.Tokens = Math.Min(25, Options.RuleRate); source.LastTick = now; }
+      var budget = source.Budget;
+      if (!budget.Started)
+      { budget.Started = true; budget.Tokens = Math.Min(25, Options.RuleRate); budget.LastTick = now; }
       Refill(ref GlobalTokens, ref GlobalTick, now, Options.GlobalRate, Math.Min(100, Options.GlobalRate));
-      Refill(ref source.Tokens, ref source.LastTick, now, Options.RuleRate, Math.Min(25, Options.RuleRate));
-      if (GlobalTokens < 1 || source.Tokens < 1)
-      { Interlocked.Increment(ref RateDrops); return false; }
-      GlobalTokens--; source.Tokens--;
+      Refill(ref budget.Tokens, ref budget.LastTick, now, Options.RuleRate, Math.Min(25, Options.RuleRate));
+      if (GlobalTokens < 1 || budget.Tokens < 1)
+      { DropLocked(source.Files, 0); return false; }
+      GlobalTokens--; budget.Tokens--;
       RetainedRecords++; RetainedBytes += reservation;
+      destinations = new Destination[count];
+      int index = 0;
+      foreach (var name in source.Files)
+        if (Destinations.TryGetValue(name, out var d) && d.Configured && !d.Failed)
+        { destinations[index++] = d; d.References++; }
     }
 
     string? message = null;
     try
     {
       if (source.Template.Length > Options.MaxRecordChars)
-      { Interlocked.Increment(ref SizeDrops); return false; }
+      { Drop(destinations, 2); return false; }
       message = source.NeedsFormatting ? format(source.Template, context) : source.Template;
       if (message == null || message.Length > Options.MaxRecordChars)
-      { message = null; Interlocked.Increment(ref SizeDrops); return false; }
+      { message = null; Drop(destinations, 2); return false; }
     }
     catch (Exception e)
     {
       source.Disabled = true;
-      Interlocked.Increment(ref FormatDrops);
-      // One bounded sample, not a growing set of failed templates or resolved player text.
-      Interlocked.CompareExchange(ref FormatExample,
-        source.Template.Substring(0, Math.Min(128, source.Template.Length)) + ": " +
-        e.GetType().Name + ". Rule disabled until YAML reload.", null);
+      lock (Sync)
+      {
+        foreach (var d in destinations)
+        {
+          d.FormatDrops++;
+          d.FormatExample ??= source.Template.Substring(0, Math.Min(128, source.Template.Length)) + ": " +
+            e.GetType().Name + ". Logging item disabled until YAML reload.";
+        }
+      }
       return false;
     }
-    finally
-    {
-      if (message == null) Release(reservation);
-    }
+    finally { if (message == null) Release(reservation, destinations); }
 
+    var record = new Record(message, destinations);
     lock (Sync)
     {
-      if (!Enabled || Stopping || Failed)
-      { RetainedRecords--; RetainedBytes -= reservation; Interlocked.Increment(ref CapacityDrops); return false; }
-      RetainedBytes += Charge(message) - reservation;
-      Queue.Enqueue(message);
+      if (!Enabled || Stopping)
+      {
+        foreach (var d in destinations) d.CapacityDrops++;
+        ReleaseLocked(reservation, destinations);
+        return false;
+      }
+      RetainedBytes += record.Charge - reservation;
+      Queue.Enqueue(record);
       if (Queue.Count == 1) Monitor.Pulse(Sync);
     }
     return true;
   }
 
-  private static int Charge(string message) => message.Length * 2 + 64;
-  private void Release(int bytes)
+  private void Drop(Destination[] destinations, int kind)
+  { lock (Sync) foreach (var d in destinations) { if (kind == 2) d.SizeDrops++; else d.CapacityDrops++; } }
+  private void DropLocked(string[] files, int kind)
   {
-    lock (Sync) { RetainedRecords--; RetainedBytes -= bytes; }
+    foreach (var name in files)
+    {
+      if (!Destinations.TryGetValue(name, out var d) || !d.Configured || d.Failed) continue;
+      if (kind == 0) d.RateDrops++;
+      else if (kind == 1) d.CapacityDrops++;
+      else d.FormatDrops++;
+    }
   }
+  private void ReleaseLocked(int bytes, Destination[] destinations)
+  {
+    RetainedRecords--; RetainedBytes -= bytes;
+    foreach (var d in destinations) d.References--;
+  }
+  private void Release(int bytes, Destination[] destinations)
+  { lock (Sync) { ReleaseLocked(bytes, destinations); Monitor.Pulse(Sync); } }
   private static void Refill(ref double tokens, ref long previous, long now, int rate, int burst)
   {
     tokens = Math.Min(burst, tokens + Math.Max(0, now - previous) / (double)Stopwatch.Frequency * rate);
@@ -152,8 +244,6 @@ internal sealed class BufferedRuleLog
   private static double Milliseconds(long since) =>
     (Stopwatch.GetTimestamp() - since) * 1000.0 / Stopwatch.Frequency;
 
-  // Only shutdown waits, and never longer than the caller's budget. Do not close or
-  // replace a sink from another thread if the OS has stalled the worker inside a write.
   internal bool Stop(int milliseconds)
   {
     lock (Sync)
@@ -170,107 +260,127 @@ internal sealed class BufferedRuleLog
 
   private void Run()
   {
-    TextWriter? writer = null;
-    int dirtyBytes = 0;
-    long lastFlush = Stopwatch.GetTimestamp(), lastReport = lastFlush;
+    long lastReport = Stopwatch.GetTimestamp();
     try
     {
       while (true)
       {
-        string? message = null;
-        bool done = false;
+        Record? record = null;
+        bool done;
+        Destination[] destinations;
         lock (Sync)
         {
           if (Stopping && Stopwatch.GetTimestamp() >= StopDeadline)
-          {
             while (Queue.Count > 0)
             {
               var abandoned = Queue.Dequeue();
-              RetainedRecords--; RetainedBytes -= Charge(abandoned);
-              Interlocked.Increment(ref CapacityDrops);
+              foreach (var d in abandoned.Destinations) d.CapacityDrops++;
+              ReleaseLocked(abandoned.Charge, abandoned.Destinations);
             }
-          }
-          if (Queue.Count > 0) message = Queue.Dequeue();
-          else if (Stopping) done = true;
+          if (Queue.Count > 0) record = Queue.Dequeue();
+          done = record == null && Stopping;
+          destinations = Destinations.Values.ToArray();
         }
-        if (message != null)
+        if (record != null)
         {
           try
           {
-            writer ??= Open();
-            writer.WriteLine(message);
-            dirtyBytes += Encoding.UTF8.GetByteCount(message) + Encoding.UTF8.GetByteCount(writer.NewLine);
+            foreach (var d in record.Destinations)
+            {
+              if (DestinationFailed(d)) continue;
+              try
+              {
+                d.Writer ??= Open(d.Name);
+                if (d.DirtyBytes == 0) d.LastFlush = Stopwatch.GetTimestamp();
+                d.Writer.WriteLine(record.Message);
+                d.DirtyBytes += Encoding.UTF8.GetByteCount(record.Message) + Encoding.UTF8.GetByteCount(d.Writer.NewLine);
+              }
+              catch (Exception e) { Fail(d, e); }
+            }
           }
-          finally { Release(Charge(message)); }
+          finally { Release(record.Charge, record.Destinations); }
         }
-        // Deadline checked during busy traffic as well as idle periods.
-        if (dirtyBytes > 0 && (done || !Enabled || dirtyBytes >= Options.FlushBytes ||
-            Milliseconds(lastFlush) >= Options.FlushMilliseconds))
-        { writer!.Flush(); dirtyBytes = 0; lastFlush = Stopwatch.GetTimestamp(); }
-
+        foreach (var d in destinations)
+        {
+          if (DestinationFailed(d)) continue;
+          try
+          {
+            if (d.DirtyBytes > 0 && (done || !Enabled || d.DirtyBytes >= Options.FlushBytes ||
+                Milliseconds(d.LastFlush) >= Options.FlushMilliseconds)) Flush(d);
+          }
+          catch (Exception e) { Fail(d, e); }
+        }
         if (done || Milliseconds(lastReport) >= Options.ReportMilliseconds)
         {
-          var notice = TakeNotice();
-          if (notice != null)
-          {
-            SafeReport(notice);
-            writer ??= Open();
-            writer.WriteLine(notice);
-            writer.Flush(); dirtyBytes = 0; lastFlush = Stopwatch.GetTimestamp();
-          }
+          foreach (var d in destinations) Notice(d);
           lastReport = Stopwatch.GetTimestamp();
         }
+        foreach (var d in destinations)
+        {
+          bool close;
+          lock (Sync) close = !d.Configured && d.References == 0;
+          if ((close || (!Enabled && record == null) || done) && d.Writer != null)
+          {
+            if (close) Notice(d);
+            try { d.Writer.Dispose(); d.Writer = null; d.DirtyBytes = 0; }
+            catch (Exception e) { Fail(d, e); }
+          }
+        }
         if (done) break;
-        if (!Enabled && message == null && writer != null)
-        { writer.Dispose(); writer = null; }
-
         lock (Sync)
         {
           if (Queue.Count == 0 && !Stopping)
           {
-            var wait = dirtyBytes > 0 ? Math.Max(1, Options.FlushMilliseconds - Milliseconds(lastFlush)) : Options.FlushMilliseconds;
+            double wait = Options.FlushMilliseconds;
+            foreach (var d in destinations)
+              if (d.DirtyBytes > 0) wait = Math.Min(wait, Math.Max(1, Options.FlushMilliseconds - Milliseconds(d.LastFlush)));
             Monitor.Wait(Sync, (int)Math.Min(wait, Options.ReportMilliseconds));
           }
         }
       }
     }
-    catch (Exception e)
-    {
-      Failed = true;
-      int pending;
-      lock (Sync)
-      {
-        pending = Queue.Count;
-        while (Queue.Count > 0)
-        { var dropped = Queue.Dequeue(); RetainedRecords--; RetainedBytes -= Charge(dropped); }
-      }
-      SafeReport("[EWP LOG ERROR] Logging disabled until restart; file output failed: " + e.GetType().Name +
-        ". Pending records discarded=" + pending + ". The current record/unflushed tail may be incomplete. " +
-        (TakeNotice() ?? ""));
-    }
     finally
     {
-      try { writer?.Dispose(); }
-      catch (Exception e)
-      {
-        if (!Failed) SafeReport("[EWP LOG ERROR] Close failed: " + e.GetType().Name + ". Tail may be incomplete.");
-        Failed = true;
-      }
+      Destination[] destinations;
+      lock (Sync) destinations = Destinations.Values.ToArray();
+      foreach (var d in destinations)
+        try { d.Writer?.Dispose(); d.Writer = null; }
+        catch (Exception e) { Fail(d, e); }
     }
   }
 
-  private string? TakeNotice()
+  private bool DestinationFailed(Destination destination) { lock (Sync) return destination.Failed; }
+  private void Flush(Destination d)
+  { d.Writer!.Flush(); d.DirtyBytes = 0; d.LastFlush = Stopwatch.GetTimestamp(); }
+
+  private void Fail(Destination d, Exception error)
   {
-    long rate = Interlocked.Exchange(ref RateDrops, 0), capacity = Interlocked.Exchange(ref CapacityDrops, 0),
-      size = Interlocked.Exchange(ref SizeDrops, 0), format = Interlocked.Exchange(ref FormatDrops, 0);
-    var sample = Interlocked.Exchange(ref FormatExample, null);
-    if (rate + capacity + size + format == 0 && sample == null) return null;
-    return "[EWP LOG GAP] Omitted since previous summary: rate=" + rate + ", capacity/shutdown=" + capacity +
-      ", oversized=" + size + ", formatting/disabled-rule=" + format +
-      ". Summary placement is not the exact gap position." + (sample == null ? "" : " Example: " + sample);
+    lock (Sync) { if (d.Failed) return; d.Failed = true; }
+    SafeReport("[EWP LOG ERROR] " + d.Name + ".txt disabled until restart: " + error.GetType().Name +
+      ". Accepted records/unflushed output for this destination may be incomplete. Other destinations continue.");
+    // Never dispose a sink from a producer thread; the worker owns recovery/close.
+    try { d.Writer?.Dispose(); } catch { }
+    d.Writer = null; d.DirtyBytes = 0;
+  }
+
+  private void Notice(Destination d)
+  {
+    string? notice;
+    lock (Sync)
+    {
+      if (d.RateDrops + d.CapacityDrops + d.SizeDrops + d.FormatDrops == 0 && d.FormatExample == null) return;
+      notice = "[EWP LOG GAP] " + d.Name + ".txt omitted since previous summary: rate=" + d.RateDrops +
+        ", capacity/shutdown=" + d.CapacityDrops + ", oversized=" + d.SizeDrops +
+        ", formatting/disabled-item=" + d.FormatDrops + ". Summary placement is not the exact gap position." +
+        (d.FormatExample == null ? "" : " Example: " + d.FormatExample);
+      d.RateDrops = d.CapacityDrops = d.SizeDrops = d.FormatDrops = 0;
+      d.FormatExample = null;
+    }
+    SafeReport(notice);
+    if (DestinationFailed(d)) return;
+    try { d.Writer ??= Open(d.Name); d.Writer.WriteLine(notice); Flush(d); }
+    catch (Exception e) { Fail(d, e); }
   }
   private void SafeReport(string message)
-  {
-    try { Report(message); } catch { /* Diagnostics must not restart a failing writer. */ }
-  }
+  { try { Report(message); } catch { /* Diagnostics cannot restart a failed destination. */ } }
 }

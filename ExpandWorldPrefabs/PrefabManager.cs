@@ -35,8 +35,8 @@ public class Manager
       }
     }
 
-    if (info.LogSource != null && Config.RuleLogging)
-      RuleLog.Write(info.LogSource, f);
+    if (info.LogSources != null && Config.RuleLogging)
+      RuleLog.Write(info.LogSources, f);
     info.Execute?.Get(f);
     if (info.Commands.Length > 0)
       Commands.Run(info, f);
@@ -92,8 +92,8 @@ public class Manager
     if (info.Objects != null)
       f.SetObjectCounts(info.Objects);
 
-    if (info.LogSource != null && Config.RuleLogging)
-      RuleLog.Write(info.LogSource, f);
+    if (info.LogSources != null && Config.RuleLogging)
+      RuleLog.Write(info.LogSources, f);
     info.Execute?.Get(f);
     if (info.Commands.Length > 0)
       Commands.Run(info, f);

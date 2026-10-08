@@ -26,7 +26,7 @@ Config file `expand_world_prefabs.cfg` is created automatically when the game is
 - Server side data: If disabled, EWP no longer supports server side only data.
   - Server side data is just regular data, but prefixed with `ewp_`.
   - This reduces network traffic because the data is not sent to clients.
-- Rule logging: If disabled, `log` actions stop adding records to `expand_world/ewp_log.txt`.
+- Rule logging: If disabled, `log` actions stop adding records to `expand_world/logs/`.
   - Existing records are kept when the game is restarted.
   - Records per second (default: `1000`): Maximum refill rate shared by all rules.
   - Records per rule per second (default: `250`): Maximum refill rate for one rule, shared by all objects.
