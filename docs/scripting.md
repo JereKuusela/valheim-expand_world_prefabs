@@ -7,6 +7,8 @@ Most fields are put on a single line. List values are separated by `,`.
   - Value groups can be used ([data system](https://github.com/JereKuusela/valheim-world_edit_commands/blob/main/README_data.md#multiple-parameter-values)).
     - By default, each object component has its own value group. For example `Tameable` or `Piece`.
     - By default, keywords `creature` (Humanoid) and `structure` (WearNTear) have their own value group.
+    - By default, each build cost resource has its own value group. For example `material_Wood` or `material_Stone`.
+      - The "Material" tab of the build menu lists the available names.
     - Values from groups are cached, so the prefab yaml must be manually saved when changing an already used value group.
 - excludePrefab: List of excluded object ids.
   - This can be used to skip specific objects when a wildcard or component is used in the `prefab` field.
