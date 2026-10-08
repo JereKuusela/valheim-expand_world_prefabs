@@ -37,7 +37,7 @@ public class Manager
 
     if (info.LogSource != null && Config.RuleLogging)
       RuleLog.Write(info.LogSource, f);
-    info.Execute?.Get(f);
+    info.Execute?.Run(f);
     if (info.Commands.Length > 0)
       Commands.Run(info, f);
     var weightedClientRpc = info.GetWeightedClientRpc(f);
@@ -94,7 +94,7 @@ public class Manager
 
     if (info.LogSource != null && Config.RuleLogging)
       RuleLog.Write(info.LogSource, f);
-    info.Execute?.Get(f);
+    info.Execute?.Run(f);
     if (info.Commands.Length > 0)
       Commands.Run(info, f);
 

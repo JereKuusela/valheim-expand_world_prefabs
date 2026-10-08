@@ -291,6 +291,7 @@ See object filtering [examples](examples_object_filtering.md).
   - Not supported for type `destroy`.
 - exec: Runs functions with side effects.
   - Mostly useful for saving custom data with the `save` function.
+  - Function `<wait_X>` delays the next operation by X seconds. (Decimals work)
 - owner: Changes the object owner (number).
   - Only works when using `injectData: true`.
   - Number 0 removes the owner, but the server will reassign it after a few seconds.

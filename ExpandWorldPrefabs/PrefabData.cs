@@ -321,7 +321,7 @@ public class Info
   public IZdoIdValue? Attach;
   public IZdoIdValue? Connect;
   public IBoolValue? Cancel;
-  public IStringValue? Execute;
+  public ExecValue? Execute;
   public IBoolValue? Admin;
   public IFloatValue? Chance;
   public ConditionClause? Condition;

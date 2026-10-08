@@ -178,7 +178,7 @@ public class Loading
         Connect = data.connect == null ? null : DataValue.ZdoId(data.connect),
         MinTerrainHeight = minTerrainHeight,
         MaxTerrainHeight = maxTerrainHeight,
-        Execute = data.exec == null ? null : DataValue.String(data.exec),
+        Execute = data.exec == null ? null : new ExecValue(DataValue.SplitWithValues(data.exec)),
         Admin = data.admin == null ? null : DataValue.Bool(data.admin),
         Condition = condition,
       };

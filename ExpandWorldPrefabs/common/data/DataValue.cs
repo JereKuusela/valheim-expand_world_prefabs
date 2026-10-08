@@ -158,7 +158,7 @@ public class DataValue
 
   private static bool HasFunctions(string value) => value.Contains("<") && value.Contains(">");
 
-  private static string[] SplitWithValues(string str)
+  public static string[] SplitWithValues(string str)
   {
     List<string> result = [];
     var split = Parse.SplitWithEmpty(str);

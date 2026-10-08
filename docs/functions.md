@@ -41,6 +41,7 @@ Following functions are available to be used in the yaml file:
 - `<item_*>`: Amount of specific item in the container.
   - Wildcard `*` can be used for partial matches. For example `Trophy*` to match all trophies or `*` to count everything.
 - `<item_X_Y>`: Item name at slot X,Y.
+- `<wait_X>`: Delays the next operation by X seconds (decimals work). Only works in `exec`.
 - `<pdata_*>`: Player data.
   - `<pdata_baseValue>`: Amount of nearby player base structures.
   - `<pdata_possibleEvents>`: List of possible events.
