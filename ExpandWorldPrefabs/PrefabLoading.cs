@@ -65,6 +65,7 @@ public class Loading
     var legacyPokes = data.pokes == null ? null : ParseObjects(data.pokes);
 
     var allPokes = data.poke == null ? null : ParsePokes(data.poke);
+    var allExecs = data.exec == null ? null : ParseExecs(data.exec.Data);
 
     var terrains = data.terrain == null ? null : data.terrain.Select(s => new Terrain(s)).ToArray();
     var allObjectRpcs = ParseObjectRpcs(data);
@@ -182,7 +183,8 @@ public class Loading
         Connect = data.connect == null ? null : DataValue.ZdoId(data.connect),
         MinTerrainHeight = minTerrainHeight,
         MaxTerrainHeight = maxTerrainHeight,
-        Execute = data.exec == null ? null : DataValue.String(data.exec),
+        Execs = allExecs?.Item1,
+        WeightedExecs = allExecs?.Item2,
         Admin = data.admin == null ? null : DataValue.Bool(data.admin),
         Condition = condition,
       };
@@ -235,6 +237,17 @@ public class Loading
     if (weightedPokes.Length == 0)
       weightedPokes = null;
     return Tuple.Create(pokes, weightedPokes);
+  }
+  private static Tuple<Exec[]?, Exec[]?> ParseExecs(ExecYaml[] objects)
+  {
+    var allExecs = objects.Select(s => new Exec(s)).ToArray();
+    var execs = allExecs.Where(s => s.Weight == null).ToArray();
+    if (execs.Length == 0)
+      execs = null;
+    var weightedExecs = allExecs.Where(s => s.Weight != null).ToArray();
+    if (weightedExecs.Length == 0)
+      weightedExecs = null;
+    return Tuple.Create(execs, weightedExecs);
   }
   private static Tuple<ObjectRpcInfo[]?, ObjectRpcInfo[]?>? ParseObjectRpcs(RuleYaml data)
   {

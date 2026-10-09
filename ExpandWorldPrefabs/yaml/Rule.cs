@@ -174,7 +174,7 @@ public class RuleYaml
   [DefaultValue(null)]
   public string? cancel;
   [DefaultValue(null)]
-  public string? exec;
+  public ExecEntries? exec;
   [DefaultValue(null)]
   public string? admin;
   [DefaultValue(null)]
@@ -321,7 +321,21 @@ public class Rule
   public IZdoIdValue? Attach;
   public IZdoIdValue? Connect;
   public IBoolValue? Cancel;
-  public IStringValue? Execute;
+  public Exec[]? Execs;
+  public Exec[]? WeightedExecs;
+  public Exec? GetWeightedExec(Functions f)
+  {
+    if (WeightedExecs == null || WeightedExecs.Length == 0) return null;
+    var weights = WeightedExecs.Select(e => e.Weight?.Get(f) ?? 0f).ToArray();
+    var total = Mathf.Max(1f, weights.Sum(s => s));
+    var random = UnityEngine.Random.Range(0f, total);
+    for (var i = 0; i < weights.Length; i++)
+    {
+      random -= weights[i];
+      if (random <= 0f) return WeightedExecs[i];
+    }
+    return null;
+  }
   public IBoolValue? Admin;
   public IFloatValue? Chance;
   public ConditionClause? Condition;

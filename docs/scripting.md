@@ -302,8 +302,28 @@ See object filtering [examples](examples_object_filtering.md).
   - These include creature drops, destructible drops and structure materials.
   - This can also be a data entry with `items` information.
   - Not supported for type `destroy`.
-- exec: Runs functions with side effects.
+- exec: Runs functions with side effects or console commands.
   - Mostly useful for saving custom data with the `save` function.
+  - Can be a single line or a list. A line starting with `<` is a function, otherwise it is a console command.
+  - A list entry can also be an object with these fields:
+    - function: Functions to run.
+    - command: Console command to run. If the entry also has a function, the function runs first.
+    - condition: Optional condition expression. Must evaluate to true when the entry runs.
+    - chance (default: `1`): Chance to run the entry.
+    - weight (optional): When set, only one of the weighted entries is selected.
+    - delay: Delay in seconds.
+    - repeat (default: `0`): How many times the entry is repeated.
+    - repeatInterval (default: `0`): Interval in seconds between repeats.
+    - repeatChance (default: `1`): Chance to run for each attempt (including the original).
+  - Pending delays and repeats are not saved, so they are lost when the server restarts.
+
+```yaml
+exec:
+- function: <save_a_1>
+- command: say hello
+  delay: 5
+  condition: <key_b> != 1
+```
 - owner: Changes the object owner (number).
   - Only works when using `injectData: true`.
   - Number 0 removes the owner, but the server will reassign it after a few seconds.

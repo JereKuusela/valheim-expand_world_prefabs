@@ -16,7 +16,7 @@ public class Commands
     Run(commands);
   }
 
-  private static void Run(IEnumerable<string> commands)
+  public static void Run(IEnumerable<string> commands)
   {
     foreach (var cmd in commands)
     {
