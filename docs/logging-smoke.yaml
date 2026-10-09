@@ -1,0 +1,16 @@
+# Logging-only fixture for a disposable Valheim test installation.
+- prefab: Player
+  type: state, join
+  log: "SMOKE scalar <pname> • λ"
+
+- prefab: Player
+  type: state, join
+  logFile: ewp_log, logging_smoke, logging_smoke
+  log:
+  - "SMOKE fanout <realtime>, <pname>"
+  - logFile: logging_details
+    log:
+    - "SMOKE details <pname>"
+    - |-
+      SMOKE multiline λ
+      second line, intact

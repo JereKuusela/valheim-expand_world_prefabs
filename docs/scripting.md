@@ -265,17 +265,21 @@ See object filtering [examples](examples_object_filtering.md).
   - Functions are supported.
   - Using `say` command requires either Discord Control mod or Server Devcommands mod (with Server chat enabled).
 - commands: List of console commands to run.
-- log: Text appended as a new record in `BepInEx/config/expand_world/ewp_log.txt`.
+- log: Text appended as a new record in `BepInEx/config/expand_world/logs/ewp_log.txt`, or a list of strings / structured `log` and optional `logFile` items for separate records.
   - Functions and object substitutions are supported.
   - Logging is server-authoritative and occurs after rule selection and chance checks, before other configured actions.
   - Logging records that the rule reached its action phase; it does not prove that later actions succeeded.
-  - The file is never read, rewritten, sorted, or truncated by EWP.
+  - Existing text is appended; complete records rotate into numbered archives at the configured size limit.
+  - The previous root-level `expand_world/ewp_log.txt` is left untouched; new output goes to `logs/`.
   - The `Rule logging` configuration setting can disable all `log` actions without changing scripts.
   - One background worker buffers writes and flushes about every second or at 64 KiB; it never performs file I/O on the rule's caller.
   - Rate, memory and record-size limits protect gameplay. Rejected records are counted in throttled gap summaries.
-  - An I/O failure disables logging until restart; a throwing formatter disables that rule's log action until YAML reload.
-  - EWP does not rotate or limit this file. Server operators are responsible for retention and disk usage.
-  - See [append-only rule logging](logging.md) for examples and operational notes.
+  - An I/O failure disables only the affected destination until restart; a throwing formatter disables that message until YAML reload.
+  - Defaults retain four 256 MiB segments per named log, including the active file. There is no shared folder-size cap.
+  - See [rule logging](logging.md) for examples and operational notes.
+- logFile: Comma-separated destination names, inherited by log items unless explicitly replaced. Message text is resolved once for all copies.
+  - Names are lowercased and use 1–64 ASCII letters, numbers, underscores or hyphens; EWP adds `.txt`.
+  - Duplicate destinations are removed. Paths, extensions and reserved device names are rejected.
 - data: Sets object data either with format `name` or `type, key, value`.
   - Format `name` can be used to set multiple values (entry name from `data.yaml`).
   - Format `type, key, value` is a shorthand to set a single data value.

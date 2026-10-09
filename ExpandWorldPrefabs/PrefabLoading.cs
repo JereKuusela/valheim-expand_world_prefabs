@@ -21,11 +21,13 @@ public class Loading
     var data = files.Where(fileEntries.ContainsKey).SelectMany(f => fileEntries[f]).ToList();
     if (data.Count == 0)
     {
+      RuleLog.Configure([]);
       Log.Warning($"Failed to load any prefab data.");
       return;
     }
     Log.Info($"Loaded {data.Count} prefab rules.");
     var items = data.SelectMany(FromData).ToList();
+    RuleLog.Configure(items.SelectMany(item => item.LogSources ?? []).SelectMany(source => source.Files));
     foreach (var item in items)
       InfoManager.Add(item);
     InfoManager.Patch();
@@ -90,6 +92,8 @@ public class Loading
       }
     }
     var allAltBiomes = AltBiomeList.m_altBiomes.Select(ab => ab.m_name).ToArray();
+    var logSources = data.log?.Normalize(data.logFile, message =>
+      Log.Warning("Rule " + data.prefab + " (" + data.type + "): " + message));
     return [.. types.Select(t =>
     {
       var d = t.Type != ActionType.Destroy ? data.data : "";
@@ -112,7 +116,7 @@ public class Loading
         Data = DataValue.String(d),
         InjectData = data.injectData,
         Commands = commands,
-        LogSource = data.log == null ? null : new RuleLogSource(data.log),
+        LogSources = logSources,
         Weight = data.weight == null ? null : DataValue.Float(data.weight),
         Chance = data.chance == null ? null : DataValue.Float(data.chance),
         Day = data.day == null ? null : DataValue.Bool(data.day),

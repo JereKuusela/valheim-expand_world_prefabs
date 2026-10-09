@@ -48,7 +48,9 @@ public class Data
   [DefaultValue(null)]
   public string[]? commands;
   [DefaultValue(null)]
-  public string? log;
+  public RuleLogData? log;
+  [DefaultValue(null)]
+  public RuleLogFiles? logFile;
   [DefaultValue(null)]
   public string? day;
   [DefaultValue(null)]
@@ -220,7 +222,7 @@ public class Info
   public IStringValue? Data;
   public bool? InjectData;
   public string[] Commands = [];
-  internal RuleLogSource? LogSource;
+  internal RuleLogSource[]? LogSources;
   public IBoolValue? Day;
   public IBoolValue? Night;
   public IFloatValue? MinDistance;

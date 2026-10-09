@@ -340,8 +340,8 @@ public class Yaml
       Directory.CreateDirectory(BaseDirectory);
   }
 
-  private static IDeserializer Deserializer() => new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
-  private static IDeserializer DeserializerUnSafe() => new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).IgnoreUnmatchedProperties().Build();
+  private static IDeserializer Deserializer() => new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).WithTypeConverter(new global::ExpandWorld.Prefab.RuleLogYamlConverter()).Build();
+  private static IDeserializer DeserializerUnSafe() => new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).WithTypeConverter(new global::ExpandWorld.Prefab.RuleLogYamlConverter()).IgnoreUnmatchedProperties().Build();
 
   private static List<T> Deserialize<T>(string raw, string file)
   {
