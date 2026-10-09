@@ -7,6 +7,8 @@ Most fields are put on a single line. List values are separated by `,`.
   - Value groups can be used ([data system](https://github.com/JereKuusela/valheim-world_edit_commands/blob/main/README_data.md#multiple-parameter-values)).
     - By default, each object component has its own value group. For example `Tameable` or `Piece`.
     - By default, keywords `creature` (Humanoid) and `structure` (WearNTear) have their own value group.
+    - By default, each build cost resource has its own value group. For example `material_Wood` or `material_Stone`.
+      - The "Material" tab of the build menu lists the available names.
     - By default, each item type has its own value group. For example `itemtype_Consumable` or `itemtype_OneHandedWeapon`.
       - [Discord Guide](https://discord.com/channels/1167153871546744842/1400114819708751902)
       - Use command `ewp_itemtype` to list the available `itemtype_*` value groups.
