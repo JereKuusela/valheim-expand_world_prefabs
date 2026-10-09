@@ -17,7 +17,10 @@ public class Config
   private static ConfigEntry<int> ConfigLogGlobalRate, ConfigLogRuleRate, ConfigLogFlushMs, ConfigLogFileMiB, ConfigLogSegments;
   private static ConfigEntry<float> ConfigNpcPlayerListRange;
   private static ConfigEntry<string> ConfigCustomPrefabNames;
+  private static ConfigEntry<bool> ConfigAllowModConfigWrite;
 #nullable enable
+  internal static ConfigFile? Main;
+  public static bool AllowModConfigWrite => ConfigAllowModConfigWrite.Value;
   public static bool AutomaticReload => ConfigAutomaticReload.Value;
   public static bool RestoreScale => ConfigRestoreScale.Value;
   public static bool PersistPlayers => ConfigPersistPlayers.Value;
@@ -38,6 +41,8 @@ public class Config
 
   public static void Init(ConfigFile config)
   {
+    Main = config;
+    ConfigAllowModConfigWrite = config.Bind("General", "Allow modifying mod configs", false, "When enabled, scripts can change settings of other mods with <savemodconfig_X>.");
     ConfigAutomaticReload = config.Bind("General", "Automatic file reload", true, "Settings are automatically reloaded on file changes. Requires restart to take effect.");
     ConfigRestoreScale = config.Bind("General", "Restore scale", true, "When enabled, EWP automatically restores custom scale for objects with ZSyncTransform.m_syncScale.");
     ConfigSupportAttach = config.Bind("General", "Object attaching", true, "When enabled, EWP keeps ownership of attached objects to prevent clients from separating them.");

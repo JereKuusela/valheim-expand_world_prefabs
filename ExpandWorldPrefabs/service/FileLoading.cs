@@ -16,6 +16,7 @@ public static class FileLoading
   public const string PrefabPattern = "expand_prefabs*.yaml";
   private static readonly Dictionary<string, List<ExpandWorld.Prefab.RuleYaml>> PrefabFileEntries = new(StringComparer.OrdinalIgnoreCase);
   private static readonly Dictionary<string, List<Data.DataYaml>> DataFileEntries = new(StringComparer.OrdinalIgnoreCase);
+  private static readonly Dictionary<string, List<ExpandWorld.Prefab.ConfigYaml>> ConfigFileEntries = new(StringComparer.OrdinalIgnoreCase);
 
   public static string NormalizePath(string path)
   {
@@ -127,8 +128,12 @@ public static class FileLoading
     var prefabFiles = GetPatternFiles(Yaml.BaseDirectory, PrefabPattern);
     prefabFiles.Reverse();
     PrefabFileEntries.Clear();
+    ConfigFileEntries.Clear();
     foreach (var file in prefabFiles)
+    {
       PrefabFileEntries[file] = ReadScriptEntries(file);
+      ConfigFileEntries[file] = ReadConfigEntries(file);
+    }
 
     var dataFiles = GetDataSourceFiles();
     DataFileEntries.Clear();
@@ -136,6 +141,7 @@ public static class FileLoading
       DataFileEntries[file] = ReadDataEntries(file);
 
     Data.DataLoading.LoadFromFiles(dataFiles, DataFileEntries);
+    ExpandWorld.Prefab.ConfigManager.LoadFromFiles(prefabFiles, ConfigFileEntries);
     ExpandWorld.Prefab.Loading.LoadFromFiles(prefabFiles, PrefabFileEntries);
   }
 
@@ -171,30 +177,36 @@ public static class FileLoading
     {
       PrefabFileEntries.Remove(oldPath);
       DataFileEntries.Remove(oldPath);
+      ConfigFileEntries.Remove(oldPath);
     }
 
     if (type == Yaml.FileChangeType.Deleted)
     {
       PrefabFileEntries.Remove(path);
       DataFileEntries.Remove(path);
+      ConfigFileEntries.Remove(path);
     }
     else
     {
       var mixed = Yaml.ReadMixedFile(path, true);
       PrefabFileEntries[path] = mixed.ScriptEntries;
       DataFileEntries[path] = mixed.DataEntries;
+      ConfigFileEntries[path] = mixed.ConfigEntries;
     }
 
     var prefabFiles = GetPatternFiles(Yaml.BaseDirectory, PrefabPattern);
     prefabFiles.Reverse();
     PruneStaleCache(PrefabFileEntries, prefabFiles);
+    PruneStaleCache(ConfigFileEntries, prefabFiles);
     EnsureCache(PrefabFileEntries, prefabFiles, file => ReadScriptEntries(file));
+    EnsureCache(ConfigFileEntries, prefabFiles, file => ReadConfigEntries(file));
 
     var dataFiles = GetDataSourceFiles();
     PruneStaleCache(DataFileEntries, dataFiles);
     EnsureCache(DataFileEntries, dataFiles, file => ReadDataEntries(file));
 
     Data.DataLoading.LoadFromFiles(dataFiles, DataFileEntries);
+    ExpandWorld.Prefab.ConfigManager.LoadFromFiles(prefabFiles, ConfigFileEntries);
     ExpandWorld.Prefab.Loading.LoadFromFiles(prefabFiles, PrefabFileEntries);
   }
 
@@ -244,6 +256,12 @@ public static class FileLoading
   {
     if (!File.Exists(file)) return [];
     return Yaml.ReadMixedFile(file, migrateScripts).ScriptEntries;
+  }
+
+  public static List<ExpandWorld.Prefab.ConfigYaml> ReadConfigEntries(string file)
+  {
+    if (!File.Exists(file)) return [];
+    return Yaml.ReadMixedFile(file, false).ConfigEntries;
   }
 
   public static List<Data.DataYaml> ReadDataEntries(string file, bool migrateScripts = true)

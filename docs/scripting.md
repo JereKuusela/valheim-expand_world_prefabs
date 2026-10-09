@@ -58,6 +58,10 @@ Most fields are put on a single line. List values are separated by `,`.
       - First parameter is the granularity (day, hour, minute, second).
       - Second parameter is the condition (single value, multiple values, range).
       - Uses server timezone.
+    - `config`: When a setting declared with a `config` entry changes (see [config](config.md)). Parameter is the config id (`SECTION_NAME`).
+      - Also triggers on external edits of the config file.
+      - Changes made by rules triggered by this type don't trigger `config` again.
+      - There is no prefab or position for this type, so most fields won't work.
   - Objects spawned or removed by this mod won't trigger `create` or `destroy`.
 - types: List of types.
 - chance (default: `1`): Chance to execute this entry when all filters match.

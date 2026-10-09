@@ -14,7 +14,7 @@ public class EWP : BaseUnityPlugin
 {
   public const string GUID = "expand_world_prefabs";
   public const string NAME = "Expand World Prefabs";
-  public const string VERSION = "1.62";
+  public const string VERSION = "1.62.1";
 #nullable disable
   public static Harmony Harmony;
 #nullable enable
@@ -75,6 +75,7 @@ public class EWP : BaseUnityPlugin
   }
   public void LateUpdate()
   {
+    ConfigManager.Flush();
     if (ZNet.instance == null) return;
     HandleCreated.Execute();
     HandleChanged.Execute();
@@ -88,6 +89,7 @@ public class EWP : BaseUnityPlugin
   }
   public void OnDestroy()
   {
+    ConfigManager.Flush(true);
     RuleLog.Close();
   }
 

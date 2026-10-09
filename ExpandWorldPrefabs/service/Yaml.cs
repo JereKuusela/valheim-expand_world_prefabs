@@ -24,6 +24,7 @@ public class Yaml
   {
     public List<ExpandWorld.Prefab.RuleYaml> ScriptEntries = [];
     public List<Data.DataYaml> DataEntries = [];
+    public List<ExpandWorld.Prefab.ConfigYaml> ConfigEntries = [];
   }
 
   public static string BaseDirectory = Path.Combine(Paths.ConfigPath, "expand_world");
@@ -86,6 +87,11 @@ public class Yaml
         var raw = string.Join("\n", split.DataLines);
         result.DataEntries = Deserialize<Data.DataYaml>(raw, file);
       }
+      if (split.ConfigLines.Count > 0)
+      {
+        var raw = string.Join("\n", split.ConfigLines);
+        result.ConfigEntries = Deserialize<ExpandWorld.Prefab.ConfigYaml>(raw, file);
+      }
       return result;
     }
     catch (Exception ex)
@@ -99,6 +105,7 @@ public class Yaml
   {
     public List<string> ScriptLines = [];
     public List<string> DataLines = [];
+    public List<string> ConfigLines = [];
   }
 
   private static MixedSplit SplitMixed(string[] lines)
@@ -135,7 +142,9 @@ public class Yaml
 
   private static void AddMixedBlock(MixedSplit split, List<string> block)
   {
-    if (IsDataBlock(block))
+    if (IsConfigBlock(block))
+      split.ConfigLines.AddRange(block);
+    else if (IsDataBlock(block))
       split.DataLines.AddRange(block);
     else
       split.ScriptLines.AddRange(block);
@@ -145,6 +154,17 @@ public class Yaml
   {
     var raw = line.Length > 0 && line[0] == '\uFEFF' ? line.Substring(1) : line;
     return raw.StartsWith("- ");
+  }
+
+  private static bool IsConfigBlock(List<string> block)
+  {
+    foreach (var line in block)
+    {
+      var key = ParseBlockKey(line);
+      if (key == null) continue;
+      return key.Equals("config", StringComparison.OrdinalIgnoreCase);
+    }
+    return false;
   }
 
   private static bool IsDataBlock(List<string> block)
@@ -158,8 +178,8 @@ public class Yaml
         || key.Equals("value", StringComparison.OrdinalIgnoreCase);
     }
     return false;
-  }
 
+  }
   private static string? ParseBlockKey(string line)
   {
     var noComment = line.Split('#')[0].Trim();
@@ -193,6 +213,7 @@ public class Yaml
   private static void ReadConfigValues(string path, ConfigFile config)
   {
     if (!File.Exists(path)) return;
+    if (ExpandWorld.Prefab.ConfigManager.IsSelfWrite && config == ExpandWorld.Prefab.Config.Main) return;
     BackupFile(path, true);
     try
     {

@@ -21,7 +21,8 @@ public enum ActionType
   Custom,
   Time,
   RealTime,
-  ClientState
+  ClientState,
+  Config
 }
 public class InfoManager
 {
@@ -38,6 +39,7 @@ public class InfoManager
   public static readonly GlobalInfo EventDatas = new();
   public static readonly GlobalInfo TimeDatas = new();
   public static readonly GlobalInfo RealTimeDatas = new();
+  public static readonly GlobalInfo ConfigDatas = new();
 
   public static void Clear()
   {
@@ -54,6 +56,7 @@ public class InfoManager
     ChangeDatas.Clear();
     TimeDatas.Clear();
     RealTimeDatas.Clear();
+    ConfigDatas.Clear();
     RpcInfo.Clear();
   }
   public static void Add(Rule info)
@@ -86,6 +89,11 @@ public class InfoManager
     if (info.Type == ActionType.RealTime)
     {
       RealTimeDatas.Add(info);
+      return;
+    }
+    if (info.Type == ActionType.Config)
+    {
+      ConfigDatas.Add(info);
       return;
     }
     if (info.Type == ActionType.Command)
@@ -167,6 +175,7 @@ public class InfoManager
     PeerManager.Patch(EWP.Harmony, shouldHandlePeerState);
     PrefabConnector.Patch(EWP.Harmony, shouldHandleSwapConnections);
 
+    ConfigManager.SetTriggerEnabled(canPatch && ConfigDatas.Exists);
     DataStorage.OnSet = KeyDatas.Exists ? OnKeySet : null;
   }
 
@@ -302,6 +311,7 @@ public class InfoManager
     ActionType.Event => EventDatas,
     ActionType.Time => TimeDatas,
     ActionType.RealTime => RealTimeDatas,
+    ActionType.Config => ConfigDatas,
     _ => ErrorGlobal(type),
   };
   private static GlobalInfo ErrorGlobal(ActionType type)
