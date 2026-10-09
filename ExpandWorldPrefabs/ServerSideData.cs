@@ -220,7 +220,7 @@ public static class ServerSideData
 
   private static void RemovePayloadFromZdo(ZDO zdo)
   {
-    RemoveFromStore<byte[]>(ZDOExtraData.s_byteArrays, zdo.m_uid, StorageHash);
+    RemoveFromStore(ZDOExtraData.s_byteArrays, zdo.m_uid, StorageHash);
   }
 
   public static bool TryGetStrings(ZDOID id, out Dictionary<int, string> values) => Strings.TryGetValue(id, out values);

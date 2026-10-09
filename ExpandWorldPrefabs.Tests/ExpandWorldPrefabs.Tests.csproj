@@ -32,6 +32,12 @@
     <Reference Include="assembly_valheim">
       <HintPath>..\..\Libs\assembly_valheim.dll</HintPath>
     </Reference>
+    <Reference Include="YamlDotNet">
+      <HintPath>..\..\Libs\YamlDotNet.dll</HintPath>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>..\..\Libs\0Harmony.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

@@ -45,7 +45,7 @@ public static class Api
     if (type == null) return;
 
     registerSimpleFunctionHandlerMethod = AccessTools.Method(type, "RegisterFunctionHandler", [typeof(string), typeof(Func<string?>)]);
-    registerValueFunctionHandlerMethod = AccessTools.Method(type, "RegisterFunctionHandler", [typeof(string), typeof(Func<string, string?>)]);
+    registerValueFunctionHandlerMethod = AccessTools.Method(type, "RegisterValueFunctionHandler", [typeof(string), typeof(Func<string, string?>)]);
     unregisterFunctionHandlerMethod = AccessTools.Method(type, "UnregisterFunctionHandler", [typeof(string)]);
     registerGroupHandlerMethod = AccessTools.Method(type, "RegisterGroupHandler", [typeof(string), typeof(Func<string, long, string, bool>)]);
     unregisterGroupHandlerMethod = AccessTools.Method(type, "UnregisterGroupHandler", [typeof(string)]);

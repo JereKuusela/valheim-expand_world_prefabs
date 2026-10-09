@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Data;
 using Service;
@@ -11,14 +12,19 @@ internal static class RuleLog
   private static readonly Func<string, Functions, string> Format =
     (template, functions) => functions.Replace(template, false, false);
 
-  public static void Init(string path)
+  public static void Init(string directory)
   {
     // Never replace a worker that might still own the file.
     if (Writer != null) return;
     try
     {
-      Writer = new BufferedRuleLog(() => Open(path), Config.GetRuleLogOptions(), Log.Warning);
+      var maximumBytes = Config.RuleLogMaximumFileBytes;
+      var segments = Config.RuleLogSegments;
+      Writer = new BufferedRuleLog(name => new RollingRuleLogWriter(
+        Path.Combine(directory, name + ".txt"), maximumBytes, segments), Config.GetRuleLogOptions(), Log.Warning);
       Writer.SetEnabled(Config.RuleLogging);
+      Log.Info("Rule log files: " + directory + "; segment size=" + (maximumBytes / (1024 * 1024)) +
+        " MiB; retained segments=" + segments + " per log.");
     }
     catch (Exception e)
     {
@@ -26,20 +32,18 @@ internal static class RuleLog
     }
   }
 
-  private static TextWriter Open(string path)
+  public static void Configure(IEnumerable<string> names)
   {
-    var directory = Path.GetDirectoryName(path);
-    if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-    var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, 65536);
-    try
-    {
-      var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(false), 16384) { AutoFlush = false };
-      return new BoundedRuleLogWriter(writer, stream.Length, Config.RuleLogMaximumFileBytes);
-    }
-    catch { stream.Dispose(); throw; }
+    var rejected = Writer?.SetDestinations(names);
+    if (rejected != null && rejected.Length > 0)
+      Log.Warning("Rule logging tracks at most " + BufferedRuleLog.MaximumDestinations +
+        " destination names until restart. Skipping: " + string.Join(", ", rejected));
   }
 
-  public static void Write(RuleLogSource source, Functions functions) => Writer?.TryWrite(source, functions, Format);
+  public static void Write(RuleLogSource[] sources, Functions functions)
+  {
+    foreach (var source in sources) Writer?.TryWrite(source, functions, Format);
+  }
   public static void SetEnabled(bool enabled) => Writer?.SetEnabled(enabled);
   public static void Close() => Writer?.Stop(1000);
 }

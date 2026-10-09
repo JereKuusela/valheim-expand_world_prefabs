@@ -27,7 +27,7 @@ public class EWP : BaseUnityPlugin
     Harmony.PatchAll();
     Log.Init(Logger);
     Yaml.Init();
-    RuleLog.Init(Path.Combine(Yaml.BaseDirectory, "ewp_log.txt"));
+    RuleLog.Init(Path.Combine(Yaml.BaseDirectory, "logs"));
     try
     {
       if (Prefab.Config.AutomaticReload)
@@ -61,6 +61,16 @@ public class EWP : BaseUnityPlugin
     {
       var names = AltBiomeList.m_altBiomes.Select(alt => alt.m_name).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct().OrderBy(name => name, StringComparer.Ordinal).ToArray();
       args.Context.AddString(names.Length > 0 ? string.Join("\n", names) : "No alternate biomes loaded. Enter a world and try again.");
+    });
+    new Terminal.ConsoleCommand("ewp_itemtype", "Lists the itemtype_* value groups that can be used in prefab.", (args) =>
+    {
+      if (!ObjectDB.instance)
+      {
+        args.Context.AddString("No items loaded. Enter a world and try again.");
+        return;
+      }
+      var names = ObjectDB.instance.m_items.Select(item => item.GetComponent<ItemDrop>()).Where(item => item).Select(item => $"itemtype_{item.m_itemData.m_shared.m_itemType}").Distinct().OrderBy(name => name, StringComparer.Ordinal).ToArray();
+      args.Context.AddString(string.Join("\n", names));
     });
   }
   public void LateUpdate()

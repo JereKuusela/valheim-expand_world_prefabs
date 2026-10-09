@@ -8,33 +8,33 @@ namespace ExpandWorld.Prefab;
 
 public class InfoSelector
 {
-  public static Info? SelectWeighted(ActionType type, ZDO zdo, string[] args, Functions f)
+  public static Rule? SelectWeighted(ActionType type, ZDO zdo, string[] args, Functions f)
   {
     var infos = InfoManager.Select(type);
     if (!infos.TryGetWeightedValue(zdo.m_prefab, out var data)) return null;
     return SelectInfo(data, zdo, args, f);
   }
-  public static Info? SelectFallback(ActionType type, ZDO zdo, string[] args, Functions f)
+  public static Rule? SelectFallback(ActionType type, ZDO zdo, string[] args, Functions f)
   {
     var infos = InfoManager.Select(type);
     if (!infos.TryGetFallbackValue(zdo.m_prefab, out var data)) return null;
     return SelectInfo(data, zdo, args, f);
   }
-  public static Info[]? SelectSeparate(ActionType type, ZDO zdo, string[] args, Functions f)
+  public static Rule[]? SelectSeparate(ActionType type, ZDO zdo, string[] args, Functions f)
   {
     var infos = InfoManager.Select(type);
     if (!infos.TryGetSeparateValue(zdo.m_prefab, out var data)) return null;
     return SelectInfos(data, zdo.m_position, zdo, args, f);
   }
 
-  private static Info? SelectInfo(List<Info> data, ZDO zdo, string[] args, Functions f)
+  private static Rule? SelectInfo(List<Rule> data, ZDO zdo, string[] args, Functions f)
   {
     var infos = SelectInfos(data, zdo.m_position, zdo, args, f);
     if (infos == null || infos.Length == 0) return null;
     return Randomize(infos, f);
   }
 
-  private static Info[]? SelectInfos(List<Info> data, Vector3 pos, ZDO zdo, string[] args, Functions f)
+  private static Rule[]? SelectInfos(List<Rule> data, Vector3 pos, ZDO zdo, string[] args, Functions f)
   {
     if (data.Count == 0) return null;
     var biome = WorldGenerator.instance.GetBiome(pos);
@@ -151,17 +151,17 @@ public class InfoSelector
         (d.MinPaint == null || (d.MinPaint.Value.b <= paint.b && d.MinPaint.Value.g <= paint.g && d.MinPaint.Value.r <= paint.r && d.MinPaint.Value.a <= paint.a)) &&
         (d.MaxPaint == null || (d.MaxPaint.Value.b >= paint.b && d.MaxPaint.Value.g >= paint.g && d.MaxPaint.Value.r >= paint.r && d.MaxPaint.Value.a >= paint.a)))];
     }
-    Info[] result = [.. linq];
+    Rule[] result = [.. linq];
     return result.Length == 0 ? null : result;
   }
-  private static bool CheckGroups(Info d, string pid, long cid)
+  private static bool CheckGroups(Rule d, string pid, long cid)
   {
     if (d.BannedGroups != null && d.BannedGroups.Any(group => Api.IsInGroup(pid, cid, group))) return false;
     if (d.Groups == null) return true;
     return d.Groups.Any(group => Api.IsInGroup(pid, cid, group));
   }
-  private static bool CheckLocations(Info d, Vector3 pos, Vector2s zone) => CheckBannedLocations(d, pos, zone) && CheckRequiredLocations(d, pos, zone);
-  private static bool CheckBannedLocations(Info d, Vector3 pos, Vector2s zone)
+  private static bool CheckLocations(Rule d, Vector3 pos, Vector2s zone) => CheckBannedLocations(d, pos, zone) && CheckRequiredLocations(d, pos, zone);
+  private static bool CheckBannedLocations(Rule d, Vector3 pos, Vector2s zone)
   {
     if (d.BannedLocations == null) return true;
     // +1 because the location can be at zone edge, so any distance can be on the next zone.
@@ -184,7 +184,7 @@ public class InfoSelector
     }
     return true;
   }
-  private static bool CheckRequiredLocations(Info d, Vector3 pos, Vector2s zone)
+  private static bool CheckRequiredLocations(Rule d, Vector3 pos, Vector2s zone)
   {
     if (d.Locations == null) return true;
     // +1 because the location can be at zone edge, so any distance can be on the next zone.
@@ -207,7 +207,7 @@ public class InfoSelector
     }
     return false;
   }
-  private static Info? Randomize(Info[] valid, Functions f)
+  private static Rule? Randomize(Rule[] valid, Functions f)
   {
     if (valid.Length == 0) return null;
     var weights = valid.Select(d => d.Weight?.Get(f) ?? 1f).ToArray();
@@ -221,7 +221,7 @@ public class InfoSelector
     }
     return null;
   }
-  private static bool CheckArgs(Info info, string[] args)
+  private static bool CheckArgs(Rule info, string[] args)
   {
     if (info.Args.Length == 0) return true;
     if (info.Args.Length > args.Length) return false;
@@ -230,7 +230,7 @@ public class InfoSelector
     return true;
 
   }
-  internal static bool CheckBiomes(Info data, Heightmap.Biome biome, List<AltBiome> altBiomes) =>
+  internal static bool CheckBiomes(Rule data, Heightmap.Biome biome, List<AltBiome> altBiomes) =>
     ((data.Biomes & biome) == biome || altBiomes.Any(alt => data.AltBiomes?.Contains(alt.m_name) == true))
     && (data.BannedBiomes & biome) == 0
     && !altBiomes.Any(alt => data.BannedAltBiomes?.Contains(alt.m_name) == true);
@@ -247,30 +247,30 @@ public class InfoSelector
     Random.state = state;
     return env.m_name.ToLower();
   }
-  public static Info? SelectGlobalWeighted(ActionType type, string[] args, Functions f, Vector3 pos, bool remove)
+  public static Rule? SelectGlobalWeighted(ActionType type, string[] args, Functions f, Vector3 pos, bool remove)
   {
     var infos = InfoManager.SelectGlobal(type);
     return SelectGlobalInfo(infos.Weighted, args, f, pos, remove);
   }
-  public static Info? SelectGlobalFallback(ActionType type, string[] args, Functions f, Vector3 pos, bool remove)
+  public static Rule? SelectGlobalFallback(ActionType type, string[] args, Functions f, Vector3 pos, bool remove)
   {
     var infos = InfoManager.SelectGlobal(type);
     return SelectGlobalInfo(infos.Fallback, args, f, pos, remove);
   }
-  public static Info[]? SelectGlobalSeparate(ActionType type, string[] args, Functions f, Vector3 pos, bool remove)
+  public static Rule[]? SelectGlobalSeparate(ActionType type, string[] args, Functions f, Vector3 pos, bool remove)
   {
     var infos = InfoManager.SelectGlobal(type);
     return SelectGlobalInfos(infos.Separate, args, f, pos, remove);
   }
 
-  private static Info? SelectGlobalInfo(List<Info> data, string[] args, Functions f, Vector3 pos, bool remove)
+  private static Rule? SelectGlobalInfo(List<Rule> data, string[] args, Functions f, Vector3 pos, bool remove)
   {
     var infos = SelectGlobalInfos(data, args, f, pos, remove);
     if (infos == null || infos.Length == 0) return null;
     return Randomize(infos, f);
   }
 
-  private static Info[]? SelectGlobalInfos(List<Info> data, string[] args, Functions f, Vector3 pos, bool remove)
+  private static Rule[]? SelectGlobalInfos(List<Rule> data, string[] args, Functions f, Vector3 pos, bool remove)
   {
     if (data.Count == 0) return null;
     var day = EnvMan.IsDay();
@@ -294,7 +294,7 @@ public class InfoSelector
       .Where(d => d.Condition == null || d.Condition.Evaluate(f));
 
 
-    Info[] result = [.. linq];
+    Rule[] result = [.. linq];
     return result.Length == 0 ? null : result;
   }
 }

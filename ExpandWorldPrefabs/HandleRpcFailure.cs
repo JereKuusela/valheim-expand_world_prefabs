@@ -85,7 +85,5 @@ public class HandleRpcFailure
   {
     if (RpcInfo.TryGetName(hash, out var name))
       Log.Warning($"Failed to find rpc method {name}");
-    else
-      Log.Warning($"Failed to find rpc method {hash}");
   }
 }

@@ -9,42 +9,44 @@ namespace ExpandWorld.Prefab;
 
 public class Loading
 {
-  public static void LoadFromFiles(List<string> files, Dictionary<string, List<Data>> fileEntries)
+  public static void LoadFromFiles(List<string> files, Dictionary<string, List<RuleYaml>> fileEntries)
   {
     if (Helper.IsClient()) return;
     RebuildFromCache(files, fileEntries);
   }
 
-  private static void RebuildFromCache(List<string> files, Dictionary<string, List<Data>> fileEntries)
+  private static void RebuildFromCache(List<string> files, Dictionary<string, List<RuleYaml>> fileEntries)
   {
     InfoManager.Clear();
     var data = files.Where(fileEntries.ContainsKey).SelectMany(f => fileEntries[f]).ToList();
     if (data.Count == 0)
     {
+      RuleLog.Configure([]);
       Log.Warning($"Failed to load any prefab data.");
       return;
     }
     Log.Info($"Loaded {data.Count} prefab rules.");
     var items = data.SelectMany(FromData).ToList();
+    RuleLog.Configure(items.SelectMany(item => item.LogSources ?? []).SelectMany(source => source.Files));
     foreach (var item in items)
       InfoManager.Add(item);
     InfoManager.Patch();
   }
 
-  public static Info[] FromData(Data data)
+  public static Rule[] FromData(RuleYaml data)
   {
     var waterLevel = ZoneSystem.instance.m_waterLevel;
     float? spawnDelay = data.delay == null && data.spawnDelay == null ? null : Math.Max(data.delay ?? 0f, data.spawnDelay ?? 0f);
     bool? triggerRules = data.triggerRules;
 
-    var allSwaps = data.swap == null ? data.swaps == null ? null : ParseSpawns(data.swaps, spawnDelay, triggerRules) : ParseSpawns(data.swap, spawnDelay, triggerRules);
-    var allSpawns = data.spawn == null ? data.spawns == null ? null : ParseSpawns(data.spawns, spawnDelay, triggerRules) : ParseSpawns(data.spawn, spawnDelay, triggerRules);
+    var allSwaps = ParseSpawns(data.swap, data.swaps, spawnDelay, triggerRules);
+    var allSpawns = ParseSpawns(data.spawn, data.spawns, spawnDelay, triggerRules);
 
     var types = (data.types ?? [data.type]).Select(s => new InfoType(data.prefab, s)).ToArray();
     if (data.prefab == "" && types.Any(t => t.Type != ActionType.GlobalKey && t.Type != ActionType.Key && t.Type != ActionType.Custom && t.Type != ActionType.Event && t.Type != ActionType.Time && t.Type != ActionType.RealTime))
       Log.Warning($"Prefab missing for type {data.type}");
     HashSet<string> events = [.. Parse.ToList(data.events)];
-    var commands = data.commands ?? (data.command == null ? [] : [data.command]);
+    string[] commands = [.. data.command?.Items ?? [], .. data.commands ?? []];
     HashSet<string> environments = [.. Parse.ToList(data.environments).Select(s => s.ToLower())];
     HashSet<string> bannedEnvironments = [.. Parse.ToList(data.bannedEnvironments).Select(s => s.ToLower())];
     HashSet<string>? locations = data.locations == null ? null : [.. Parse.ToList(data.locations)];
@@ -54,8 +56,8 @@ public class Loading
     HashSet<string>? groups = data.groups == null ? null : [.. Parse.ToList(data.groups)];
     HashSet<string>? bannedGroups = data.bannedGroups == null ? null : [.. Parse.ToList(data.bannedGroups)];
     var objectsLimit = data.objectsLimit == null ? null : DataValue.RangeInt(data.objectsLimit);
-    var objects = data.objects == null ? null : ParseObjects(data.objects);
-    var bannedObjects = data.bannedObjects == null ? null : ParseObjects(data.bannedObjects);
+    var objects = data.objects == null ? null : ParseObjects(data.objects.Data);
+    var bannedObjects = data.bannedObjects == null ? null : ParseObjects(data.bannedObjects.Data);
     var bannedObjectsLimit = data.bannedObjectsLimit == null ? null : DataValue.RangeInt(data.bannedObjectsLimit);
 
     var filters = data.filters == null && data.bannedFilters == null ? null : new Filters(data.filters, data.bannedFilters, data.filterLimit);
@@ -90,11 +92,13 @@ public class Loading
       }
     }
     var allAltBiomes = AltBiomeList.m_altBiomes.Select(ab => ab.m_name).ToArray();
+    var logSources = data.log?.Normalize(data.logFile, message =>
+      Log.Warning("Rule " + data.prefab + " (" + data.type + "): " + message));
     return [.. types.Select(t =>
     {
       var d = t.Type != ActionType.Destroy ? data.data : "";
       bool? remove = t.Type == ActionType.Destroy ? false : allSwaps != null ? true : data.remove == "" ? false : null;
-      return new Info()
+      return new Rule()
       {
         Prefabs = data.prefab,
         ExcludedPrefabs = data.excludePrefab,
@@ -112,7 +116,7 @@ public class Loading
         Data = DataValue.String(d),
         InjectData = data.injectData,
         Commands = commands,
-        LogSource = data.log == null ? null : new RuleLogSource(data.log),
+        LogSources = logSources,
         Weight = data.weight == null ? null : DataValue.Float(data.weight),
         Chance = data.chance == null ? null : DataValue.Float(data.chance),
         Day = data.day == null ? null : DataValue.Bool(data.day),
@@ -184,7 +188,7 @@ public class Loading
       };
     })];
   }
-  private static ConditionClause? ParseCondition(Data data)
+  private static ConditionClause? ParseCondition(RuleYaml data)
   {
     if (string.IsNullOrWhiteSpace(data.condition)) return null;
     var rawCondition = data.condition!;
@@ -201,18 +205,13 @@ public class Loading
     if (kvp.Value == "") return kvp.Key.ToLowerInvariant();
     return kvp.Key.ToLowerInvariant() + " " + kvp.Value;
   }
-  private static Tuple<Spawn[]?, Spawn[]?> ParseSpawns(string[] spawns, float? delay, bool? triggerRules)
+  private static Tuple<Spawn[]?, Spawn[]?>? ParseSpawns(SpawnEntries? entries, string[]? lines, float? delay, bool? triggerRules)
   {
-    var allSpawns = spawns.Select(s => new Spawn(s, delay, triggerRules)).ToArray();
-    var spawn = allSpawns.Where(s => s.Weight == null).ToArray();
-    if (spawn.Length == 0)
-      spawn = null;
-    var weightedSpawns = allSpawns.Where(s => s.Weight != null).ToArray();
-    if (weightedSpawns.Length == 0)
-      weightedSpawns = null;
-    return Tuple.Create(spawn, weightedSpawns);
+    var all = entries?.Data ?? lines?.Select(SpawnYaml.FromLine).ToArray();
+    return all == null ? null : ParseSpawns(all, delay, triggerRules);
   }
-  private static Tuple<Spawn[]?, Spawn[]?> ParseSpawns(SpawnData[] spawns, float? delay, bool? triggerRules)
+
+  private static Tuple<Spawn[]?, Spawn[]?> ParseSpawns(SpawnYaml[] spawns, float? delay, bool? triggerRules)
   {
     var allSpawns = spawns.Select(s => new Spawn(s, delay, triggerRules)).ToArray();
     var spawn = allSpawns.Where(s => s.Weight == null).ToArray();
@@ -224,9 +223,9 @@ public class Loading
     return Tuple.Create(spawn, weightedSpawns);
   }
 
-  private static Object[] ParseObjects(string[] objects) => [.. objects.Select(s => new Object(s))];
-  private static Object[] ParseObjects(ObjectData[] objects) => [.. objects.Select(s => new Object(s))];
-  private static Tuple<Poke[]?, Poke[]?> ParsePokes(PokeData[] objects)
+  private static Object[] ParseObjects(string[] objects) => ParseObjects([.. objects.Select(ObjectYaml.FromLine)]);
+  private static Object[] ParseObjects(ObjectYaml[] objects) => [.. objects.Select(s => new Object(s))];
+  private static Tuple<Poke[]?, Poke[]?> ParsePokes(PokeYaml[] objects)
   {
     var allPokes = objects.Select(s => new Poke(s)).ToArray();
     var pokes = allPokes.Where(s => s.Weight == null).ToArray();
@@ -237,7 +236,7 @@ public class Loading
       weightedPokes = null;
     return Tuple.Create(pokes, weightedPokes);
   }
-  private static Tuple<ObjectRpcInfo[]?, ObjectRpcInfo[]?>? ParseObjectRpcs(Data data)
+  private static Tuple<ObjectRpcInfo[]?, ObjectRpcInfo[]?>? ParseObjectRpcs(RuleYaml data)
   {
     if (data.objectRpc == null || data.objectRpc.Length == 0) return null;
     var allRpcs = data.objectRpc.Select(s => new ObjectRpcInfo(s)).ToArray();
@@ -249,7 +248,7 @@ public class Loading
       weightedRpcs = null;
     return Tuple.Create(rpcs, weightedRpcs);
   }
-  private static Tuple<ClientRpcInfo[]?, ClientRpcInfo[]?>? ParseClientRpcs(Data data)
+  private static Tuple<ClientRpcInfo[]?, ClientRpcInfo[]?>? ParseClientRpcs(RuleYaml data)
   {
     if (data.clientRpc == null || data.clientRpc.Length == 0) return null;
     var allRpcs = data.clientRpc.Select(s => new ClientRpcInfo(s)).ToArray();

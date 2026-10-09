@@ -23,7 +23,7 @@ public class Manager
       foreach (var i in infos)
         HandleGlobal(i, f, pos, remove);
   }
-  private static void HandleGlobal(Info info, Functions f, Vector3 pos, bool remove)
+  private static void HandleGlobal(Rule info, Functions f, Vector3 pos, bool remove)
   {
     if (info.Chance != null)
     {
@@ -35,8 +35,8 @@ public class Manager
       }
     }
 
-    if (info.LogSource != null && Config.RuleLogging)
-      RuleLog.Write(info.LogSource, f);
+    if (info.LogSources != null && Config.RuleLogging)
+      RuleLog.Write(info.LogSources, f);
     info.Execute?.Get(f);
     if (info.Commands.Length > 0)
       Commands.Run(info, f);
@@ -77,7 +77,7 @@ public class Manager
     return ret;
   }
 
-  private static bool Handle(Info info, ObjectFunctions f, ZDO zdo)
+  private static bool Handle(Rule info, ObjectFunctions f, ZDO zdo)
   {
     if (info.Chance != null)
     {
@@ -92,8 +92,8 @@ public class Manager
     if (info.Objects != null)
       f.SetObjectCounts(info.Objects);
 
-    if (info.LogSource != null && Config.RuleLogging)
-      RuleLog.Write(info.LogSource, f);
+    if (info.LogSources != null && Config.RuleLogging)
+      RuleLog.Write(info.LogSources, f);
     info.Execute?.Get(f);
     if (info.Commands.Length > 0)
       Commands.Run(info, f);
@@ -188,7 +188,7 @@ public class Manager
       return infos.Any(i => i.Cancel?.GetBool(f) == true);
     return false;
   }
-  private static void HandleSpawns(Info info, ZDO zdo, Functions f, bool remove, bool regenerate, DataEntry? customData)
+  private static void HandleSpawns(Rule info, ZDO zdo, Functions f, bool remove, bool regenerate, DataEntry? customData)
   {
     // Original object must be regenerated to apply data.
     var regenerateOriginal = !remove && regenerate;
@@ -313,7 +313,7 @@ public class Manager
       item.Spawn(zdo, f);
     HandleCreated.Skip = false;
   }
-  public static void Poke(Info info, ZDO zdo, Functions f)
+  public static void Poke(Rule info, ZDO zdo, Functions f)
   {
     var pos = zdo.m_position;
     var rot = zdo.GetRotation();
@@ -332,7 +332,7 @@ public class Manager
       DelayedPoke.Add(poke, zdo.m_uid, pos, rot, f);
   }
 
-  public static void PokeGlobal(Info info, Functions f, Vector3 pos)
+  public static void PokeGlobal(Rule info, Functions f, Vector3 pos)
   {
     if (info.LegacyPokes != null)
     {
@@ -348,7 +348,7 @@ public class Manager
     foreach (var poke in info.Pokes)
       DelayedPoke.AddGlobal(poke, pos, Quaternion.identity, f);
   }
-  public static void Terrain(Info info, ZDO zdo, Functions f)
+  public static void Terrain(Rule info, ZDO zdo, Functions f)
   {
     if (info.Terrains == null) return;
     var pos = zdo.m_position;
