@@ -118,9 +118,13 @@ public static class ValueGroups
           AddName(names, "character");
         if (lower == "wearntear")
           AddName(names, "structure");
+        if (component is Piece piece)
+          foreach (var requirement in piece.m_resources)
+            if (requirement.m_resItem)
+              AddDefault(added, $"material_{requirement.m_resItem.gameObject.name}", prefabName);
         if (component is WearNTear wearNTear)
           AddDefault(added, $"material_{wearNTear.m_materialType}", prefabName);
-        if (component is ItemDrop item)
+        if (component is ItemDrop item && ObjectDB.instance.m_items.Contains(prefab))
           AddDefault(added, $"itemtype_{item.m_itemData.m_shared.m_itemType}", prefabName);
       }
     }

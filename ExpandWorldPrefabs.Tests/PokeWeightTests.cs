@@ -26,7 +26,7 @@ public class PokeWeightTests
     {
       CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
       // No target prefab: this test exercises weight parsing, not the game registry.
-      var poke = new Poke(new PokeData { weight = text });
+      var poke = new Poke(new PokeYaml { weight = text });
       Assert.That(poke.Weight, Is.InstanceOf<IFloatValue>());
       Assert.That(poke.Weight!.Get(functions), Is.EqualTo(expected));
     }

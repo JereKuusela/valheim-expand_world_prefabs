@@ -1,55 +1,79 @@
-# Logging
+# Rule logging
 
-The `log` field adds text to `BepInEx/config/expand_world/ewp_log.txt` when a rule runs.
+`log:` writes a line when the rule triggers (before any other actions).
+Only the server writes (including singleplayer and a local-server host).
+
+Files are UTF-8 text in `BepInEx/config/expand_world/logs/`. Each message gets a newline;
+no timestamp is added. Use `<time>` (game time) or `<realtime>` (real time).
+Functions and object substitutions work as usual.
+
+## Destinations
+
+By default, messages go to `logs/ewp_log.txt`:
 
 ```yaml
 - prefab: Player
   type: state, join
-  log: "<realtime> • <pname> • joined"
+  log: "<pname> joined the server."
 ```
 
-- Functions and object substitutions are supported.
-- Logging runs after rule selection and chance checks, before other actions.
-  - A record means the rule started its actions. It does not confirm that later actions succeeded.
-- Only the server writes records. This includes single player and the host of a local server.
-- Existing contents are kept when restarting. EWP does not read, replace or truncate the file.
-- Each call adds a record and a newline. Newlines within the text are kept.
-- Timestamps are not added automatically. Use `<time>` for game time or `<realtime>` for real time.
-- Worlds using the same server installation share the file.
+Use `logFile` to pick one or more files (comma-separated). The text is resolved once:
+
+```yaml
+- prefab: Player
+  type: state, join
+  logFile: ewp_log, heatmap
+  log: "<realtime> • <pname> • joined • <pos>"
+```
+
+Use a list for several messages. Entries can set their own `logFile`, otherwise they inherit the top-level one:
+
+```yaml
+- prefab: Player
+  type: state, join
+  logFile: ewp_log
+  log:
+  - "<pname> joined the server."
+  - logFile: heatmap
+    log: "<realtime> • <pname> • joined • <pos>"
+```
+
+Notes:
+
+- Each list item is a separate entry. A multiline string is one entry.
+- Names are 1–64 ASCII letters, numbers, `_` or `-`, lowercased. EWP adds `.txt`. Paths and reserved Windows names are rejected.
+- Invalid values give a warning and skip that log item; the rest of the rule still runs.
+- At most 32 distinct file names are tracked until restart.
+
+## Rotation
+
+Each log keeps up to 4 segments of 256 MiB (the active file plus archives):
+`heatmap.txt`, `heatmap.1.txt`, `heatmap.2.txt`, `heatmap.3.txt` (oldest).
+Records are never split. Logs rotate independently and there is no shared folder cap.
+Stop the server before manually deleting or archiving files.
+
+The old `expand_world/ewp_log.txt` is left untouched; new output goes to `logs/`.
 
 ## Configuration
 
-Settings are in `BepInEx/config/expand_world_prefabs.cfg`.
+Settings are in `BepInEx/config/expand_world_prefabs.cfg`. All except the first require a restart.
 
-- Rule logging (default: `true`): Enables the `log` action.
-  - Can be changed while running. Pending records are written before the file closes.
-- Records per second (default: `1000`): Refill rate shared by all rules.
-  - Allows a burst of up to `100` records, or the configured rate if lower.
-- Records per rule per second (default: `250`): Refill rate shared by all objects using one rule.
-  - Allows a burst of up to `25` records, or the configured rate if lower.
-- Flush interval milliseconds (default: `1000`): How often pending output is flushed.
-  - Output is also flushed after `64 KiB`.
-- Rate and flush settings require restarting the game.
+| Setting | Default | Meaning |
+| --- | ---: | --- |
+| Rule logging | true | Enable output. |
+| Maximum file MiB | 256 | Size of each segment (1–4096). |
+| Retained segments | 4 | Segments per log, including the active one (1–16). |
+| Records per second | 1000 | Global rate limit (burst up to 100). |
+| Records per rule per second | 250 | Per-rule rate limit (burst up to 25). |
+| Flush interval milliseconds | 1000 | Maximum delay before pending output is flushed. |
 
-## Performance
+## Dropped output
 
-Text is resolved when the rule runs. A background thread writes and flushes the file, so the rule does not wait for disk access.
+Logging never blocks gameplay. A single background worker writes all files.
+Entries are skipped when rate limits are hit, the queue is full (4096 entries / 4 MiB),
+or a message exceeds 8192 characters. Skips are reported as `[EWP LOG GAP]` summaries
+in the affected log and in the BepInEx log, about every 30 seconds and on shutdown.
 
-- Rate and queue limits are checked before resolving functions.
-- The queue holds at most `4096` records and `4 MiB` of charged text storage, including reservations and the record being written.
-  - Storage is charged as two bytes per character plus 64 bytes per record. Queue and stream buffers use additional memory.
-- A template or resolved record can contain at most `8192` UTF-16 characters. Longer records are skipped.
-- Limits skip records instead of delaying other actions or growing the queue indefinitely.
-- Functions still run on the calling thread. Expensive functions can affect gameplay even when file writes are buffered.
-
-## Missing records
-
-Logging is intended for development and administration. It does not guarantee that every record reaches disk.
-
-- Skipped records are counted in an `[EWP LOG GAP]` summary, normally at most once every 30 seconds and once when stopping.
-  - Summaries are sent to the BepInEx log and the file. They do not mark the exact position of missing records.
-  - A busy rule has its own rate limit, but many busy rules can still fill the shared queue.
-- If a function throws, that rule's logging is disabled until YAML reload. Other actions can still run.
-- A file error disables logging until restart. Toggling the setting or reloading YAML does not retry it.
-- Shutdown waits up to one second for the writer. A crash, forced shutdown or stalled disk can lose pending records.
-- The file is not rotated or size limited. Remove or archive it yourself while the server is stopped.
+A formatting error disables that message until YAML reload. A file error disables
+that destination until restart. Shutdown waits at most one second, so crashes
+can lose unflushed output.

@@ -21,7 +21,8 @@ public enum ActionType
   Custom,
   Time,
   RealTime,
-  ClientState
+  ClientState,
+  Config
 }
 public class InfoManager
 {
@@ -38,6 +39,7 @@ public class InfoManager
   public static readonly GlobalInfo EventDatas = new();
   public static readonly GlobalInfo TimeDatas = new();
   public static readonly GlobalInfo RealTimeDatas = new();
+  public static readonly GlobalInfo ConfigDatas = new();
 
   public static void Clear()
   {
@@ -54,9 +56,10 @@ public class InfoManager
     ChangeDatas.Clear();
     TimeDatas.Clear();
     RealTimeDatas.Clear();
+    ConfigDatas.Clear();
     RpcInfo.Clear();
   }
-  public static void Add(Info info)
+  public static void Add(Rule info)
   {
     if (info.Type == ActionType.GlobalKey)
     {
@@ -86,6 +89,11 @@ public class InfoManager
     if (info.Type == ActionType.RealTime)
     {
       RealTimeDatas.Add(info);
+      return;
+    }
+    if (info.Type == ActionType.Config)
+    {
+      ConfigDatas.Add(info);
       return;
     }
     if (info.Type == ActionType.Command)
@@ -167,6 +175,7 @@ public class InfoManager
     PeerManager.Patch(EWP.Harmony, shouldHandlePeerState);
     PrefabConnector.Patch(EWP.Harmony, shouldHandleSwapConnections);
 
+    ConfigManager.SetTriggerEnabled(canPatch && ConfigDatas.Exists);
     DataStorage.OnSet = KeyDatas.Exists ? OnKeySet : null;
   }
 
@@ -302,6 +311,7 @@ public class InfoManager
     ActionType.Event => EventDatas,
     ActionType.Time => TimeDatas,
     ActionType.RealTime => RealTimeDatas,
+    ActionType.Config => ConfigDatas,
     _ => ErrorGlobal(type),
   };
   private static GlobalInfo ErrorGlobal(ActionType type)
@@ -313,9 +323,9 @@ public class InfoManager
 
 public class PrefabInfo
 {
-  public readonly Dictionary<int, List<Info>> Weighted = [];
-  public readonly Dictionary<int, List<Info>> Fallback = [];
-  public readonly Dictionary<int, List<Info>> Separate = [];
+  public readonly Dictionary<int, List<Rule>> Weighted = [];
+  public readonly Dictionary<int, List<Rule>> Fallback = [];
+  public readonly Dictionary<int, List<Rule>> Separate = [];
   public bool Exists => Weighted.Count > 0 || Fallback.Count > 0 || Separate.Count > 0;
 
 
@@ -325,7 +335,7 @@ public class PrefabInfo
     Fallback.Clear();
     Separate.Clear();
   }
-  public void Add(Info info)
+  public void Add(Rule info)
   {
     var prefabs = PrefabHelper.GetPrefabs(info.Prefabs, info.ExcludedPrefabs).ToList();
     foreach (var hash in prefabs)
@@ -350,18 +360,18 @@ public class PrefabInfo
       }
     }
   }
-  public bool TryGetWeightedValue(int prefab, out List<Info> list) => Weighted.TryGetValue(prefab, out list);
-  public bool TryGetFallbackValue(int prefab, out List<Info> list) => Fallback.TryGetValue(prefab, out list);
-  public bool TryGetSeparateValue(int prefab, out List<Info> list) => Separate.TryGetValue(prefab, out list);
+  public bool TryGetWeightedValue(int prefab, out List<Rule> list) => Weighted.TryGetValue(prefab, out list);
+  public bool TryGetFallbackValue(int prefab, out List<Rule> list) => Fallback.TryGetValue(prefab, out list);
+  public bool TryGetSeparateValue(int prefab, out List<Rule> list) => Separate.TryGetValue(prefab, out list);
 
 }
 
 
 public class GlobalInfo
 {
-  public readonly List<Info> Weighted = [];
-  public readonly List<Info> Fallback = [];
-  public readonly List<Info> Separate = [];
+  public readonly List<Rule> Weighted = [];
+  public readonly List<Rule> Fallback = [];
+  public readonly List<Rule> Separate = [];
   public bool Exists => Weighted.Count > 0 || Fallback.Count > 0 || Separate.Count > 0;
 
 
@@ -371,7 +381,7 @@ public class GlobalInfo
     Fallback.Clear();
     Separate.Clear();
   }
-  public void Add(Info info)
+  public void Add(Rule info)
   {
     if (info.Fallback)
       Fallback.Add(info);

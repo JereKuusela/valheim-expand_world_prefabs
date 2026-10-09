@@ -1,3 +1,13 @@
+- v1.63
+  - Adds support for loading decoded `item` field from data.
+  - Adds trigger type `config` to react to EWP config changes.
+  - Adds support adding custom config entries.
+  - Adds functions `<config_SECTION_NAME>`, `<saveconfig_SECTION_NAME_Y>`, `<modconfig_GUID_SECTION_KEY>` and `<savemodconfig_GUID_SECTION_KEY_Y>` for interacting with EWP config entries.
+  - Adds support for multiple log files and rolling logs. Thanks JPValheim!
+  - Changes value group `material_*` to be based on resource cost rather than support system type. Thanks Zeall!
+  - Fixes value group `itemtype_*` containing other objects like enemy attacks. Thanks Zeall!
+  - Fixes unnecessary warnings about missing RPC methods (vanilla issue). Thanks Zeall!
+
 - v1.62
   - Adds automatic backing up for ew_data.yaml file (was accidentally removed).
   - Adds better warning for invalid RPC method lookups Thanks Zeall!

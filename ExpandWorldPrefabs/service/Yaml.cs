@@ -22,8 +22,9 @@ public class Yaml
 
   public class MixedFileEntries
   {
-    public List<global::ExpandWorld.Prefab.Data> ScriptEntries = [];
-    public List<global::Data.DataYaml> DataEntries = [];
+    public List<ExpandWorld.Prefab.RuleYaml> ScriptEntries = [];
+    public List<Data.DataYaml> DataEntries = [];
+    public List<ExpandWorld.Prefab.ConfigYaml> ConfigEntries = [];
   }
 
   public static string BaseDirectory = Path.Combine(Paths.ConfigPath, "expand_world");
@@ -79,12 +80,17 @@ public class Yaml
       if (split.ScriptLines.Count > 0)
       {
         var raw = migrateScripts ? PreParse([.. split.ScriptLines]) : string.Join("\n", split.ScriptLines);
-        result.ScriptEntries = Deserialize<global::ExpandWorld.Prefab.Data>(raw, file);
+        result.ScriptEntries = Deserialize<ExpandWorld.Prefab.RuleYaml>(raw, file);
       }
       if (split.DataLines.Count > 0)
       {
         var raw = string.Join("\n", split.DataLines);
-        result.DataEntries = Deserialize<global::Data.DataYaml>(raw, file);
+        result.DataEntries = Deserialize<Data.DataYaml>(raw, file);
+      }
+      if (split.ConfigLines.Count > 0)
+      {
+        var raw = string.Join("\n", split.ConfigLines);
+        result.ConfigEntries = Deserialize<ExpandWorld.Prefab.ConfigYaml>(raw, file);
       }
       return result;
     }
@@ -99,6 +105,7 @@ public class Yaml
   {
     public List<string> ScriptLines = [];
     public List<string> DataLines = [];
+    public List<string> ConfigLines = [];
   }
 
   private static MixedSplit SplitMixed(string[] lines)
@@ -135,7 +142,9 @@ public class Yaml
 
   private static void AddMixedBlock(MixedSplit split, List<string> block)
   {
-    if (IsDataBlock(block))
+    if (IsConfigBlock(block))
+      split.ConfigLines.AddRange(block);
+    else if (IsDataBlock(block))
       split.DataLines.AddRange(block);
     else
       split.ScriptLines.AddRange(block);
@@ -145,6 +154,17 @@ public class Yaml
   {
     var raw = line.Length > 0 && line[0] == '\uFEFF' ? line.Substring(1) : line;
     return raw.StartsWith("- ");
+  }
+
+  private static bool IsConfigBlock(List<string> block)
+  {
+    foreach (var line in block)
+    {
+      var key = ParseBlockKey(line);
+      if (key == null) continue;
+      return key.Equals("config", StringComparison.OrdinalIgnoreCase);
+    }
+    return false;
   }
 
   private static bool IsDataBlock(List<string> block)
@@ -158,8 +178,8 @@ public class Yaml
         || key.Equals("value", StringComparison.OrdinalIgnoreCase);
     }
     return false;
-  }
 
+  }
   private static string? ParseBlockKey(string line)
   {
     var noComment = line.Split('#')[0].Trim();
@@ -178,65 +198,7 @@ public class Yaml
 
   private static string PreParse(string[] lines)
   {
-    bool objectsMode = false;
-    List<string> result = [];
-    foreach (var line in lines)
-    {
-      if (objectsMode)
-      {
-        if (line.StartsWith("  - ") && !line.Contains(":"))
-        {
-          HandleObjects(result, line);
-          continue;
-        }
-        objectsMode = false;
-      }
-      // Some extra checks needed to not break if the spawn line has extra spaces or comments.
-      if (line.StartsWith("  spawn: ") && !line.Contains("#") && line.Trim().Length > 6)
-      {
-        // Convert to spawns list.
-        result.Add("  spawns:");
-        result.Add("  - " + line.Substring(9));
-      }
-      else if (line.StartsWith("  swap: ") && !line.Contains("#") && line.Trim().Length > 5)
-      {
-        // Convert to swaps list.
-        result.Add("  swaps:");
-        result.Add("  - " + line.Substring(8));
-      }
-      else if (line.StartsWith("  objects:") || line.StartsWith("  bannedObjects:"))
-      {
-        objectsMode = true;
-        result.Add(line);
-      }
-      else result.Add(line);
-    }
-    return FilterShorthand.Normalize(string.Join("\n", result));
-  }
-  private static void HandleObjects(List<string> result, string line)
-  {
-    var parts = line.Substring(4).Split(',');
-    result.Add("  - prefab: " + parts[0]);
-    if (parts.Length > 1)
-    {
-      var distance = Parse.StringRange(parts[1]);
-      if (distance.Min != distance.Max)
-        result.Add("    minDistance: " + distance.Min);
-      result.Add("    maxDistance: " + distance.Max);
-    }
-    if (parts.Length > 2)
-      result.Add("    data: " + parts[2]);
-
-    if (parts.Length > 3)
-      result.Add("    weight: " + parts[3]);
-    if (parts.Length > 4)
-    {
-      var height = Parse.StringRange(parts[4]);
-      if (height.Min != height.Max)
-        result.Add("    minHeight: " + height.Min);
-      result.Add("    maxHeight: " + height.Max);
-    }
-
+    return FilterShorthand.Normalize(string.Join("\n", lines));
   }
   public static void SetupWatcher(ConfigFile config)
   {
@@ -251,6 +213,7 @@ public class Yaml
   private static void ReadConfigValues(string path, ConfigFile config)
   {
     if (!File.Exists(path)) return;
+    if (ExpandWorld.Prefab.ConfigManager.IsSelfWrite && config == ExpandWorld.Prefab.Config.Main) return;
     BackupFile(path, true);
     try
     {
@@ -340,8 +303,8 @@ public class Yaml
       Directory.CreateDirectory(BaseDirectory);
   }
 
-  private static IDeserializer Deserializer() => new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
-  private static IDeserializer DeserializerUnSafe() => new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).IgnoreUnmatchedProperties().Build();
+  private static IDeserializer Deserializer() => new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).WithTypeConverter(new ExpandWorld.Prefab.FlexibleYamlConverter()).Build();
+  private static IDeserializer DeserializerUnSafe() => new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).WithTypeConverter(new ExpandWorld.Prefab.FlexibleYamlConverter()).IgnoreUnmatchedProperties().Build();
 
   private static List<T> Deserialize<T>(string raw, string file)
   {
