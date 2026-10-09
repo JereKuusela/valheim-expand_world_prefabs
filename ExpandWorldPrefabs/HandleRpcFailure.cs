@@ -47,7 +47,7 @@ public class HandleRpcFailure
   {
     var warning = AccessTools.Method(typeof(ZLog), nameof(ZLog.LogWarning), [typeof(object)]);
     var hash = AccessTools.Field(typeof(ZRoutedRpc.RoutedRPCData), nameof(ZRoutedRpc.RoutedRPCData.m_methodHash));
-    var log = AccessTools.Method(typeof(HandleRpcFailure), nameof(LogFailure));
+    var log = AccessTools.Method(typeof(HandleRpcFailure), nameof(LogObjectFailure));
     return new CodeMatcher(instructions)
       .MatchStartForward(new CodeMatch(OpCodes.Call, warning))
       .ThrowIfInvalid("Failed to patch ZNetView.HandleRoutedRPC for rpc failure logging.")
@@ -64,7 +64,7 @@ public class HandleRpcFailure
   {
     var functions = AccessTools.Field(typeof(ZRoutedRpc), nameof(ZRoutedRpc.m_functions));
     var hash = AccessTools.Field(typeof(ZRoutedRpc.RoutedRPCData), nameof(ZRoutedRpc.RoutedRPCData.m_methodHash));
-    var log = AccessTools.Method(typeof(HandleRpcFailure), nameof(LogFailure));
+    var log = AccessTools.Method(typeof(HandleRpcFailure), nameof(LogClientFailure));
     // Advance to the original branch on the lookup result; the duplicated result skips our log when found.
     return new CodeMatcher(instructions, generator)
       .MatchStartForward(new CodeMatch(i => i.LoadsField(functions)))
@@ -81,9 +81,18 @@ public class HandleRpcFailure
       .InstructionEnumeration();
   }
 
-  private static void LogFailure(int hash)
+  private static void LogObjectFailure(int hash)
   {
     if (RpcInfo.TryGetName(hash, out var name))
       Log.Warning($"Failed to find rpc method {name}");
+    else
+      // Original warning even when quite useless to avoid changing behavior.
+      ZLog.LogWarning("Failed to find rpc method " + hash);
+  }
+  private static void LogClientFailure(int hash)
+  {
+    if (RpcInfo.TryGetName(hash, out var name))
+      Log.Warning($"Failed to find rpc method {name}");
+    // Game doesn't log the failure. It also calls missing RPCs constantly.
   }
 }
