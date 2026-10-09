@@ -1,10 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <!-- Unity's netstandard2.1 assemblies use default interface methods, which net48 can't load. -->
+    <TargetFramework>net8.0</TargetFramework>
     <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>false</IsPackable>
+    <!-- NU1702: referencing the net48 mod project. SYSLIB0050: FormatterServices for uninitialized game objects. -->
+    <NoWarn>$(NoWarn);NU1702;SYSLIB0050</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

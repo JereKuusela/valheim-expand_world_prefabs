@@ -12,7 +12,6 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using Data;
 using ExpandWorld.Prefab;
-using HarmonyLib;
 using NUnit.Framework;
 using Service;
 using YamlDotNet.Serialization;
@@ -22,6 +21,7 @@ namespace ExpandWorldPrefabs.Tests;
 [NonParallelizable]
 public class RuleLogIntegrationTests
 {
+  private const BindingFlags Static = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
   private string ManagedDirectory = "";
   private Dictionary<FieldInfo, object?> PreviousPaths = [];
 
@@ -32,7 +32,7 @@ public class RuleLogIntegrationTests
       .Where(field => !field.IsInitOnly).ToDictionary(field => field, field => (object?)field.GetValue(null));
     ManagedDirectory = TemporaryDirectory();
     // BepInEx may create its core config. Keep it outside the source checkout.
-    AccessTools.Method(typeof(Paths), "SetExecutablePath").Invoke(null,
+    typeof(Paths).GetMethod("SetExecutablePath", Static)!.Invoke(null,
       [Path.Combine(ManagedDirectory, "valheim.exe"), Path.Combine(ManagedDirectory, "BepInEx"), null, null]);
   }
 
@@ -70,22 +70,47 @@ public class RuleLogIntegrationTests
   }
 
   [Test]
-  public void LoggingSmokeFileLoadsThroughProductionPreprocessing()
+  public void LoggingFileLoadsThroughProductionPreprocessing()
   {
-    var loaded = Yaml.ReadMixedFile(RepositoryFile("docs/logging-smoke.yaml"), true);
-    Assert.That(loaded.DataEntries, Is.Empty);
-    Assert.That(loaded.ScriptEntries.Count, Is.EqualTo(2));
-    var warnings = new List<string>();
-    var scalar = loaded.ScriptEntries[0];
-    Assert.That(scalar.log!.Normalize(scalar.logFile, warnings.Add).Length, Is.EqualTo(1));
-    var rule = loaded.ScriptEntries[1];
-    var sources = rule.log!.Normalize(rule.logFile, warnings.Add);
-    Assert.That(warnings, Is.Empty);
-    Assert.That(sources.Length, Is.EqualTo(3));
-    Assert.That(sources[0].Files, Is.EqualTo(new[] { "ewp_log", "logging_smoke" }));
-    Assert.That(sources[1].Files, Is.EqualTo(new[] { "logging_details" }));
-    Assert.That(sources[2].Files, Is.EqualTo(new[] { "logging_details" }));
-    Assert.That(sources[2].Template, Is.EqualTo("SMOKE multiline λ\nsecond line, intact"));
+    const string yaml = @"- prefab: Player
+  type: state, join
+  log: ""SMOKE scalar <pname> • λ""
+
+- prefab: Player
+  type: state, join
+  logFile: ewp_log, logging_smoke, logging_smoke
+  log:
+  - ""SMOKE fanout <realtime>, <pname>""
+  - logFile: logging_details
+    log:
+    - ""SMOKE details <pname>""
+    - |-
+      SMOKE multiline λ
+      second line, intact
+";
+    var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, "logging-fixture.yaml");
+    File.WriteAllText(path, yaml, new System.Text.UTF8Encoding(false));
+    try
+    {
+      var loaded = Yaml.ReadMixedFile(path, true);
+      Assert.That(loaded.DataEntries, Is.Empty);
+      Assert.That(loaded.ScriptEntries.Count, Is.EqualTo(2));
+      var warnings = new List<string>();
+      var scalar = loaded.ScriptEntries[0];
+      Assert.That(scalar.log!.Normalize(scalar.logFile, warnings.Add).Length, Is.EqualTo(1));
+      var rule = loaded.ScriptEntries[1];
+      var sources = rule.log!.Normalize(rule.logFile, warnings.Add);
+      Assert.That(warnings, Is.Empty);
+      Assert.That(sources.Length, Is.EqualTo(3));
+      Assert.That(sources[0].Files, Is.EqualTo(new[] { "ewp_log", "logging_smoke" }));
+      Assert.That(sources[1].Files, Is.EqualTo(new[] { "logging_details" }));
+      Assert.That(sources[2].Files, Is.EqualTo(new[] { "logging_details" }));
+      Assert.That(sources[2].Template, Is.EqualTo("SMOKE multiline λ\nsecond line, intact"));
+    }
+    finally
+    {
+      File.Delete(path);
+    }
   }
 
   [TestCase("Deserializer")]
@@ -93,7 +118,7 @@ public class RuleLogIntegrationTests
   public void ProductionDeserializersAcceptLoggingForms(string method)
   {
     // Initialize only managed paths; no Unity scene or game process is started.
-    var deserializer = (IDeserializer)AccessTools.Method(typeof(Yaml), method).Invoke(null, null);
+    var deserializer = (IDeserializer)typeof(Yaml).GetMethod(method, Static)!.Invoke(null, null)!;
     var rule = deserializer.Deserialize<ExpandWorld.Prefab.RuleYaml>(
       "command: preserved\nlogFile: shared\nlog:\n- 'é, λ, 🜂'\n- logFile: other\n  log: |\n    first\n    second\n");
     var warnings = new List<string>();
@@ -111,7 +136,7 @@ public class RuleLogIntegrationTests
   [Test]
   public void ExpandedActionTypesShareOneAuthoredRuleBudget()
   {
-    var instance = AccessTools.Field(typeof(ZoneSystem), "s_instance");
+    var instance = typeof(ZoneSystem).GetField("s_instance", Static)!;
     var previous = instance.GetValue(null);
     instance.SetValue(null, Uninitialized<ZoneSystem>());
     try
@@ -261,7 +286,7 @@ public class RuleLogIntegrationTests
     Assert.That(match.Success, Is.True);
     Assert.That(match.Groups[1].Value, Is.EqualTo(expected));
     var handlerType = withValue ? typeof(Func<string, string>) : typeof(Func<string>);
-    var method = AccessTools.Method(typeof(Api), match.Groups[1].Value, [typeof(string), handlerType]);
+    var method = typeof(Api).GetMethod(match.Groups[1].Value, Static, null, [typeof(string), handlerType], null)!;
     Assert.That(method, Is.Not.Null);
     const string key = "rule_log_lookup_test";
     object handler = withValue ? (object)new Func<string, string>(value => "value=" + value) : new Func<string>(() => "simple");
@@ -278,9 +303,9 @@ public class RuleLogIntegrationTests
   public void RuleLogGlueResolvesFanoutOnceAndLeavesOldRootLogUntouched()
   {
     var directory = TemporaryDirectory();
-    var writerField = AccessTools.Field(typeof(RuleLog), "Writer");
+    var writerField = typeof(RuleLog).GetField("Writer", Static)!;
     var previousWriter = writerField.GetValue(null);
-    var loggerField = AccessTools.Field(typeof(Log), "Logger");
+    var loggerField = typeof(Log).GetField("Logger", Static)!;
     var previousLogger = loggerField.GetValue(null);
     var previousConfig = typeof(Config).GetFields(BindingFlags.Static | BindingFlags.NonPublic)
       .Where(field => field.Name.StartsWith("Config")).ToDictionary(field => field, field => field.GetValue(null));
