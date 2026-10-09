@@ -56,7 +56,7 @@ public class InfoManager
     RealTimeDatas.Clear();
     RpcInfo.Clear();
   }
-  public static void Add(Info info)
+  public static void Add(Rule info)
   {
     if (info.Type == ActionType.GlobalKey)
     {
@@ -313,9 +313,9 @@ public class InfoManager
 
 public class PrefabInfo
 {
-  public readonly Dictionary<int, List<Info>> Weighted = [];
-  public readonly Dictionary<int, List<Info>> Fallback = [];
-  public readonly Dictionary<int, List<Info>> Separate = [];
+  public readonly Dictionary<int, List<Rule>> Weighted = [];
+  public readonly Dictionary<int, List<Rule>> Fallback = [];
+  public readonly Dictionary<int, List<Rule>> Separate = [];
   public bool Exists => Weighted.Count > 0 || Fallback.Count > 0 || Separate.Count > 0;
 
 
@@ -325,7 +325,7 @@ public class PrefabInfo
     Fallback.Clear();
     Separate.Clear();
   }
-  public void Add(Info info)
+  public void Add(Rule info)
   {
     var prefabs = PrefabHelper.GetPrefabs(info.Prefabs, info.ExcludedPrefabs).ToList();
     foreach (var hash in prefabs)
@@ -350,18 +350,18 @@ public class PrefabInfo
       }
     }
   }
-  public bool TryGetWeightedValue(int prefab, out List<Info> list) => Weighted.TryGetValue(prefab, out list);
-  public bool TryGetFallbackValue(int prefab, out List<Info> list) => Fallback.TryGetValue(prefab, out list);
-  public bool TryGetSeparateValue(int prefab, out List<Info> list) => Separate.TryGetValue(prefab, out list);
+  public bool TryGetWeightedValue(int prefab, out List<Rule> list) => Weighted.TryGetValue(prefab, out list);
+  public bool TryGetFallbackValue(int prefab, out List<Rule> list) => Fallback.TryGetValue(prefab, out list);
+  public bool TryGetSeparateValue(int prefab, out List<Rule> list) => Separate.TryGetValue(prefab, out list);
 
 }
 
 
 public class GlobalInfo
 {
-  public readonly List<Info> Weighted = [];
-  public readonly List<Info> Fallback = [];
-  public readonly List<Info> Separate = [];
+  public readonly List<Rule> Weighted = [];
+  public readonly List<Rule> Fallback = [];
+  public readonly List<Rule> Separate = [];
   public bool Exists => Weighted.Count > 0 || Fallback.Count > 0 || Separate.Count > 0;
 
 
@@ -371,7 +371,7 @@ public class GlobalInfo
     Fallback.Clear();
     Separate.Clear();
   }
-  public void Add(Info info)
+  public void Add(Rule info)
   {
     if (info.Fallback)
       Fallback.Add(info);

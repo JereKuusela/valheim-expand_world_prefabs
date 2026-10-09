@@ -94,15 +94,18 @@ public class RuleLogIntegrationTests
   {
     // Initialize only managed paths; no Unity scene or game process is started.
     var deserializer = (IDeserializer)AccessTools.Method(typeof(Yaml), method).Invoke(null, null);
-    var rule = deserializer.Deserialize<ExpandWorld.Prefab.Data>(
+    var rule = deserializer.Deserialize<ExpandWorld.Prefab.RuleYaml>(
       "command: preserved\nlogFile: shared\nlog:\n- 'é, λ, 🜂'\n- logFile: other\n  log: |\n    first\n    second\n");
     var warnings = new List<string>();
     var sources = rule.log!.Normalize(rule.logFile, warnings.Add);
     Assert.That(warnings, Is.Empty);
-    Assert.That(rule.command, Is.EqualTo("preserved"));
+    Assert.That(rule.command!.Items, Is.EqualTo(new[] { "preserved" }));
     Assert.That(sources.Select(source => source.Template), Is.EqualTo(new[] { "é, λ, 🜂", "first\nsecond\n" }));
     Assert.That(sources.Select(source => source.Files.Single()), Is.EqualTo(new[] { "shared", "other" }));
-    Assert.Throws<YamlDotNet.Core.YamlException>(() => deserializer.Deserialize<ExpandWorld.Prefab.Data>("command: [invalid]\nlog: valid"));
+    var list = deserializer.Deserialize<ExpandWorld.Prefab.RuleYaml>("command: [a, b]\nspawn: x");
+    Assert.That(list.command!.Items, Is.EqualTo(new[] { "a", "b" }));
+    Assert.That(list.spawn!.Data.Select(s => s.prefab), Is.EqualTo(new[] { "x" }));
+    Assert.Throws<YamlDotNet.Core.YamlException>(() => deserializer.Deserialize<ExpandWorld.Prefab.RuleYaml>("command: {a: b}\nlog: valid"));
   }
 
   [Test]
@@ -113,9 +116,10 @@ public class RuleLogIntegrationTests
     instance.SetValue(null, Uninitialized<ZoneSystem>());
     try
     {
-      var rule = new ExpandWorld.Prefab.Data
+      var rule = new ExpandWorld.Prefab.RuleYaml
       {
-        prefab = "Player", types = ["create", "destroy", "state, join"],
+        prefab = "Player",
+        types = ["create", "destroy", "state, join"],
         log = new RuleLogData(new[] { "one", "two" })
       };
       var infos = Loading.FromData(rule);

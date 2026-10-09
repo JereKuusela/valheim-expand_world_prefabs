@@ -22,10 +22,10 @@ internal static class NamedRuleLogChecks
       QuietDestinationFlush, ReloadAndDestinationBound, DestinationGapSummaries, FanoutCapacityAndOpenFailure, RollingRetentionAndRestart,
       MultilineAndSingleSegment, RollingFailureIsolation];
 
-  private static RuleLogSource[] Parse(string yaml, out List<string> warnings, out ExpandWorld.Prefab.Data data)
+  private static RuleLogSource[] Parse(string yaml, out List<string> warnings, out ExpandWorld.Prefab.RuleYaml data)
   {
     data = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance)
-      .WithTypeConverter(new RuleLogYamlConverter()).Build().Deserialize<ExpandWorld.Prefab.Data>(yaml);
+      .WithTypeConverter(new FlexibleYamlConverter()).Build().Deserialize<ExpandWorld.Prefab.RuleYaml>(yaml);
     var messages = new List<string>();
     var result = data.log?.Normalize(data.logFile, messages.Add) ?? [];
     warnings = messages;
@@ -59,13 +59,13 @@ internal static class NamedRuleLogChecks
     foreach (var name in new[] { "", "../heatmap", "heatmap.txt", "con", "COM1", "a,bad/name", "a,,b", new string('x', 65), "a b", "<pname>" })
     {
       var sources = Parse("command: preserved\nlog: text\nlogFile: '" + name + "'", out var warnings, out var data);
-      Check(sources.Length == 0 && warnings.Count > 0 && data.command == "preserved", "invalid filename: " + name);
+      Check(sources.Length == 0 && warnings.Count > 0 && data.command?.Items[0] == "preserved", "invalid filename: " + name);
     }
     foreach (var yaml in new[] { "log: text\nlogFile: [heatmap]", "log: text\nlogFile: null", "log: []", "log: {wrong: message}",
       "log:\n- log: [ {Time: now} ]", "log:\n- log:\n  - log: too-deep", "log:\n- logFile: heatmap", "log:\n- log: text\n  typo: ignored" })
     {
       var sources = Parse("command: preserved\n" + yaml, out var warnings, out var data);
-      Check(sources.Length == 0 && warnings.Count > 0 && data.command == "preserved", "invalid logging must preserve other actions: " + yaml);
+      Check(sources.Length == 0 && warnings.Count > 0 && data.command?.Items[0] == "preserved", "invalid logging must preserve other actions: " + yaml);
     }
     var valid = Parse("log:\n- log: {wrong: message}\n- logFile: heatmap\n  log: valid", out var notes, out _);
     Check(valid.Length == 1 && notes.Count > 0 && valid[0].Template == "valid", "one bad item must not suppress valid siblings");

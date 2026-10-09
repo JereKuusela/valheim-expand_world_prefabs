@@ -105,7 +105,7 @@ public class HandleChanged
     harmony.Unpatch(method, patch);
   }
 
-  private static void AddTracks(Dictionary<int, List<Info>> datas)
+  private static void AddTracks(Dictionary<int, List<Rule>> datas)
   {
     foreach (var kvp in datas)
     {

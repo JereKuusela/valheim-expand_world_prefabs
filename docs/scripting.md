@@ -9,6 +9,7 @@ Most fields are put on a single line. List values are separated by `,`.
     - By default, keywords `creature` (Humanoid) and `structure` (WearNTear) have their own value group.
     - By default, each item type has its own value group. For example `itemtype_Consumable` or `itemtype_OneHandedWeapon`.
       - [Discord Guide](https://discord.com/channels/1167153871546744842/1400114819708751902)
+      - Use command `ewp_itemtype` to list the available `itemtype_*` value groups.
     - Values from groups are cached, so the prefab yaml must be manually saved when changing an already used value group.
 - excludePrefab: List of excluded object ids.
   - This can be used to skip specific objects when a wildcard or component is used in the `prefab` field.

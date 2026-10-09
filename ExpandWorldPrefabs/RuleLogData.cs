@@ -82,15 +82,3 @@ public sealed class RuleLogFiles(object? value)
     return !(name.Length == 4 && (name.StartsWith("com") || name.StartsWith("lpt")) && name[3] >= '1' && name[3] <= '9');
   }
 }
-
-internal sealed class RuleLogYamlConverter : IYamlTypeConverter
-{
-  public bool Accepts(Type type) => type == typeof(RuleLogData) || type == typeof(RuleLogFiles);
-  public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
-  {
-    var value = rootDeserializer(typeof(object));
-    return type == typeof(RuleLogData) ? new RuleLogData(value) : new RuleLogFiles(value);
-  }
-  public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
-    serializer(value is RuleLogData data ? data.Value : (value as RuleLogFiles)?.Value, typeof(object));
-}

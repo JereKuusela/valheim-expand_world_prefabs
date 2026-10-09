@@ -14,8 +14,8 @@ public static class FileLoading
   public static readonly string DataProfilePath = Path.GetFullPath(Path.Combine(Paths.ConfigPath, "data"));
   public const string DataPattern = "expand_data*.yaml";
   public const string PrefabPattern = "expand_prefabs*.yaml";
-  private static readonly Dictionary<string, List<global::ExpandWorld.Prefab.Data>> PrefabFileEntries = new(StringComparer.OrdinalIgnoreCase);
-  private static readonly Dictionary<string, List<global::Data.DataYaml>> DataFileEntries = new(StringComparer.OrdinalIgnoreCase);
+  private static readonly Dictionary<string, List<ExpandWorld.Prefab.RuleYaml>> PrefabFileEntries = new(StringComparer.OrdinalIgnoreCase);
+  private static readonly Dictionary<string, List<Data.DataYaml>> DataFileEntries = new(StringComparer.OrdinalIgnoreCase);
 
   public static string NormalizePath(string path)
   {
@@ -120,7 +120,7 @@ public static class FileLoading
 
   public static void ReloadAll()
   {
-    if (global::ExpandWorld.Prefab.Helper.IsClient()) return;
+    if (ExpandWorld.Prefab.Helper.IsClient()) return;
     EnsureDataDirectories();
     EnsurePrefabFile();
 
@@ -135,13 +135,13 @@ public static class FileLoading
     foreach (var file in dataFiles)
       DataFileEntries[file] = ReadDataEntries(file);
 
-    global::Data.DataLoading.LoadFromFiles(dataFiles, DataFileEntries);
-    global::ExpandWorld.Prefab.Loading.LoadFromFiles(prefabFiles, PrefabFileEntries);
+    Data.DataLoading.LoadFromFiles(dataFiles, DataFileEntries);
+    ExpandWorld.Prefab.Loading.LoadFromFiles(prefabFiles, PrefabFileEntries);
   }
 
   private static void HandleDataFileChange(string path, string? oldPath, Yaml.FileChangeType type)
   {
-    if (global::ExpandWorld.Prefab.Helper.IsClient()) return;
+    if (ExpandWorld.Prefab.Helper.IsClient()) return;
     path = NormalizePath(path);
     oldPath = oldPath == null ? null : NormalizePath(oldPath);
     if (!IsTrackedDataPath(path) && (oldPath == null || !IsTrackedDataPath(oldPath))) return;
@@ -157,12 +157,12 @@ public static class FileLoading
     var dataFiles = GetDataSourceFiles();
     PruneStaleCache(DataFileEntries, dataFiles);
     EnsureCache(DataFileEntries, dataFiles, file => ReadDataEntries(file));
-    global::Data.DataLoading.LoadFromFiles(dataFiles, DataFileEntries);
+    Data.DataLoading.LoadFromFiles(dataFiles, DataFileEntries);
   }
 
   private static void HandlePrefabFileChange(string path, string? oldPath, Yaml.FileChangeType type)
   {
-    if (global::ExpandWorld.Prefab.Helper.IsClient()) return;
+    if (ExpandWorld.Prefab.Helper.IsClient()) return;
     path = NormalizePath(path);
     oldPath = oldPath == null ? null : NormalizePath(oldPath);
     if (!IsPrefabPath(path) && (oldPath == null || !IsPrefabPath(oldPath))) return;
@@ -194,8 +194,8 @@ public static class FileLoading
     PruneStaleCache(DataFileEntries, dataFiles);
     EnsureCache(DataFileEntries, dataFiles, file => ReadDataEntries(file));
 
-    global::Data.DataLoading.LoadFromFiles(dataFiles, DataFileEntries);
-    global::ExpandWorld.Prefab.Loading.LoadFromFiles(prefabFiles, PrefabFileEntries);
+    Data.DataLoading.LoadFromFiles(dataFiles, DataFileEntries);
+    ExpandWorld.Prefab.Loading.LoadFromFiles(prefabFiles, PrefabFileEntries);
   }
 
   public static bool IsPrefabPath(string path, string baseDirectory, string prefabPattern)
@@ -240,13 +240,13 @@ public static class FileLoading
     }
   }
 
-  public static List<global::ExpandWorld.Prefab.Data> ReadScriptEntries(string file, bool migrateScripts = true)
+  public static List<ExpandWorld.Prefab.RuleYaml> ReadScriptEntries(string file, bool migrateScripts = true)
   {
     if (!File.Exists(file)) return [];
     return Yaml.ReadMixedFile(file, migrateScripts).ScriptEntries;
   }
 
-  public static List<global::Data.DataYaml> ReadDataEntries(string file, bool migrateScripts = true)
+  public static List<Data.DataYaml> ReadDataEntries(string file, bool migrateScripts = true)
   {
     if (!File.Exists(file)) return [];
     return Yaml.ReadMixedFile(file, migrateScripts).DataEntries;
