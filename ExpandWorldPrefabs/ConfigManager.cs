@@ -291,11 +291,12 @@ public static class ConfigManager
   private static void OnSettingChanged(object sender, SettingChangedEventArgs e)
   {
     if (!triggerEnabled || handling) return;
-    if (!Names.TryGetValue(e.ChangedSetting, out var name)) return;
+    if (!Names.TryGetValue(e.ChangedSetting, out var id)) return;
+    var split = id.IndexOf(Separator);
     handling = true;
     try
     {
-      Manager.HandleGlobal(ActionType.Config, [name, e.ChangedSetting.GetSerializedValue()], Vector3.zero, false);
+      Manager.HandleGlobal(ActionType.Config, [id.Substring(0, split), id.Substring(split + 1), e.ChangedSetting.GetSerializedValue()], Vector3.zero, false);
     }
     finally
     {

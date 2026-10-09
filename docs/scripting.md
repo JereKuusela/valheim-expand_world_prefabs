@@ -58,7 +58,10 @@ Most fields are put on a single line. List values are separated by `,`.
       - First parameter is the granularity (day, hour, minute, second).
       - Second parameter is the condition (single value, multiple values, range).
       - Uses server timezone.
-    - `config`: When a setting declared with a `config` entry changes (see [config](config.md)). Parameter is the config id (`SECTION_NAME`).
+    - `config`: When a setting declared with a `config` entry changes (see [config](config.md)).
+      - Parameters are the section, the name and the new value. Rule parameters filter by section and name, for example `type: config Bosses bossHealth`.
+      - Wildcards work, for example `config Bosses *`. The new value is available as `<par2>`.
+      - Old value isn't provided.
       - Also triggers on external edits of the config file.
       - Changes made by rules triggered by this type don't trigger `config` again.
       - There is no prefab or position for this type, so most fields won't work.
