@@ -4,6 +4,7 @@ using System.Linq;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using Common;
+using Data;
 using Service;
 using UnityEngine;
 
@@ -12,10 +13,26 @@ namespace ExpandWorld.Prefab;
 // Script declared settings stored in the main EWP config file.
 public static class ConfigManager
 {
-  private class Declared(string signature, ConfigEntryBase entry)
+  private class Declared(string signature, ConfigEntryBase entry, string prefab)
   {
     public readonly string Signature = signature;
     public readonly ConfigEntryBase Entry = entry;
+    public readonly string Prefab = prefab;
+  }
+
+  // Declaration with functions resolved for one prefab.
+  private class Resolved
+  {
+    public string Section = "";
+    public string Key = "";
+    public string Name = "";
+    public string Prefab = "";
+    public string Type = "";
+    public string Default = "";
+    public string Description = "";
+    public string? Min;
+    public string? Max;
+    public string? Values;
   }
 
   public const char Separator = '_';
@@ -39,7 +56,7 @@ public static class ConfigManager
   {
     var file = Config.Main;
     if (file == null) return;
-    var declarations = files.Where(fileEntries.ContainsKey).SelectMany(f => fileEntries[f]).ToList();
+    var declarations = files.Where(fileEntries.ContainsKey).SelectMany(f => fileEntries[f]).SelectMany(Resolve).ToList();
     var wasSaving = file.SaveOnConfigSet;
     file.SaveOnConfigSet = false;
     try
@@ -53,30 +70,88 @@ public static class ConfigManager
     Save(file);
   }
 
-  private static void Sync(ConfigFile file, List<ConfigYaml> declarations)
+  // One declaration becomes one entry per matching prefab.
+  private static IEnumerable<Resolved> Resolve(ConfigYaml yaml)
+  {
+    var prefabs = yaml.prefab.Trim();
+    ConditionClause? condition = null;
+    if (yaml.condition.Trim() != "")
+    {
+      if (!Conditions.TryParse(yaml.condition, out condition, out var error))
+      {
+        Log.Error($"Invalid condition \"{yaml.condition}\" for config \"{yaml.key}\": {error}");
+        yield break;
+      }
+    }
+    if (prefabs == "")
+    {
+      var resolved = Resolve(yaml, condition, new Functions("", [], Vector3.zero), "");
+      if (resolved != null) yield return resolved;
+      yield break;
+    }
+    if (!ZNetScene.instance)
+    {
+      Log.Warning($"Config \"{yaml.key}\" with a prefab can't be created before the scene is loaded.");
+      yield break;
+    }
+    foreach (var hash in PrefabHelper.GetPrefabs(prefabs, ""))
+    {
+      var prefab = ZNetScene.instance.GetPrefab(hash);
+      if (!prefab) continue;
+      // The ZDO has only the prefab, so object functions return prefab defaults.
+      var zdo = new ZDO { m_prefab = hash };
+      var resolved = Resolve(yaml, condition, new ObjectFunctions(prefab.name, [], zdo), prefab.name);
+      if (resolved != null) yield return resolved;
+    }
+  }
+
+  private static Resolved? Resolve(ConfigYaml yaml, ConditionClause? condition, Functions f, string prefab)
+  {
+    if (condition != null && !condition.Evaluate(f)) return null;
+    var resolved = new Resolved
+    {
+      Section = f.Replace(yaml.config).Trim(),
+      Key = f.Replace(yaml.key).Trim(),
+      Name = f.Replace(yaml.name).Trim(),
+      Prefab = prefab,
+      Type = f.Replace(yaml.type),
+      Default = f.Replace(yaml.@default),
+      Description = Translate(f.Replace(yaml.description)),
+      Min = yaml.min == null ? null : f.Replace(yaml.min),
+      Max = yaml.max == null ? null : f.Replace(yaml.max),
+      Values = yaml.values == null ? null : f.Replace(yaml.values),
+    };
+    if (resolved.Key == "") resolved.Key = resolved.Name;
+    if (resolved.Name == "") resolved.Name = resolved.Key;
+    return resolved;
+  }
+
+  // Resolves $tokens like $enemy_troll with the language of the game.
+  private static string Translate(string text) => Localization.instance == null ? text : Localization.instance.Localize(text);
+
+  private static void Sync(ConfigFile file, List<Resolved> declarations)
   {
     HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
-    foreach (var yaml in declarations)
+    foreach (var declaration in declarations)
     {
-      var name = yaml.config.Trim();
-      var section = yaml.section.Trim();
-      if (!IsValidName(name) || !IsValidName(section))
+      var section = declaration.Section;
+      var key = declaration.Key;
+      if (!IsValidName(key) || !IsValidName(section))
       {
-        Log.Error($"Invalid config \"{section}/{name}\". Section and name can't be empty or contain _ = < >.");
+        Log.Error($"Invalid config \"{section}/{key}\". Section and key can't be empty or contain _ = < >. Use <safeprefab> instead of <prefab>.");
         continue;
       }
-      var id = section + Separator + name;
+      var id = section + Separator + key;
       if (!seen.Add(id))
       {
         Log.Warning($"Duplicate config \"{id}\" ignored.");
         continue;
       }
-      var key = yaml.key.Trim() == "" ? name : yaml.key.Trim();
-      var signature = string.Join("|", section, key, yaml.type, yaml.@default, yaml.description, yaml.min, yaml.max, yaml.values);
+      var signature = string.Join("|", declaration.Name, declaration.Prefab, declaration.Type, declaration.Default, declaration.Description, declaration.Min, declaration.Max, declaration.Values);
       if (Entries.TryGetValue(id, out var current) && current.Signature == signature) continue;
       try
       {
-        Declare(file, id, section, key, signature, yaml, current);
+        Declare(file, id, signature, declaration, current);
       }
       catch (Exception e)
       {
@@ -87,26 +162,26 @@ public static class ConfigManager
       Remove(file, name);
   }
 
-  private static void Declare(ConfigFile file, string name, string section, string key, string signature, ConfigYaml yaml, Declared? previous)
+  private static void Declare(ConfigFile file, string id, string signature, Resolved declaration, Declared? previous)
   {
     string? oldValue = previous?.Entry.GetSerializedValue();
     if (previous != null)
-      Remove(file, name);
-    var definition = new ConfigDefinition(section, key);
+      Remove(file, id);
+    var definition = new ConfigDefinition(declaration.Section, declaration.Name);
     if (file.Keys.Contains(definition))
     {
-      Log.Error($"Config \"{name}\" conflicts with the existing setting {section}/{key}.");
+      Log.Error($"Config \"{id}\" conflicts with the existing setting {declaration.Section}/{declaration.Name}.");
       return;
     }
-    var entry = Bind(file, definition, yaml);
+    var entry = Bind(file, definition, declaration);
     if (entry == null) return;
     if (oldValue != null)
     {
       try { entry.SetSerializedValue(oldValue); }
       catch { }
     }
-    Entries[name] = new Declared(signature, entry);
-    Names[entry] = name;
+    Entries[id] = new Declared(signature, entry, declaration.Prefab);
+    Names[entry] = id;
   }
 
   private static void Remove(ConfigFile file, string name)
@@ -119,37 +194,37 @@ public static class ConfigManager
 
   private static bool IsValidName(string name) => name != "" && name.IndexOfAny(['_', '=', '<', '>']) < 0;
 
-  private static ConfigEntryBase? Bind(ConfigFile file, ConfigDefinition definition, ConfigYaml yaml)
+  private static ConfigEntryBase? Bind(ConfigFile file, ConfigDefinition definition, Resolved yaml)
   {
-    switch (yaml.type.Trim().ToLowerInvariant())
+    switch (yaml.Type.Trim().ToLowerInvariant())
     {
       case "bool":
-        return file.Bind(definition, !bool.TryParse(yaml.@default, out var b) ? false : b, new ConfigDescription(yaml.description));
+        return file.Bind(definition, !bool.TryParse(yaml.Default, out var b) ? false : b, new ConfigDescription(yaml.Description));
       case "int":
         {
-          var value = Parse.Int(yaml.@default);
+          var value = Parse.Int(yaml.Default);
           AcceptableValueBase? range = null;
-          if (yaml.min != null || yaml.max != null)
-            range = new AcceptableValueRange<int>(Parse.Int(yaml.min ?? "", int.MinValue), Parse.Int(yaml.max ?? "", int.MaxValue));
-          return file.Bind(definition, value, new ConfigDescription(yaml.description, range));
+          if (yaml.Min != null || yaml.Max != null)
+            range = new AcceptableValueRange<int>(Parse.Int(yaml.Min ?? "", int.MinValue), Parse.Int(yaml.Max ?? "", int.MaxValue));
+          return file.Bind(definition, value, new ConfigDescription(yaml.Description, range));
         }
       case "float":
         {
-          var value = Parse.Float(yaml.@default);
+          var value = Parse.Float(yaml.Default);
           AcceptableValueBase? range = null;
-          if (yaml.min != null || yaml.max != null)
-            range = new AcceptableValueRange<float>(Parse.Float(yaml.min ?? "", float.MinValue), Parse.Float(yaml.max ?? "", float.MaxValue));
-          return file.Bind(definition, value, new ConfigDescription(yaml.description, range));
+          if (yaml.Min != null || yaml.Max != null)
+            range = new AcceptableValueRange<float>(Parse.Float(yaml.Min ?? "", float.MinValue), Parse.Float(yaml.Max ?? "", float.MaxValue));
+          return file.Bind(definition, value, new ConfigDescription(yaml.Description, range));
         }
       case "string":
         {
           AcceptableValueBase? list = null;
-          if (yaml.values != null)
-            list = new AcceptableValueList<string>([.. Parse.ToList(yaml.values)]);
-          return file.Bind(definition, yaml.@default, new ConfigDescription(yaml.description, list));
+          if (yaml.Values != null)
+            list = new AcceptableValueList<string>([.. Parse.ToList(yaml.Values)]);
+          return file.Bind(definition, yaml.Default, new ConfigDescription(yaml.Description, list));
         }
       default:
-        Log.Error($"Invalid config type \"{yaml.type}\". Use bool, int, float or string.");
+        Log.Error($"Invalid config type \"{yaml.Type}\". Use bool, int, float or string.");
         return null;
     }
   }
@@ -291,11 +366,13 @@ public static class ConfigManager
   private static void OnSettingChanged(object sender, SettingChangedEventArgs e)
   {
     if (!triggerEnabled || handling) return;
-    if (!Names.TryGetValue(e.ChangedSetting, out var name)) return;
+    if (!Names.TryGetValue(e.ChangedSetting, out var id)) return;
+    var split = id.IndexOf(Separator);
+    var prefab = Entries.TryGetValue(id, out var declared) ? declared.Prefab : "";
     handling = true;
     try
     {
-      Manager.HandleGlobal(ActionType.Config, [name, e.ChangedSetting.GetSerializedValue()], Vector3.zero, false);
+      Manager.HandleGlobal(ActionType.Config, [id.Substring(0, split), id.Substring(split + 1), e.ChangedSetting.GetSerializedValue(), prefab], Vector3.zero, false);
     }
     finally
     {

@@ -3,8 +3,9 @@
 Scripts can declare their own settings in the main config file (`expand_world_prefabs.cfg`) with a `config` entry in `expand_prefabs*.yaml`:
 
 ```yaml
-- config: bossHealth
-  section: Bosses
+- config: Bosses
+  key: bossHealth
+  name: Boss health
   type: float
   default: 1
   min: 0.1
@@ -12,13 +13,29 @@ Scripts can declare their own settings in the main config file (`expand_world_pr
   description: Boss health multiplier.
 ```
 
-- config: Name used in the functions. Can't be empty or contain `_`, `=`, `<` or `>`.
-- section (default: `Custom`) and key (default: name): Location in the config file.
-  - Section is also part of the function id, so it can't contain `_`, `=`, `<` or `>`. Names only need to be unique within a section.
+- config (default: `Custom`): Section in the config file. Must be the first field. Can't contain `_`, `=`, `<` or `>`.
+- key: Id used in the functions. Defaults to name. Can't be empty or contain `_`, `=`, `<` or `>`. Must be unique within a section.
+- name: Name in the config file. Defaults to key.
 - type (default: `string`): `bool`, `int`, `float` or `string`.
-- default, description: Default value and description.
+- default, description: Default value and description. Description supports translation tokens like `$enemy_troll`, using the language of the game (server language on servers).
 - min, max: Allowed range for `int` and `float`.
 - values: Comma separated allowed values for `string`.
+- prefab: Creates a setting for each matching prefab. Supports wildcards, multiple values and value groups like in [scripting](scripting.md).
+- condition: Prefabs are skipped if this is false. Evaluated against the prefab and its default values, see [functions](functions.md).
+
+All fields support functions. With `prefab`, functions are resolved separately for each prefab, so `<prefab>` and the default values of the prefab can be used:
+
+```yaml
+- config: Health
+  key: <safeprefab>
+  name: <prefab> health
+  prefab: creature
+  condition: <float_Humanoid.m_health> > 500
+  type: float
+  default: <float_Humanoid.m_health>
+```
+
+This creates `<config_Health_Troll>` and similar for each matching creature. Use `<safeprefab>` for keys because prefab names often contain `_`.
 
 Settings are added, changed and removed when the yaml files reload. Removed settings are also removed from the config file. Existing settings of EWP can't be overridden.
 
