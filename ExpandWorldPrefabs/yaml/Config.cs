@@ -1,16 +1,26 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace ExpandWorld.Prefab;
 
-// Declares a BepInEx config entry that scripts can read and write.
+// Declares BepInEx config entries that scripts can read and write.
+// All text fields support functions, resolved separately for each matching prefab.
 public class ConfigYaml
 {
-  [DefaultValue("")]
-  public string config = "";
+  // Section in the config file. Must be the first field.
   [DefaultValue("Custom")]
-  public string section = "Custom";
+  public string config = "Custom";
+  // Name in the config file. Defaults to key.
+  [DefaultValue("")]
+  public string name = "";
+  // Id used by scripts. Defaults to name.
   [DefaultValue("")]
   public string key = "";
+  // Creates an entry for each matching prefab. Same format as the rule prefab.
+  [DefaultValue("")]
+  public string prefab = "";
+  // Evaluated for each prefab, entry is skipped if false.
+  [DefaultValue("")]
+  public string condition = "";
   [DefaultValue("string")]
   public string type = "string";
   [DefaultValue("")]

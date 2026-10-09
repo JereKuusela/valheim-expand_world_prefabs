@@ -59,8 +59,8 @@ Most fields are put on a single line. List values are separated by `,`.
       - Second parameter is the condition (single value, multiple values, range).
       - Uses server timezone.
     - `config`: When a setting declared with a `config` entry changes (see [config](config.md)).
-      - Parameters are the section, the name and the new value. Rule parameters filter by section and name, for example `type: config Bosses bossHealth`.
-      - Wildcards work, for example `config Bosses *`. The new value is available as `<par2>`.
+      - Parameters are the section, the key and the new value. Rule parameters filter by section and key, for example `type: config Bosses bossHealth`.
+      - Wildcards work, for example `config Bosses *`. The new value is available as `<par2>` and the prefab of the setting as `<par3>`.
       - Old value isn't provided.
       - Also triggers on external edits of the config file.
       - Changes made by rules triggered by this type don't trigger `config` again.
