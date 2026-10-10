@@ -244,6 +244,8 @@ bannedFilters:
   - When using max, all objects must be searched.
 - objects: List of required nearby objects.
   - prefab: Target object id or value group.
+  - excludePrefab: List of excluded object ids.
+    - This can be used to skip specific objects when a wildcard or component is used in the `prefab` field.
   - self: When set to true, the object itself is included in the search.
   - minDistance: Minimum distance to the object.
   - maxDistance: Maximum distance to the object. Default is 100 meters.
@@ -369,6 +371,8 @@ Poking allows to trigger actions on other objects (or even on the original objec
 - poke: List of poke objects:
   - prefab: Target object id or value group.
     - By default, the object itself can't be poked. You can set `self` to true allow self poking.
+  - excludePrefab: List of excluded object ids.
+    - This can be used to skip specific objects when a wildcard or component is used in the `prefab` field.
   - self: When set to true, the object itself can be poked.
     - If prefab is set, then other filters must apply as usual.
     - If prefab is not set, then the object itself is always poked.
@@ -403,6 +407,7 @@ Poking allows to trigger actions on other objects (or even on the original objec
     - Global triggers don't have any object, so the distance is from the world center (0,0,0).
   - minHeight: Minimum height difference from the poker.
   - maxHeight: Maximum height difference from the poker.
+  - condition: Optional condition expression. Must evaluate to true for the object.
   - position: Absolute position in x,z,y to override the original object position.
   - offset: Position offset in x,z,y from the original object position and rotation.
   - Data filters like `filter`, `filters`, `bannedFilter` and `bannedFilters` can be used to filter the affected objects.
