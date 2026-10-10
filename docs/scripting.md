@@ -307,8 +307,8 @@ See object filtering [examples](examples_object_filtering.md).
   - These include creature drops, destructible drops and structure materials.
   - This can also be a data entry with `items` information.
   - Not supported for type `destroy`.
-- exec: Runs functions with side effects or console commands.
-  - Mostly useful for saving custom data with the `save` function.
+- exec: Runs functions or console commands.
+  - Functions only make sense if they have side effects like saving data.
   - Can be a single line or a list of [execs](#execs).
 - owner: Changes the object owner (number).
   - Only works when using `injectData: true`.

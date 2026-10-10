@@ -4,8 +4,10 @@
   - Adds field `excludePrefab` to pokes. Thanks Zeall!
   - Adds support adding custom config entries.
   - Adds functions `<config_SECTION_NAME>`, `<saveconfig_SECTION_NAME_Y>`, `<modconfig_GUID_SECTION_KEY>` and `<savemodconfig_GUID_SECTION_KEY_Y>` for interacting with EWP config entries.
-  - Adds support for multiple log files and rolling logs. Thanks JPValheim!
+  - Adds support for multiple log files and rolling logs to field `log`. Thanks JPValheim!
+  - Adds support for multiple execs to field `exec`. Thanks Zeall!
   - Changes value group `material_*` to be based on resource cost rather than support system type. Thanks Zeall!
+  - Changes field `exec` to also support running console commands. Thanks Zeall!
   - Fixes value group `itemtype_*` containing other objects like enemy attacks. Thanks Zeall!
   - Fixes unnecessary warnings about missing RPC methods (vanilla issue). Thanks Zeall!
 
@@ -34,11 +36,3 @@
 - v1.59
   - Adds server side position update for attached objects when a script triggers on them.
   - Adds experimental NPC chat support.
-
-- v1.58
-  - Adds new function `random` to get a random number between two values.
-  - Adds new field `random` to pokes to allow randomizing affected objects.
-  - Adds support for specifying unit (deg or rad) for angle parameters.
-  - Adds support for "distance, angle, y" format for vectors (requires using deg or rad for angle).
-  - Adds dynamic value support to `objectsLimit` and `bannedObjectsLimit`.
-  - Fixes `pos` y coordinate offset not being applied when `snap` is true.
