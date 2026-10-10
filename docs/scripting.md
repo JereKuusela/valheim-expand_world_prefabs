@@ -307,8 +307,9 @@ See object filtering [examples](examples_object_filtering.md).
   - These include creature drops, destructible drops and structure materials.
   - This can also be a data entry with `items` information.
   - Not supported for type `destroy`.
-- exec: Runs functions with side effects.
+- exec: Runs functions with side effects or console commands.
   - Mostly useful for saving custom data with the `save` function.
+  - Can be a single line or a list of [execs](#execs).
 - owner: Changes the object owner (number).
   - Only works when using `injectData: true`.
   - Number 0 removes the owner, but the server will reassign it after a few seconds.
@@ -411,6 +412,23 @@ Poking allows to trigger actions on other objects (or even on the original objec
   - position: Absolute position in x,z,y to override the original object position.
   - offset: Position offset in x,z,y from the original object position and rotation.
   - Data filters like `filter`, `filters`, `bannedFilter` and `bannedFilters` can be used to filter the affected objects.
+
+### Execs
+
+Execs allow running functions and console commands from a rule.
+
+- exec: List of exec entries. Text starting with `<` is a function, otherwise it is a console command.
+  - function: Function to run. For example `<save_X_Y>` saves custom data with key X and value Y.
+  - command: Console command to run. Runs after the function of the same entry.
+  - condition: Optional condition expression. Must evaluate to true for this exec attempt.
+  - chance (default: `1`): Chance to run.
+  - weight (optional): When set, only one of the weighted execs is selected.
+    - All weights are summed and the probability is `weight / sum`.
+    - Sum is at least 1, so with low weights there is a chance to not run anything.
+  - delay: Delay in seconds.
+  - repeat (default: `0`): How many times the exec is repeated.
+  - repeatInterval (default: `0`): Interval in seconds between repeats.
+  - repeatChance (default: `1`): Chance to run for each attempt (including the original).
 
 ### RPCs
 

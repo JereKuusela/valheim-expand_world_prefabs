@@ -24,10 +24,15 @@ public sealed class ObjectEntries(ObjectYaml[] data)
   public readonly ObjectYaml[] Data = data;
 }
 
+public sealed class ExecEntries(ExecYaml[] data)
+{
+  public readonly ExecYaml[] Data = data;
+}
+
 internal sealed class FlexibleYamlConverter : IYamlTypeConverter
 {
   public bool Accepts(Type type) =>
-    type == typeof(StringList) || type == typeof(SpawnEntries) || type == typeof(ObjectEntries) || type == typeof(RuleLogData) || type == typeof(RuleLogFiles);
+    type == typeof(StringList) || type == typeof(SpawnEntries) || type == typeof(ObjectEntries) || type == typeof(ExecEntries) || type == typeof(RuleLogData) || type == typeof(RuleLogFiles);
 
   public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
   {
@@ -53,6 +58,31 @@ internal sealed class FlexibleYamlConverter : IYamlTypeConverter
       }
       return new ObjectEntries([.. objects]);
     }
+    if (type == typeof(ExecEntries))
+    {
+      if (parser.Current is Scalar single)
+      {
+        parser.MoveNext();
+        return string.IsNullOrWhiteSpace(single.Value) ? null : new ExecEntries([ExecYaml.FromLine(single.Value)]);
+      }
+      if (parser.Current is not SequenceStart)
+      {
+        rootDeserializer(typeof(object));
+        return null;
+      }
+      parser.Consume<SequenceStart>();
+      var execs = new List<ExecYaml>();
+      while (!parser.TryConsume<SequenceEnd>(out _))
+      {
+        if (parser.Current is Scalar item)
+        {
+          parser.MoveNext();
+          execs.Add(ExecYaml.FromLine(item.Value));
+        }
+        else execs.Add((ExecYaml)rootDeserializer(typeof(ExecYaml))!);
+      }
+      return new ExecEntries([.. execs]);
+    }
     var scalar = parser.Current is Scalar;
     if (type == typeof(StringList))
     {
@@ -71,6 +101,7 @@ internal sealed class FlexibleYamlConverter : IYamlTypeConverter
       StringList list => list.Items,
       SpawnEntries spawn => spawn.Data,
       ObjectEntries objects => objects.Data,
+      ExecEntries execs => execs.Data,
       RuleLogData log => log.Value,
       RuleLogFiles files => files.Value,
       _ => null
