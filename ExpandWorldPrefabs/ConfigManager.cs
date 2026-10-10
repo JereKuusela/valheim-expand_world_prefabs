@@ -94,7 +94,7 @@ public static class ConfigManager
       Log.Warning($"Config \"{yaml.key}\" with a prefab can't be created before the scene is loaded.");
       yield break;
     }
-    foreach (var hash in PrefabHelper.GetPrefabs(prefabs, ""))
+    foreach (var hash in PrefabHelper.GetPrefabs(prefabs, yaml.excludePrefab.Trim()))
     {
       var prefab = ZNetScene.instance.GetPrefab(hash);
       if (!prefab) continue;

@@ -1,6 +1,7 @@
 - v1.63
   - Adds support for loading decoded `item` field from data.
   - Adds trigger type `config` to react to EWP config changes.
+  - Adds field `excludePrefab` to pokes. Thanks Zeall!
   - Adds support adding custom config entries.
   - Adds functions `<config_SECTION_NAME>`, `<saveconfig_SECTION_NAME_Y>`, `<modconfig_GUID_SECTION_KEY>` and `<savemodconfig_GUID_SECTION_KEY_Y>` for interacting with EWP config entries.
   - Adds support for multiple log files and rolling logs. Thanks JPValheim!

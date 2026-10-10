@@ -18,6 +18,9 @@ public class ConfigYaml
   // Creates an entry for each matching prefab. Same format as the rule prefab.
   [DefaultValue("")]
   public string prefab = "";
+  // Prefabs to skip from the prefab list.
+  [DefaultValue("")]
+  public string excludePrefab = "";
   // Evaluated for each prefab, entry is skipped if false.
   [DefaultValue("")]
   public string condition = "";
