@@ -92,7 +92,7 @@ public class RuleLogIntegrationTests
     File.WriteAllText(path, yaml, new System.Text.UTF8Encoding(false));
     try
     {
-      var loaded = Yaml.ReadMixedFile(path, true);
+      var loaded = Yaml.ReadMixedFile(path);
       Assert.That(loaded.DataEntries, Is.Empty);
       Assert.That(loaded.ScriptEntries.Count, Is.EqualTo(2));
       var warnings = new List<string>();

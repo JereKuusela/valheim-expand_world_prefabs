@@ -71,7 +71,7 @@ public class Yaml
     }
   }
 
-  public static MixedFileEntries ReadMixedFile(string file, bool migrateScripts)
+  public static MixedFileEntries ReadMixedFile(string file)
   {
     try
     {
@@ -79,13 +79,14 @@ public class Yaml
       var result = new MixedFileEntries();
       if (split.ScriptLines.Count > 0)
       {
-        var raw = migrateScripts ? PreParse([.. split.ScriptLines]) : string.Join("\n", split.ScriptLines);
+        var raw = PreParse([.. split.ScriptLines]);
         result.ScriptEntries = Deserialize<ExpandWorld.Prefab.RuleYaml>(raw, file);
+        result.DataEntries.AddRange(ExpandWorld.Prefab.DataField.Hoist(result.ScriptEntries, file));
       }
       if (split.DataLines.Count > 0)
       {
         var raw = string.Join("\n", split.DataLines);
-        result.DataEntries = Deserialize<Data.DataYaml>(raw, file);
+        result.DataEntries.InsertRange(0, Deserialize<Data.DataYaml>(raw, file));
       }
       if (split.ConfigLines.Count > 0)
       {

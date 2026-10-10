@@ -59,8 +59,8 @@ public class Object
     }
     if (data.filters != null || data.bannedFilters != null)
       filters = new Filters(data.filters, data.bannedFilters, data.filterLimit);
-    else if (data.data != null)
-      filters = new Filters([data.data], null, data.filterLimit);
+    else if (data.data?.Name != null)
+      filters = new Filters([data.data.Name], null, data.filterLimit);
   }
   private float? MinDistance;
   public float MaxDistance;
@@ -130,7 +130,7 @@ public class ObjectYaml
   [DefaultValue(null)]
   public string? offset;
   [DefaultValue(null)]
-  public string? data;
+  public DataField? data;
   [DefaultValue(null)]
   public string[]? filters;
   [DefaultValue(null)]
@@ -156,7 +156,7 @@ public class ObjectYaml
         result.minDistance = distance.Min.ToString();
       result.maxDistance = distance.Max.ToString();
     }
-    if (split.Count > 2) result.data = split[2];
+    if (split.Count > 2) result.data = new DataField(split[2]);
     if (split.Count > 3) result.weight = split[3];
     if (split.Count > 4)
     {

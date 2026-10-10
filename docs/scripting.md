@@ -294,9 +294,10 @@ See object filtering [examples](examples_object_filtering.md).
 - logFile: Comma-separated destination names, inherited by log items unless explicitly replaced. Message text is resolved once for all copies.
   - Names are lowercased and use 1–64 ASCII letters, numbers, underscores or hyphens; EWP adds `.txt`.
   - Duplicate destinations are removed. Paths, extensions and reserved device names are rejected.
-- data: Sets object data either with format `name` or `type, key, value`.
-  - Format `name` can be used to set multiple values (entry name from `data.yaml`).
-  - Format `type, key, value` is a shorthand to set a single data value.
+- data: Sets object data.
+  - Three possible formats: `name` of existing data entry, full data entry or shorthand `type, key, value`.
+  - Existing data entry can be in any file.
+  - Shorthand can only be used to set a single value.
   - If a component field is set, the object is respawned to apply the changes.
   - Otherwise the data is force pushed to clients, which can override local changes (such as creature movement).
 - injectData: If set, overrides the default logic for data changes.
@@ -334,8 +335,10 @@ See object filtering [examples](examples_object_filtering.md).
 - spawn: Spawns another object.
   - prefab: Object id or value group.
   - condition: Optional condition expression. Must evaluate to true for this spawn attempt.
-  - data: Entry in the `data.yaml` to be used as initial data.
-    - Supports `type, key, value` format to set a single data value.
+  - data: Sets initial data.
+    - Three possible formats: `name` of existing data entry, full data entry or shorthand `type, key, value`.
+    - Existing data entry can be in any file.
+    - Shorthand can only be used to set a single value.
   - pos: Position offset in `x, z, y` from the original object.
     - Polar format `distance, angle, y` is supported when angle ends with `deg` or `rad`.
   - snap: If true, the spawned object is snapped to the original terrain height.

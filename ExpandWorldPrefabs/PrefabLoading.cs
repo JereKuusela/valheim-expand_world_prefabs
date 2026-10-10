@@ -97,7 +97,7 @@ public class Loading
       Log.Warning("Rule " + data.prefab + " (" + data.type + "): " + message));
     return [.. types.Select(t =>
     {
-      var d = t.Type != ActionType.Destroy ? data.data : "";
+      var d = t.Type != ActionType.Destroy ? data.data?.Name ?? "" : "";
       bool? remove = t.Type == ActionType.Destroy ? false : allSwaps != null ? true : data.remove == "" ? false : null;
       return new Rule()
       {

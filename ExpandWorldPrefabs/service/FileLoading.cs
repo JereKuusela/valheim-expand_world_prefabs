@@ -129,16 +129,12 @@ public static class FileLoading
     prefabFiles.Reverse();
     PrefabFileEntries.Clear();
     ConfigFileEntries.Clear();
+    DataFileEntries.Clear();
     foreach (var file in prefabFiles)
-    {
-      PrefabFileEntries[file] = ReadScriptEntries(file);
-      ConfigFileEntries[file] = ReadConfigEntries(file);
-    }
+      LoadPrefabFile(file);
 
     var dataFiles = GetDataSourceFiles();
-    DataFileEntries.Clear();
-    foreach (var file in dataFiles)
-      DataFileEntries[file] = ReadDataEntries(file);
+    EnsureCache(DataFileEntries, dataFiles, file => ReadDataEntries(file));
 
     Data.DataLoading.LoadFromFiles(dataFiles, DataFileEntries);
     ExpandWorld.Prefab.ConfigManager.LoadFromFiles(prefabFiles, ConfigFileEntries);
@@ -187,19 +183,17 @@ public static class FileLoading
       ConfigFileEntries.Remove(path);
     }
     else
-    {
-      var mixed = Yaml.ReadMixedFile(path, true);
-      PrefabFileEntries[path] = mixed.ScriptEntries;
-      DataFileEntries[path] = mixed.DataEntries;
-      ConfigFileEntries[path] = mixed.ConfigEntries;
-    }
+      LoadPrefabFile(path);
 
     var prefabFiles = GetPatternFiles(Yaml.BaseDirectory, PrefabPattern);
     prefabFiles.Reverse();
     PruneStaleCache(PrefabFileEntries, prefabFiles);
     PruneStaleCache(ConfigFileEntries, prefabFiles);
-    EnsureCache(PrefabFileEntries, prefabFiles, file => ReadScriptEntries(file));
-    EnsureCache(ConfigFileEntries, prefabFiles, file => ReadConfigEntries(file));
+    foreach (var file in prefabFiles)
+    {
+      if (!PrefabFileEntries.ContainsKey(file) || !ConfigFileEntries.ContainsKey(file) || !DataFileEntries.ContainsKey(file))
+        LoadPrefabFile(file);
+    }
 
     var dataFiles = GetDataSourceFiles();
     PruneStaleCache(DataFileEntries, dataFiles);
@@ -252,22 +246,18 @@ public static class FileLoading
     }
   }
 
-  public static List<ExpandWorld.Prefab.RuleYaml> ReadScriptEntries(string file, bool migrateScripts = true)
+  private static void LoadPrefabFile(string file)
   {
-    if (!File.Exists(file)) return [];
-    return Yaml.ReadMixedFile(file, migrateScripts).ScriptEntries;
+    var mixed = File.Exists(file) ? Yaml.ReadMixedFile(file) : new Yaml.MixedFileEntries();
+    PrefabFileEntries[file] = mixed.ScriptEntries;
+    DataFileEntries[file] = mixed.DataEntries;
+    ConfigFileEntries[file] = mixed.ConfigEntries;
   }
 
-  public static List<ExpandWorld.Prefab.ConfigYaml> ReadConfigEntries(string file)
+  public static List<Data.DataYaml> ReadDataEntries(string file)
   {
     if (!File.Exists(file)) return [];
-    return Yaml.ReadMixedFile(file, false).ConfigEntries;
-  }
-
-  public static List<Data.DataYaml> ReadDataEntries(string file, bool migrateScripts = true)
-  {
-    if (!File.Exists(file)) return [];
-    return Yaml.ReadMixedFile(file, migrateScripts).DataEntries;
+    return Yaml.ReadMixedFile(file).DataEntries;
   }
 
 }

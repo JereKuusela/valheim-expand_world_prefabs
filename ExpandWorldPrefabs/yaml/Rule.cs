@@ -39,8 +39,8 @@ public class RuleYaml
   public string? removeDelay;
   [DefaultValue("")]
   public string drops = "";
-  [DefaultValue("")]
-  public string data = "";
+  [DefaultValue(null)]
+  public DataField? data;
   [DefaultValue(null)]
   public StringList? command;
   [DefaultValue(null)]

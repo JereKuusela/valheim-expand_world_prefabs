@@ -20,7 +20,7 @@ public class SpawnYaml
   [DefaultValue(null)]
   public string? rotation;
   [DefaultValue(null)]
-  public string? data;
+  public DataField? data;
   [DefaultValue(null)]
   public string? delay;
   [DefaultValue(null)]
@@ -82,7 +82,7 @@ public class SpawnYaml
           result.delay = value;
       }
       else
-        result.data = value;
+        result.data = new DataField(value);
     }
     return result;
   }
@@ -115,7 +115,7 @@ public class Spawn
     Pos = data.pos != null ? DataValue.Vector3(data.pos) : data.position != null ? DataValue.Vector3(data.position) : null;
     Snap = data.snap == null ? null : DataValue.Bool(data.snap);
     Rot = data.rot != null ? DataValue.Quaternion(data.rot) : data.rotation != null ? DataValue.Quaternion(data.rotation) : null;
-    Data = data.data == null ? null : DataValue.String(data.data);
+    Data = data.data?.Name == null ? null : DataValue.String(data.data.Name);
     Delay = data.delay == null ? delay == null ? null : new ConstantFloatValue(delay.Value) : DataValue.Float(data.delay);
     RemoveDelay = data.removeDelay == null ? null : DataValue.Float(data.removeDelay);
     Repeat = data.repeat == null ? null : DataValue.Int(data.repeat);
