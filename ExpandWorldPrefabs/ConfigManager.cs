@@ -284,22 +284,23 @@ public static class ConfigManager
     }
     var file = Chainloader.PluginInfos[guid].Instance.Config;
     var path = value.Substring(guid.Length + 1);
-    for (var i = path.IndexOf(Separator); i > 0; i = path.IndexOf(Separator, i + 1))
+    // Section and key are matched against existing settings, so they can contain separators.
+    ConfigDefinition? best = null;
+    foreach (var definition in file.Keys)
     {
-      var section = path.Substring(0, i);
+      var id = definition.Section + Separator + definition.Key;
       if (!withValue)
       {
-        var definition = new ConfigDefinition(section, path.Substring(i + 1));
-        if (file.Keys.Contains(definition)) return file[definition];
+        if (string.Equals(path, id, StringComparison.OrdinalIgnoreCase)) return file[definition];
         continue;
       }
-      for (var j = path.IndexOf(Separator, i + 1); j > i + 1; j = path.IndexOf(Separator, j + 1))
-      {
-        var definition = new ConfigDefinition(section, path.Substring(i + 1, j - i - 1));
-        if (!file.Keys.Contains(definition)) continue;
-        rest = path.Substring(j + 1);
-        return file[definition];
-      }
+      if (path.Length > id.Length && path.StartsWith(id + Separator, StringComparison.OrdinalIgnoreCase) && (best == null || id.Length > best.Section.Length + 1 + best.Key.Length))
+        best = definition;
+    }
+    if (best != null)
+    {
+      rest = path.Substring(best.Section.Length + 1 + best.Key.Length + 1);
+      return file[best];
     }
     WarnOnce($"Unknown config in \"{value}\".");
     return null;
