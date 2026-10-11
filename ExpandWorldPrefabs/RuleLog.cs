@@ -23,8 +23,6 @@ internal static class RuleLog
       Writer = new BufferedRuleLog(name => new RollingRuleLogWriter(
         Path.Combine(directory, name + ".txt"), maximumBytes, segments), Config.GetRuleLogOptions(), Log.Warning);
       Writer.SetEnabled(Config.RuleLogging);
-      Log.Info("Rule log files: " + directory + "; segment size=" + (maximumBytes / (1024 * 1024)) +
-        " MiB; retained segments=" + segments + " per log.");
     }
     catch (Exception e)
     {

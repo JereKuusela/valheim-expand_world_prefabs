@@ -1,7 +1,7 @@
 - v1.63
   - Adds support for inline data definitions in field `data`.
   - Adds support for loading decoded `item` field from data.
-  - Adds field `excludePrefab` to pokes. Thanks Zeall!
+  - Adds field `excludePrefab` to pokes and objects. Thanks Zeall!
   - Adds trigger type `config` to react to EWP config changes.
   - Adds support adding custom config entries.
   - Adds functions `<config_SECTION_NAME>`, `<saveconfig_SECTION_NAME_Y>`, `<modconfig_GUID_SECTION_KEY>` and `<savemodconfig_GUID_SECTION_KEY_Y>` for interacting with EWP config entries.
