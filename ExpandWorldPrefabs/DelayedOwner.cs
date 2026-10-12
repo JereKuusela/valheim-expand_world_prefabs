@@ -46,6 +46,11 @@ public class DelayedOwner(double due, ZDOID zdo, long owner)
 
   public static void Add(float delay, ZDO zdo, long owner)
   {
+    if (TeleportManager.IsPlayerWriteQuarantined(zdo.m_uid))
+    {
+      Owners.Add(new(ZNet.instance.m_netTime + System.Math.Max(0f, delay), zdo.m_uid, owner));
+      return;
+    }
     zdo.SetOwner(0);
     if (delay <= 0f)
     {
@@ -62,6 +67,7 @@ public class DelayedOwner(double due, ZDOID zdo, long owner)
     {
       var remove = Owners[i];
       if (remove.Due > ZNet.instance.m_netTime) continue;
+      if (TeleportManager.IsPlayerWriteQuarantined(remove.Zdo)) continue;
       remove.ExecuteAction();
       Owners.RemoveAt(i);
       i--;
