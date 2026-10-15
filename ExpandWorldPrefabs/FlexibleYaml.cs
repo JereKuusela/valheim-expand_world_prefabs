@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace ExpandWorld.Prefab;
 
@@ -77,6 +78,8 @@ internal sealed class FlexibleYamlConverter : IYamlTypeConverter
   public bool Accepts(Type type) =>
     type == typeof(StringList) || type == typeof(SpawnEntries) || type == typeof(ObjectEntries) || type == typeof(ExecEntries) || type == typeof(DataField) || type == typeof(RuleLogData) || type == typeof(RuleLogFiles);
 
+  private static readonly IDeserializer BlockDeserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+
   public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
   {
     if (type == typeof(RuleLogData)) return new RuleLogData(rootDeserializer(typeof(object)));
@@ -88,6 +91,8 @@ internal sealed class FlexibleYamlConverter : IYamlTypeConverter
       if (parser.Current is Scalar name)
       {
         parser.MoveNext();
+        if (name.Style == ScalarStyle.Literal || name.Style == ScalarStyle.Folded)
+          return new DataField(null, BlockDeserializer.Deserialize<Data.DataYaml>(name.Value));
         return string.IsNullOrWhiteSpace(name.Value) ? null : new DataField(name.Value);
       }
       rootDeserializer(typeof(object));
