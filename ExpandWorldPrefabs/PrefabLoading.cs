@@ -229,7 +229,7 @@ public class Loading
   private static Object[] ParseObjects(ObjectYaml[] objects) => [.. objects.Select(s => new Object(s))];
   private static Tuple<Poke[]?, Poke[]?> ParsePokes(PokeYaml[] objects)
   {
-    var allPokes = objects.Select(s => new Poke(s)).ToArray();
+    var allPokes = objects.Select((s, i) => new Poke(s) { Slot = i + 1 }).ToArray();
     var pokes = allPokes.Where(s => s.Weight == null).ToArray();
     if (pokes.Length == 0)
       pokes = null;

@@ -64,7 +64,7 @@ public class DelayedPoke
         zdos.RemoveAll(id => !connectedZdos.Contains(id));
       }
       if (zdos.Count == 0) return;
-      f.SetPokeTargets(zdos);
+      f.SetPokeTargets(poke.Slot, zdos);
       var args = poke.GetArgs(f);
       Add(delay, [.. zdos], args);
       return;
@@ -81,7 +81,7 @@ public class DelayedPoke
       if (connected)
         targets.UnionWith(SupportAttach.GetConnnected(zdo));
       if (targets.Count == 0) return;
-      f.SetPokeTargets([.. targets]);
+      f.SetPokeTargets(poke.Slot, [.. targets]);
       var args = poke.GetArgs(f);
       Add(delay, [.. targets], args);
     }
@@ -109,7 +109,7 @@ public class DelayedPoke
   {
     var random = poke.Random?.GetBool(f) == true;
     var zdos = ObjectsFiltering.GetNearby(poke.Limit?.Get(f) ?? 0, poke.Filter, pos, rot, f, null, random);
-    f.SetPokeTargets([.. zdos]);
+    f.SetPokeTargets(poke.Slot, [.. zdos]);
     var args = poke.GetArgs(f);
     Add(delay, zdos, args);
   }

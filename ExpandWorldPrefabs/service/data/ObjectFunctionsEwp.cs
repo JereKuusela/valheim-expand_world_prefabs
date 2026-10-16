@@ -11,7 +11,8 @@ namespace Data;
 // EWP only: player information and counting of nearby objects.
 public partial class ObjectFunctions
 {
-  private Dictionary<string, int>? objectCounts;
+  private Dictionary<int, Dictionary<string, int>>? objectCounts;
+  private Dictionary<string, int> objectTotals = [];
   private PrefabObject[]? objects;
   public void SetObjectCounts(PrefabObject[] value)
   {
@@ -28,7 +29,7 @@ public partial class ObjectFunctions
       "pname" => PeerManager.GetPName(zdo),
       "pchar" => PeerManager.GetPChar(zdo),
       "pvisible" => PeerManager.GetPVisible(zdo),
-      "objectcount" => GetObjectCounts().Values.Sum().ToString(CultureInfo.InvariantCulture),
+      "objectcount" => GetObjectTotals().Values.Sum().ToString(CultureInfo.InvariantCulture),
       _ => null,
     };
 
@@ -40,17 +41,14 @@ public partial class ObjectFunctions
       _ => null,
     };
 
-  private Dictionary<string, int> GetObjectCounts() => objectCounts ??= objects == null ? [] : ObjectsFiltering.GetCounts(objects, zdo, this);
+  private Dictionary<int, Dictionary<string, int>> GetObjectCounts() => objectCounts ??= objects == null ? [] : ObjectsFiltering.GetCounts(objects, zdo, this, out objectTotals);
 
-  private string GetObjectCount(string value, string defaultValue)
+  private Dictionary<string, int> GetObjectTotals()
   {
-    if (value == "") return defaultValue;
-    if (objects == null) return defaultValue;
-    var counts = GetObjectCounts();
-    if (counts.TryGetValue(value, out var exact)) return exact.ToString(CultureInfo.InvariantCulture);
-    if (ValueGroups.TryGet(value, out var members)) return SumCounts(counts, members);
-    if (!Wildcard.IsPattern(value)) return defaultValue;
-    var sum = counts.Where(kv => Wildcard.Match(kv.Key, value)).Sum(kv => kv.Value);
-    return sum.ToString(CultureInfo.InvariantCulture);
+    GetObjectCounts();
+    return objectTotals;
   }
+
+  private string GetObjectCount(string value, string defaultValue) =>
+    objects == null ? defaultValue : GetCount(GetObjectCounts(), objectTotals, value, defaultValue);
 }
