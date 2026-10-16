@@ -280,7 +280,11 @@ public class Manager
         foreach (Piece.Requirement requirement in piece.m_resources)
           requirement.m_recover = true;
       }
+      var zs = ZoneSystem.instance;
+      var key = piece.FreeBuildKey();
+      var free = zs.m_globalKeysEnums.Remove(key);
       piece.DropResources();
+      if (free) zs.m_globalKeysEnums.Add(key);
     }
     if (obj.TryGetComponent<TreeBase>(out var tree))
     {
