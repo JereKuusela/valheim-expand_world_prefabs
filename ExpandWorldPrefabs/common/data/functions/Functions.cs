@@ -46,9 +46,10 @@ public partial class Functions(string prefab, string[] args, Vector3 pos)
 
   public void SetPokeTargets(List<ZDOID> targets)
   {
-    pokeTargets = targets;
+    pokeTargets ??= [];
+    pokeTargets.AddRange(targets);
     pokeCounts = null;
-    Amount = targets.Count;
+    Amount = pokeTargets.Count;
   }
   public string Replace(string str) => Replace(str, false, false);
   public string Replace(string str, bool preventInjections, bool allValues)

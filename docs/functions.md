@@ -38,9 +38,9 @@ Following functions are available to be used in the yaml file:
 - `<objectcount_X>`: Count of nearby matches whose prefab is `X`, checked only against `objects:`'s own matches.
   - Wildcard `*` can be used for partial matches. For example `Trophy*` to match all trophies or `*` to count everything.
   - `<objectcount>`: Shorthand for the combined count of everything `objects:` matched.
-- `<pokecount_X>`: Count of targets whose prefab is `X`, checked only against the current `poke:`'s own targets.
+- `<pokecount_X>`: Count of targets whose prefab is `X`, summed over the targets of every `poke:` of the rule that ran before, including the current one.
   - Wildcard `*` can be used for partial matches. For example `Trophy*` to match all trophies or `*` to count everything.
-  - `<pokecount>`: Shorthand for the combined count of everything the current `poke:` is running against.
+  - `<pokecount>`: Shorthand for the combined count of everything those `poke:` entries ran against.
 - `<pdata_*>`: Player data.
   - `<pdata_baseValue>`: Amount of nearby player base structures.
   - `<pdata_possibleEvents>`: List of possible events.
