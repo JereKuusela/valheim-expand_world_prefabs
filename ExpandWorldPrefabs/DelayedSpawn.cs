@@ -55,7 +55,10 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
     if (prefab == 0) return;
     ZdoEntry zdoEntry = new(prefab, pos, rot, originalZdo.GetOwner());
     if (data != null)
+    {
       zdoEntry.Load(data, f, originalZdo);
+      zdoEntry.LoadItem(data, f);
+    }
     var owner = spawn.Owner?.Get(f);
     if (owner.HasValue)
       zdoEntry.Owner = owner.Value;

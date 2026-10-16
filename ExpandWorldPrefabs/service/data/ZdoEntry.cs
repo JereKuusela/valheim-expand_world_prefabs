@@ -28,6 +28,17 @@ public class ZdoEntry : ResolvedDataEntry
   public Dictionary<int, Quaternion>? ServerQuats;
   public Dictionary<int, byte[]>? ServerByteArrays;
 
+  public void LoadItem(DataEntry data, Functions f)
+  {
+    if (data.Item == null) return;
+    var itemData = data.Item.Create(f, Prefab);
+    if (itemData != null)
+      AddByteArray(ZDOVars.s_itemData, itemData);
+    else if (WarnedItems.Add(Prefab))
+      Log.Warning($"Prefab {ZNetScene.instance.GetPrefab(Prefab).name} has no ItemDrop, so item data is not created.");
+  }
+  private static readonly HashSet<int> WarnedItems = [];
+
   public ZDO? Create()
   {
     var zdo = SpawnZDO(Prefab, Position ?? Vector3.zero, Rotation ?? Vector3.zero);
