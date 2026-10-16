@@ -45,8 +45,14 @@ public partial class ObjectFunctions
 
   private Dictionary<string, int> GetObjectTotals()
   {
-    GetObjectCounts();
-    return objectTotals;
+    if (value == "") return defaultValue;
+    if (objects == null) return defaultValue;
+    var counts = GetObjectCounts();
+    if (counts.TryGetValue(value, out var exact)) return exact.ToString(CultureInfo.InvariantCulture);
+    if (ValueGroups.TryGet(value, out var members)) return SumCounts(counts, members);
+    if (!Wildcard.IsPattern(value)) return defaultValue;
+    var sum = counts.Where(kv => Wildcard.Match(kv.Key, value)).Sum(kv => kv.Value);
+    return sum.ToString(CultureInfo.InvariantCulture);
   }
 
   private string GetObjectCount(string value, string defaultValue) =>

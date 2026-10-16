@@ -30,6 +30,14 @@ public class InlineDataTests
   }
 
   [Test]
+  public void Data_BlockScalarIsInline()
+  {
+    var rule = Parse("data: |" + NL + "  ints:" + NL + "  - customData, 1");
+    Assert.That(rule.data!.Name, Is.Null);
+    Assert.That(rule.data.Inline!.ints, Is.EqualTo(new[] { "customData, 1" }));
+  }
+
+  [Test]
   public void Hoist_ReplacesInlineWithGeneratedName()
   {
     var rule = Parse(

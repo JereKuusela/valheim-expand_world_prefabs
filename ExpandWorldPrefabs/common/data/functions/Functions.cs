@@ -304,8 +304,7 @@ public partial class Functions(string prefab, string[] args, Vector3 pos)
   protected static string SumCounts(Dictionary<string, int> counts, List<string> members) =>
     counts.Where(kv => members.Contains(kv.Key)).Sum(kv => kv.Value).ToString(CultureInfo.InvariantCulture);
 
-  private Dictionary<int, Dictionary<string, int>> GetPokeCounts() =>
-    pokeCounts ??= pokeTargets!.ToDictionary(kv => kv.Key, kv => GetPokeCounts(kv.Value));
+  private Dictionary<string, int> GetPokeCounts() => pokeCounts ??= GetPokeCounts(pokeTargets!);
 
   private static Dictionary<string, int> GetPokeCounts(List<ZDOID> targets)
   {
