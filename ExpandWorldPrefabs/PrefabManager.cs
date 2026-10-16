@@ -143,7 +143,11 @@ public class Manager
         entry.Load(data, f, zdo);
         hasSyncedDataChanges = entry.HasSyncedChanges();
         if (hasSyncedDataChanges)
+        {
+          if (info.TriggerRules)
+            HandleChanged.QueueData(zdo, entry);
           entry.Write(zdo);
+        }
         else
           entry.WriteServer(zdo);
       }

@@ -156,6 +156,29 @@ public class HandleChanged
     Index = 0;
     ChangedZDOs.Clear();
   }
+  public static void QueueData(ZDO zdo, ResolvedDataEntry data)
+  {
+    if (Tracked(zdo, data.Ints?.Keys) is { } ints)
+      foreach (var hash in ints) QueueInt(zdo, hash, zdo.GetInt(hash), data.Ints![hash]);
+    if (Tracked(zdo, data.Floats?.Keys) is { } floats)
+      foreach (var hash in floats) QueueFloat(zdo, hash, zdo.GetFloat(hash), data.Floats![hash]);
+    if (Tracked(zdo, data.Strings?.Keys) is { } strings)
+      foreach (var hash in strings) QueueString(zdo, hash, zdo.GetString(hash), data.Strings![hash]);
+    if (Tracked(zdo, data.Longs?.Keys) is { } longs)
+      foreach (var hash in longs) QueueLong(zdo, hash, zdo.GetLong(hash), data.Longs![hash]);
+    if (Tracked(zdo, data.Vecs?.Keys) is { } vecs)
+      foreach (var hash in vecs) QueueVec(zdo, hash, zdo.GetVec3(hash, Vector3.zero), data.Vecs![hash]);
+    if (Tracked(zdo, data.Quats?.Keys) is { } quats)
+      foreach (var hash in quats) QueueQuaternion(zdo, hash, zdo.GetQuaternion(hash, Quaternion.identity), data.Quats![hash]);
+    if (Tracked(zdo, data.ByteArrays?.Keys) is { } bytes)
+      foreach (var hash in bytes) QueueByteArray(zdo, hash, zdo.GetByteArray(hash), data.ByteArrays![hash]);
+  }
+  private static List<int>? Tracked(ZDO zdo, IEnumerable<int>? hashes)
+  {
+    if (hashes == null || TrackedHashes.Count == 0) return null;
+    var tracked = hashes.Where(hash => TrackedHashes.TryGetValue(hash, out var prefabs) && prefabs.Contains(zdo.m_prefab)).ToList();
+    return tracked.Count > 0 ? tracked : null;
+  }
   private static readonly Dictionary<int, HashSet<int>> TrackedHashes = [];
   private static void HandleInt(ZDOID zid, int hash, int value)
   {
