@@ -286,10 +286,14 @@ public partial class Functions(string prefab, string[] args, Vector3 pos)
     if (value == "" || pokeTargets == null) return defaultValue;
     var counts = GetPokeCounts();
     if (counts.TryGetValue(value, out var exact)) return exact.ToString(CultureInfo.InvariantCulture);
+    if (ValueGroups.TryGet(value, out var members)) return SumCounts(counts, members);
     if (!Wildcard.IsPattern(value)) return defaultValue;
     var sum = counts.Where(kv => Wildcard.Match(kv.Key, value)).Sum(kv => kv.Value);
     return sum.ToString(CultureInfo.InvariantCulture);
   }
+
+  protected static string SumCounts(Dictionary<string, int> counts, List<string> members) =>
+    counts.Where(kv => members.Contains(kv.Key)).Sum(kv => kv.Value).ToString(CultureInfo.InvariantCulture);
 
   private Dictionary<string, int> GetPokeCounts() => pokeCounts ??= GetPokeCounts(pokeTargets!);
 
