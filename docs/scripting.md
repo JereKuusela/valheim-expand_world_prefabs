@@ -476,7 +476,8 @@ RPC format:
   - Old string based `items` data is automatically loaded from the byte array.
 - Item data is packed to `itemData` byte arrays.
   - Old separate data values are automatically loaded from the packed item data.
-  - These include `durability`, `stack`, `quality`, `variant`, `crafterID`, `crafterName`, `worldLevel` and `pickedUp`.
+  - These include `durability`, `stack`, `quality`, `variant`, `crafterID`, `crafterName`, `worldLevel`, `pickedUp` and `dataCount`.
+  - Custom data keys `data_0`, `data_1`, ... and values `data__0`, `data__1`, ... are also read from the packed item data.
 - Game only shows crafter name if crafter ID is nonzero.
   - Crafter ID is automatically set to value `1` when only a crafter name is provided.
 
