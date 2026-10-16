@@ -108,9 +108,10 @@ public class ObjectsFiltering
       return !HasLimitObjects(zdoLists, l, objects, zdo.m_uid, f);
   }
 
-  public static Dictionary<string, int> GetCounts(Object[] objects, ZDO zdo, Functions f)
+  public static Dictionary<int, Dictionary<string, int>> GetCounts(Object[] objects, ZDO zdo, Functions f, out Dictionary<string, int> totals)
   {
-    Dictionary<string, int> counts = [];
+    Dictionary<int, Dictionary<string, int>> counts = [];
+    totals = [];
     if (objects.Length == 0) return counts;
     foreach (var o in objects) o.Roll(f, zdo.m_position, zdo.GetRotation());
     var maxRadius = objects.Max(o => o.MaxDistance);
@@ -119,12 +120,24 @@ public class ObjectsFiltering
       : GetSectorIndices(objects).SelectMany(z => z);
     foreach (var z in candidates)
     {
-      var valid = objects.FirstOrDefault(o => o.IsValid(z, f, zdo.m_uid));
-      if (valid == null) continue;
-      var name = ZNetScene.instance.GetPrefab(z.GetPrefab())?.name;
-      if (name == null) continue;
-      counts.TryGetValue(name, out var current);
-      counts[name] = current + valid.Weight;
+      string? name = null;
+      var counted = false;
+      for (var index = 0; index < objects.Length; index++)
+      {
+        if (!objects[index].IsValid(z, f, zdo.m_uid)) continue;
+        name ??= ZNetScene.instance.GetPrefab(z.GetPrefab())?.name;
+        if (name == null) break;
+        if (!counted)
+        {
+          totals.TryGetValue(name, out var total);
+          totals[name] = total + objects[index].Weight;
+          counted = true;
+        }
+        if (!counts.TryGetValue(index + 1, out var slot))
+          counts[index + 1] = slot = [];
+        slot.TryGetValue(name, out var current);
+        slot[name] = current + objects[index].Weight;
+      }
     }
     return counts;
   }

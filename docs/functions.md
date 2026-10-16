@@ -37,9 +37,13 @@ Following functions are available to be used in the yaml file:
 - `<item_X_Y>`: Item name at slot X,Y.
 - `<objectcount_X>`: Count of nearby matches whose prefab is `X`, checked only against `objects:`'s own matches.
   - Wildcard `*` can be used for partial matches. For example `Trophy*` to match all trophies or `*` to count everything.
+  - Value group name can be used to count all prefabs of the group. For example `TeleportWorld`.
+  - If `X` is a number, it gets the count from that slot of `objects:`.
   - `<objectcount>`: Shorthand for the combined count of everything `objects:` matched.
 - `<pokecount_X>`: Count of targets whose prefab is `X`, summed over the targets of every `poke:` of the rule that ran before, including the current one.
   - Wildcard `*` can be used for partial matches. For example `Trophy*` to match all trophies or `*` to count everything.
+  - Value group name can be used to count all prefabs of the group. For example `TeleportWorld`.
+  - If `X` is a number, it gets the count from that slot of `poke:`.
   - `<pokecount>`: Shorthand for the combined count of everything those `poke:` entries ran against.
 - `<pdata_*>`: Player data.
   - `<pdata_baseValue>`: Amount of nearby player base structures.

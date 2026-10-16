@@ -8,6 +8,7 @@ namespace ExpandWorld.Prefab;
 
 public class Poke(PokeYaml data)
 {
+  public int Slot;
   public Object Filter = new(data);
   private readonly string? Parameter = data.parameter;
   private readonly string[]? Parameters = data.pars == null ? null : Parse.ToArr(data.pars);
