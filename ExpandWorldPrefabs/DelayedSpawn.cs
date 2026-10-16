@@ -58,6 +58,7 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
     {
       zdoEntry.Load(data, f, originalZdo);
       zdoEntry.LoadItem(data, f);
+      zdoEntry.LoadInventory(data, f);
     }
     var owner = spawn.Owner?.Get(f);
     if (owner.HasValue)
