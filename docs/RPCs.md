@@ -1103,6 +1103,7 @@ Recommended to use the [terrain field](scripting.md#terrain) to set position, ra
 
 ```yaml
 # Deals damage to the object.
+# A destroyed object drops no items while the global key NoBuildCost is set.
   objectRpc:
   - name: RPC_Damage
     1: hit, "hit data"
@@ -1125,6 +1126,7 @@ Recommended to use the [terrain field](scripting.md#terrain) to set position, ra
 
 ```yaml
 # Removes the object.
+# Drops no items while the global key NoBuildCost is set, even if block item drop is false.
   objectRpc:
   - name: RPC_Remove
     1: bool, "block item drop"
