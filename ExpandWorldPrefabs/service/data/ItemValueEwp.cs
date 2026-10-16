@@ -40,6 +40,14 @@ public partial class ItemValue
     }
   }
 
+  public byte[]? Create(Functions f, int prefabHash)
+  {
+    var prefab = ZNetScene.instance.GetPrefab(prefabHash);
+    if (prefab == null || !prefab.TryGetComponent(out ItemDrop _)) return null;
+    RolledStack = Stack?.Get(f) ?? 1;
+    return ItemDataHelper.Serialize(CreateItemData(f, prefab));
+  }
+
   private void LoadCustomData(ZDO zdo, Functions f, KeyValuePair<string, IStringValue> kvp)
   {
     if (kvp.Key == "data")

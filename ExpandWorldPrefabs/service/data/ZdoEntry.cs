@@ -28,6 +28,32 @@ public class ZdoEntry : ResolvedDataEntry
   public Dictionary<int, Quaternion>? ServerQuats;
   public Dictionary<int, byte[]>? ServerByteArrays;
 
+  public void LoadItem(DataEntry data, Functions f)
+  {
+    if (data.Item == null) return;
+    var itemData = data.Item.Create(f, Prefab);
+    if (itemData != null)
+      AddByteArray(ZDOVars.s_itemData, itemData);
+    else if (WarnedItems.Add(Prefab))
+      Log.Warning($"Prefab {ZNetScene.instance.GetPrefab(Prefab).name} has no ItemDrop, so item data is not created.");
+  }
+  private static readonly HashSet<int> WarnedItems = [];
+
+  private static readonly int WidthHash = ZdoHelper.Hash("Container.m_width");
+  private static readonly int HeightHash = ZdoHelper.Hash("Container.m_height");
+  public void LoadInventory(DataEntry data, Functions f)
+  {
+    if (data.Items == null || data.Items.Count == 0) return;
+    var prefab = ZNetScene.instance.GetPrefab(Prefab);
+    if (!prefab) return;
+    var container = prefab.GetComponentInChildren<Container>();
+    var width = Ints != null && Ints.TryGetValue(WidthHash, out var w) ? w : container ? container.m_width : 4;
+    var height = Ints != null && Ints.TryGetValue(HeightHash, out var h) ? h : container ? container.m_height : 2;
+    var size = data.ContainerSize ?? new Vector2i(width, height);
+    var inventory = ItemValue.LoadItemBytes(f, data.Items, size, data.ItemAmount?.Get(f) ?? 0);
+    AddByteArray(ZDOVars.s_items, inventory);
+  }
+
   public ZDO? Create()
   {
     var zdo = SpawnZDO(Prefab, Position ?? Vector3.zero, Rotation ?? Vector3.zero);
