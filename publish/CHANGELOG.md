@@ -1,3 +1,12 @@
+- v1.64
+  - Improves `<pokecount>` to allow getting count of specific poke. Thanks Zeaal!
+  - Improves `<pokecount>` to support value groups. Thanks Zeaal!
+  - Fixes item custom data not working on filters. Thanks Zeaal!
+  - Fixes `drops` not working if the server has no build cost. Thanks Zeaal!
+  - Fixes data changes by EWP not triggering `change` even when `triggerRules` was set. Thanks Zeaal!
+  - Fixes `<pokecount>` not working like `<objectcount>`. Thanks Zeaal!
+  - Fixes items data to use inventory size of the created object (instead of the original object). Thanks Zeaal!
+
 - v1.63
   - Adds support for inline data definitions in field `data`.
   - Adds support for loading decoded `item` field from data.
