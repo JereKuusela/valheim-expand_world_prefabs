@@ -1,4 +1,5 @@
 using System;
+using BepInEx.Bootstrap;
 using ExpandWorld.Prefab;
 using HarmonyLib;
 using Splatform;
@@ -101,19 +102,33 @@ public class ServerClient
   }
 
 
-  public static ZNet.PlayerInfo Client => client ??= CreatePlayerInfo();
+  public static ZNet.PlayerInfo Client => client != null && client.Value.m_name == ServerName ? client.Value : (client = CreatePlayerInfo()).Value;
   private static ZNet.PlayerInfo? client;
+
+  private static Func<string>? serverChatName;
+  private static string ServerName => (serverChatName ??= GetServerChatName())();
+
+  private static Func<string> GetServerChatName()
+  {
+    if (Chainloader.PluginInfos.TryGetValue("server_devcommands", out var plugin))
+    {
+      var getter = plugin.Instance.GetType().Assembly.GetType("ServerDevcommands.Settings")?.GetProperty("ServerChatName")?.GetGetMethod();
+      if (getter != null)
+        return (Func<string>)Delegate.CreateDelegate(typeof(Func<string>), getter);
+    }
+    return () => "Server";
+  }
 
   private static ZNet.PlayerInfo CreatePlayerInfo() => new()
   {
-    m_name = "Server",
+    m_name = ServerName,
     // Receiving chat messages requires a valid character ID.
     m_characterID = new ZDOID(ZDOMan.GetSessionID(), uint.MaxValue),
     m_userInfo = new()
     {
       m_id = GetServerUserId(),
-      m_displayName = "Server",
-      m_serverAssignedDisplayName = "Server"
+      m_displayName = ServerName,
+      m_serverAssignedDisplayName = ServerName
     },
     m_publicPosition = false,
     m_position = Vector3.zero,
