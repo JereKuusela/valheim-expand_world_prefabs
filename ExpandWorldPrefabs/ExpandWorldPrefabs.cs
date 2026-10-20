@@ -40,6 +40,7 @@ public class EWP : BaseUnityPlugin
   }
   public void Start()
   {
+    ServerDevcommands.Init();
     ExpandWorldData.Init();
     new Terminal.ConsoleCommand("ewp_reload_data", "Manually reloads the ewp_data.yaml file.", (args) =>
     {

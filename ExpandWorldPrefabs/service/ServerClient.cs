@@ -103,17 +103,24 @@ public class ServerClient
 
   public static ZNet.PlayerInfo Client => client ??= CreatePlayerInfo();
   private static ZNet.PlayerInfo? client;
+  private static string name = "Server";
+
+  public static void SetName(string value)
+  {
+    name = value;
+    client = null;
+  }
 
   private static ZNet.PlayerInfo CreatePlayerInfo() => new()
   {
-    m_name = "Server",
+    m_name = name,
     // Receiving chat messages requires a valid character ID.
     m_characterID = new ZDOID(ZDOMan.GetSessionID(), uint.MaxValue),
     m_userInfo = new()
     {
       m_id = GetServerUserId(),
-      m_displayName = "Server",
-      m_serverAssignedDisplayName = "Server"
+      m_displayName = name,
+      m_serverAssignedDisplayName = name
     },
     m_publicPosition = false,
     m_position = Vector3.zero,
