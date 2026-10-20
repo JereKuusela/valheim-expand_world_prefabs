@@ -48,6 +48,7 @@ public class EWP : BaseUnityPlugin
     {
       ExpandData = plugin.Instance.GetType().Assembly;
     }
+    ServerDevcommands.Init();
     new Terminal.ConsoleCommand("ewp_reload_data", "Manually reloads the ewp_data.yaml file.", (args) =>
     {
       DataStorage.LoadSavedData();
