@@ -97,7 +97,7 @@ public class InfoSelector
     }
     if (checkEvents)
     {
-      var ev = EWP.GetCurrentEvent(pos);
+      var ev = ExpandWorldData.GetCurrentEvent(pos);
       // Three cases:
       // 1. Nothing set, always true.
       // 2. Only event distance set, any event is fine.
