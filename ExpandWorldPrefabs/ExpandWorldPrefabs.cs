@@ -1,12 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using BepInEx;
-using BepInEx.Bootstrap;
 using HarmonyLib;
 using Service;
-using UnityEngine;
 namespace ExpandWorld.Prefab;
 
 [BepInPlugin(GUID, NAME, VERSION)]
@@ -18,7 +15,6 @@ public class EWP : BaseUnityPlugin
 #nullable disable
   public static Harmony Harmony;
 #nullable enable
-  public static Assembly? ExpandData;
   public void Awake()
   {
     Prefab.Config.Init(Config);
@@ -44,10 +40,7 @@ public class EWP : BaseUnityPlugin
   }
   public void Start()
   {
-    if (Chainloader.PluginInfos.TryGetValue("expand_world_data", out var plugin))
-    {
-      ExpandData = plugin.Instance.GetType().Assembly;
-    }
+    ExpandWorldData.Init();
     new Terminal.ConsoleCommand("ewp_reload_data", "Manually reloads the ewp_data.yaml file.", (args) =>
     {
       DataStorage.LoadSavedData();
@@ -92,14 +85,6 @@ public class EWP : BaseUnityPlugin
   {
     ConfigManager.Flush(true);
     RuleLog.Close();
-  }
-
-  public static RandomEvent GetCurrentEvent(Vector3 pos)
-  {
-    if (ExpandData == null) return RandEventSystem.instance.GetCurrentRandomEvent();
-    var method = ExpandData.GetType("ExpandWorldData.Api").GetMethod("GetCurrentRandomEvent", BindingFlags.Public | BindingFlags.Static);
-    if (method == null) return RandEventSystem.instance.GetCurrentRandomEvent();
-    return method.Invoke(null, [pos]) as RandomEvent ?? RandEventSystem.instance.GetCurrentRandomEvent();
   }
 }
 
