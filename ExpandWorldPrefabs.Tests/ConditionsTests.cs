@@ -44,6 +44,17 @@ public class ConditionsTests
   }
 
   [Test]
+  public void Evaluate_WildcardWorksInEqualityAndIn()
+  {
+    Assert.That(Evaluate("SwordIron = Sword*"), Is.True);
+    Assert.That(Evaluate("ClubIron = Sword*"), Is.False);
+    Assert.That(Evaluate("ClubIron != Sword*"), Is.True);
+    Assert.That(Evaluate("SwordIron in Sword*"), Is.True);
+    Assert.That(Evaluate("SwordIron in Club*,Sword*"), Is.True);
+    Assert.That(Evaluate("ClubIron not in Sword*"), Is.True);
+  }
+
+  [Test]
   public void Evaluate_RelationalOperatorsRequireNumbers()
   {
     Assert.That(Evaluate("5 >= 4"), Is.True);

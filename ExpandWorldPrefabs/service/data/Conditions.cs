@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using Common;
 
 namespace Data;
 
@@ -509,7 +511,9 @@ public static class Conditions
     {
       var equal = leftNumber && rightNumber
         ? Math.Abs(leftValue - rightValue) <= NumericTolerance
-        : string.Equals(leftTrimmed, rightTrimmed, StringComparison.OrdinalIgnoreCase);
+        : Wildcard.IsPattern(rightTrimmed)
+          ? Wildcard.Match(leftTrimmed, rightTrimmed, true)
+          : string.Equals(leftTrimmed, rightTrimmed, StringComparison.OrdinalIgnoreCase);
       return operatorType == TokenType.Equal ? equal : !equal;
     }
 
@@ -528,6 +532,8 @@ public static class Conditions
   private static bool ContainsValue(string commaSeparatedValues, string value)
   {
     if (value == "") return false;
-    return commaSeparatedValues.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
+    if (commaSeparatedValues.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+    return Wildcard.IsPattern(commaSeparatedValues)
+      && commaSeparatedValues.Split(',').Any(pattern => Wildcard.Match(value, pattern.Trim(), true));
   }
 }
