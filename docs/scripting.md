@@ -189,6 +189,8 @@ filter: bool, boss, true
 filter: int, level, 2;3
 # Pet name must contain "(S)".
 filter: string, TamedName, *(S)*
+# Creature must hold a sword.
+filter: hash, RightItem, Sword*
 # This data entry must NOT match.
 bannedFilter: hasTakenDamage
 # Creature must NOT be named "Piggy".
