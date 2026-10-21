@@ -1,11 +1,20 @@
+- v1.65
+  - Adds wildcard support to `locations` and `bannedLocations` fields. Thanks Zeall!
+  - Adds wildcard support to conditions. Thanks Zeall!
+  - Adds support for getting "Server chat" name from Server Devcommands mod. Thanks Zeall!
+  - Fixes single letter not working as datetime format. Thanks Zeall!
+  - Fixes attaching not working. Thanks Zeall!
+  - Fixes `bannedKeys` not working correctly with multiple keys. Thanks Zeall!
+  - Fixes wildcards not working on hash data type. Thanks Zeall!
+
 - v1.64
-  - Improves `<pokecount>` to allow getting count of specific poke. Thanks Zeaal!
-  - Improves `<pokecount>` to support value groups. Thanks Zeaal!
-  - Fixes item custom data not working on filters. Thanks Zeaal!
-  - Fixes `drops` not working if the server has no build cost. Thanks Zeaal!
-  - Fixes data changes by EWP not triggering `change` even when `triggerRules` was set. Thanks Zeaal!
-  - Fixes `<pokecount>` not working like `<objectcount>`. Thanks Zeaal!
-  - Fixes items data to use inventory size of the created object (instead of the original object). Thanks Zeaal!
+  - Improves `<pokecount>` to allow getting count of specific poke. Thanks Zeall!
+  - Improves `<pokecount>` to support value groups. Thanks Zeall!
+  - Fixes item custom data not working on filters. Thanks Zeall!
+  - Fixes `drops` not working if the server has no build cost. Thanks Zeall!
+  - Fixes data changes by EWP not triggering `change` even when `triggerRules` was set. Thanks Zeall!
+  - Fixes `<pokecount>` not working like `<objectcount>`. Thanks Zeall!
+  - Fixes items data to use inventory size of the created object (instead of the original object). Thanks Zeall!
 
 - v1.63
   - Adds support for inline data definitions in field `data`.
