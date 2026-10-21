@@ -49,8 +49,8 @@ public class Loading
     string[] commands = [.. data.command?.Items ?? [], .. data.commands ?? []];
     HashSet<string> environments = [.. Parse.ToList(data.environments).Select(s => s.ToLower())];
     HashSet<string> bannedEnvironments = [.. Parse.ToList(data.bannedEnvironments).Select(s => s.ToLower())];
-    HashSet<string>? locations = data.locations == null ? null : [.. Parse.ToList(data.locations)];
-    HashSet<string>? bannedLocations = data.bannedLocations == null ? null : [.. Parse.ToList(data.bannedLocations)];
+    var locations = data.locations == null ? null : new LocationNames([.. Parse.ToList(data.locations)]);
+    var bannedLocations = data.bannedLocations == null ? null : new LocationNames([.. Parse.ToList(data.bannedLocations)]);
     HashSet<string>? playerEvents = data.playerEvents == null ? null : [.. Parse.ToList(data.playerEvents)];
     HashSet<string>? bannedPlayerEvents = data.bannedPlayerEvents == null ? null : [.. Parse.ToList(data.bannedPlayerEvents)];
     HashSet<string>? groups = data.groups == null ? null : [.. Parse.ToList(data.groups)];

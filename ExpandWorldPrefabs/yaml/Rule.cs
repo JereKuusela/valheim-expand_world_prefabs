@@ -269,8 +269,8 @@ public class Rule
   public Object[]? Objects;
   public IRangeIntValue? BannedObjectsLimit;
   public Object[]? BannedObjects;
-  public HashSet<string>? Locations;
-  public HashSet<string>? BannedLocations;
+  public LocationNames? Locations;
+  public LocationNames? BannedLocations;
   public float LocationDistance = 0f;
   public float BannedLocationDistance = 0f;
   public HashSet<string>? PlayerEvents;
