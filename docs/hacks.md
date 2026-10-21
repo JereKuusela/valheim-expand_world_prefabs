@@ -85,8 +85,9 @@ Additionally object can be attached to a specific transformation with string att
   type: poke, unattach
   attach: 0
 
-# Attaches second arg to first arg.
-# !glue Wolf Wolf_cub
+# Attaches second arg to first arg at the relative position of the third arg.
+# The third value is the height, so use at least 0,0,0.2 for characters. Without a lift the colliders overlap and push each other up.
+# !glue Wolf Wolf_cub 0,0,0.2
 - prefab: Player
   type: say, !glue
 # First poke the parent object that then pokes the child object to attach it.
@@ -94,7 +95,7 @@ Additionally object can be attached to a specific transformation with string att
   - prefab: <par1>
     limit: 1
     maxDistance: 50
-    pars: glue, <par2>
+    pars: glue, <par2>, <par3>
 
 # Note: ZSyncTransform includes hundreds of prefabs, in real use at least narrow it down to a more specific component.
 - prefab: ZSyncTransform
@@ -103,10 +104,11 @@ Additionally object can be attached to a specific transformation with string att
   - prefab: <par1>
     limit: 1
     maxDistance: 50
-    pars: come, <zdo>
+    pars: come, <zdo>, <par2>
 
 - prefab: ZSyncTransform
   type: poke, come
+  data: vec3, relPos, <par2>
   attach: <par1>
 
 # Lists joints of nearby objects.
