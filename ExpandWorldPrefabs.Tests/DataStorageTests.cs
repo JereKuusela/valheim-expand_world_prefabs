@@ -53,6 +53,16 @@ public class DataStorageTests
   }
 
   [Test]
+  public void HasAnyKey_WildcardWithNoMatch_ChecksNextEntry()
+  {
+    DataStorage.SetValue("bar", "1");
+
+    var result = DataStorage.HasAnyKey(new List<string> { "foo*", "bar 1" }, CreateParameters());
+
+    Assert.That(result, Is.True);
+  }
+
+  [Test]
   public void HasEveryKey_RangeWithStep_MatchesOnlySteppedValues()
   {
     DataStorage.SetValue("counter", "15");
