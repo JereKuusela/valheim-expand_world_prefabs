@@ -170,7 +170,7 @@ public class DataStorage
       if (wildIndex >= 0)
       {
         var keysMatched = MatchKeys(key, wildIndex);
-        if (keysMatched.Count == 0) return false;
+        if (keysMatched.Count == 0) continue;
         foreach (var k in keysMatched)
         {
           if (Database.TryGetValue(k, out var v) && ValueMatches(v, kvp.Value)) return true;
