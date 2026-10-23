@@ -104,7 +104,7 @@ public static class PokeTimers
     finally { Flush(); }
   }
 
-  // Batch mutations per target; ServerSideData writes the combined payload during ZDO.Save.
+  // Batch mutations per target; ServerSideData persists the payload in the save snapshot.
   public static void Flush()
   {
     foreach (var id in Dirty)

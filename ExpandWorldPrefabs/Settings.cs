@@ -44,7 +44,7 @@ public class Config
     Main = config;
     ConfigAllowModConfigWrite = config.Bind("General", "Allow modifying mod configs", false, "When enabled, scripts can change settings of other mods with <savemodconfig_X>.");
     ConfigAutomaticReload = config.Bind("General", "Automatic file reload", true, "Settings are automatically reloaded on file changes. Requires restart to take effect.");
-    ConfigRestoreScale = config.Bind("General", "Restore scale", true, "When enabled, EWP automatically restores custom scale for objects with ZSyncTransform.m_syncScale.");
+    ConfigRestoreScale = config.Bind("General", "Restore scale", true, "Restores custom scale. For characters without native initial-scale synchronization, persistent scaling also requires Server side data and Server owned objects.");
     ConfigSupportAttach = config.Bind("General", "Object attaching", true, "When enabled, EWP keeps ownership of attached objects to prevent clients from separating them.");
     ConfigServerSideData = config.Bind("General", "Server side data", true, "When enabled, data keys starting with ewp_ are stored in server-only payload to reduce network traffic.");
     ConfigServerOwned = config.Bind("General", "Server owned objects", true, "When enabled, EWP keeps ownership of objects marked with owner: server, so the server receives owner-only RPCs.");
@@ -83,6 +83,7 @@ public class Config
   private static void RefreshPatches()
   {
     if (EWP.Harmony == null) return;
+    CustomScaling.OnConfigurationChanged();
     PrefabHelper.ClearCache();
     InfoManager.Patch();
   }

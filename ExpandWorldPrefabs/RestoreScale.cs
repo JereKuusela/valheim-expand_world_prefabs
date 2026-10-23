@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using Data;
 using HarmonyLib;
+using Service;
 using UnityEngine;
 
 namespace ExpandWorld.Prefab;
@@ -16,22 +18,99 @@ public class RestoreScale
   private static readonly int SyncScaleHash = ZdoHelper.Hash("ZSyncTransform.m_syncScale");
   public static bool ShouldRestoreScale(ZDO zdo) => zdo.GetBool(SyncScaleHash);
 
-  // Quality of life: Automatically applies m_syncScale for scaled objects that need it.
-  public static void Check(ZDO zdo)
-  {
-    if (!Config.RestoreScale) return;
-    if (SupportsInitialScaleSync(zdo)) return;
+  // Native initial synchronization needs no EWP owner/scale workaround.
+  public static bool NeedsLegacyScaleHack(ZDO zdo) =>
+    Config.RestoreScale && !SupportsInitialScaleSync(zdo) && ShouldRestoreScale(zdo);
 
-    if (ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vecs) && vecs.TryGetValue(ZDOVars.s_scaleHash, out var vecScale))
+  // Bound the client-owned scalar repair to one attempt per target per ZDO.
+  // Client writes may repeatedly reintroduce a conflicting runtime vector.
+  private static readonly Dictionary<ZDOID, float> ClientScalarAttempts = [];
+  private static readonly HashSet<ZDOID> ReportedConflicts = [];
+  public static void Clear()
+  {
+    ClientScalarAttempts.Clear();
+    ReportedConflicts.Clear();
+  }
+
+  // This path is invoked after *intentional* EWP data writes to existing ZDOs.
+  // The dictionaries contain only the rule's resolved writes, not all ZDO data.
+  public static void UpdateWrittenScale(ZDO zdo,
+    Dictionary<int, float>? floats, Dictionary<int, Vector3>? vectors)
+  {
+    if (!Config.RestoreScale || SupportsInitialScaleSync(zdo)) return;
+    if (vectors != null && vectors.TryGetValue(ZDOVars.s_scaleHash, out var vec))
+      BackupVector(zdo, vec);
+    else if (floats != null && floats.TryGetValue(ZDOVars.s_scaleScalarHash, out var scalar))
+      BackupScalar(zdo, scalar);
+  }
+
+  private static void BackupVector(ZDO zdo, Vector3 value)
+  {
+    SetSyncScale(zdo);
+    zdo.Set(ScaleBackupVecHash, value);
+    zdo.RemoveFloat(ScaleBackupScalarHash);
+    ClientScalarAttempts.Remove(zdo.m_uid);
+    ReportedConflicts.Remove(zdo.m_uid);
+  }
+  private static void BackupScalar(ZDO zdo, float value)
+  {
+    SetSyncScale(zdo);
+    zdo.Set(ScaleBackupScalarHash, value);
+    zdo.RemoveVec3(ScaleBackupVecHash);
+    ClientScalarAttempts.Remove(zdo.m_uid);
+    ReportedConflicts.Remove(zdo.m_uid);
+  }
+
+  // Quality of life: Automatically applies m_syncScale for scaled objects that need it.
+  public static void Check(ZDO zdo, float? explicitScalar = null, Vector3? explicitVector = null)
+  {
+    if (!Config.RestoreScale || SupportsInitialScaleSync(zdo)) return;
+    // The spawning rule explicitly supplied one or both representations.
+    if (explicitVector.HasValue)
     {
-      SetSyncScale(zdo);
-      zdo.Set(ScaleBackupVecHash, vecScale);
+      BackupVector(zdo, explicitVector.Value);
+      return;
     }
-    else if (ZDOExtraData.s_floats.TryGetValue(zdo.m_uid, out var floats) && floats.TryGetValue(ZDOVars.s_scaleScalarHash, out var scalarScale))
+    if (explicitScalar.HasValue)
     {
-      SetSyncScale(zdo);
-      zdo.Set(ScaleBackupScalarHash, scalarScale);
+      BackupScalar(zdo, explicitScalar.Value);
+      return;
     }
+
+    // Regeneration can merge a client's runtime scale with older authored
+    // backup data. The existing backup is more reliable than that runtime write.
+    // Do not promote it to a *new* CustomScaling intent, however.
+    bool hasScalar = TryCurrentScalar(zdo, out _);
+    bool hasVector = TryCurrentVector(zdo, out _);
+    if (TryGetScaleBackup(zdo, out Vector3 previousVector))
+    {
+      BackupVector(zdo, previousVector);
+      return;
+    }
+    if (TryGetScaleBackup(zdo, out float previousScalar))
+    {
+      BackupScalar(zdo, previousScalar);
+      return;
+    }
+    // Legacy migration: no provenance exists. Preserve upstream vector-first
+    // precedence rather than reinterpret old-world saves.
+    if (hasVector && TryCurrentVector(zdo, out var vec))
+      BackupVector(zdo, vec);
+    else if (hasScalar && TryCurrentScalar(zdo, out var scalar))
+      BackupScalar(zdo, scalar);
+  }
+
+  private static bool TryCurrentScalar(ZDO zdo, out float scalar)
+  {
+    scalar = 0f;
+    return ZDOExtraData.s_floats.TryGetValue(zdo.m_uid, out var floats) &&
+           floats.TryGetValue(ZDOVars.s_scaleScalarHash, out scalar);
+  }
+  private static bool TryCurrentVector(ZDO zdo, out Vector3 vec)
+  {
+    vec = Vector3.zero;
+    return ZDOExtraData.s_vec3.TryGetValue(zdo.m_uid, out var vectors) &&
+           vectors.TryGetValue(ZDOVars.s_scaleHash, out vec);
   }
   private static void SetSyncScale(ZDO zdo)
   {
@@ -72,8 +151,47 @@ public class RestoreScale
 
   static void Deserialize(ZDO __instance)
   {
-    if (!ShouldRestoreScale(__instance))
+    // Server-only custom scaling's Held phase wins over incoming client
+    // ownership/runtime data. Do not fall into the legacy owner-reset path.
+    if (CustomScaling.EnforceHeldAfterDeserialize(__instance)) return;
+    if (!NeedsLegacyScaleHack(__instance))
       return;
+    // An active client owns this Character's runtime ZSyncTransform. For that
+    // case retain the authored backup, but do not fight a client's vector or
+    // manipulate its owner on every network update.
+    if (ScaleOwnershipPolicy.HasClientOwner(__instance))
+    {
+      // Keep upstream vector-first priority for pre-existing saves where both
+      // backup formats happen to be present. New EWP writes keep only one.
+      if (TryGetScaleBackup(__instance, out Vector3 targetVector))
+      {
+        if (NeedsVectorScaleRestore(__instance, targetVector))
+          ReportClientConflict(__instance);
+      }
+      else if (TryGetScaleBackup(__instance, out float targetScalar))
+      {
+        if (!TryCurrentScalar(__instance, out var currentScalar) ||
+            Math.Abs(currentScalar - targetScalar) > 0.0001f)
+        {
+          if (!ClientScalarAttempts.TryGetValue(__instance.m_uid, out var lastAttempt) ||
+              Math.Abs(lastAttempt - targetScalar) > 0.0001f)
+          {
+            ClientScalarAttempts[__instance.m_uid] = targetScalar;
+            __instance.Set(ZDOVars.s_scaleScalarHash, targetScalar);
+          }
+        }
+        // Runtime vector may still be 1.2 even if the target is 1.1/1.3.
+        // Never delete it in this path; the client can recreate it immediately.
+        if (TryCurrentVector(__instance, out var runtimeVector) &&
+            (Math.Abs(runtimeVector.x - targetScalar) > 0.0001f ||
+             Math.Abs(runtimeVector.y - targetScalar) > 0.0001f ||
+             Math.Abs(runtimeVector.z - targetScalar) > 0.0001f))
+          ReportClientConflict(__instance);
+      }
+      else
+        SetScaleBackup(__instance);
+      return;
+    }
     if (TryGetScaleBackup(__instance, out Vector3 backedVecScale))
     {
       if (NeedsVectorScaleRestore(__instance, backedVecScale))
@@ -97,6 +215,13 @@ public class RestoreScale
     }
     // Fail safe if backup info missing. This should never happen, but just in case.
     SetScaleBackup(__instance);
+  }
+
+  private static void ReportClientConflict(ZDO zdo)
+  {
+    // Limited diagnostics for a testable upstream candidate, not a tracer.
+    if (ReportedConflicts.Count >= 64 || !ReportedConflicts.Add(zdo.m_uid)) return;
+    Log.Debug($"EWP_SCALE_POLICY|event=client-runtime-conflict|zdo={zdo.m_uid}|owner={zdo.GetOwner()}|action=preserve-owner|visual-scale-guaranteed=false");
   }
 
   private static bool NeedsVectorScaleRestore(ZDO zdo, Vector3 backedVecScale)
@@ -171,6 +296,10 @@ public class RestoreScale
 
   private static void ReassignOwnerAfterScaleRestore(ZDO zdo)
   {
+    // Character scale repair and releasing its owner are separate decisions.
+    // Releasing even an unowned/server-owned Character can destabilize its next
+    // client initialization. Physics/non-Character paths keep the original hack.
+    if (ScaleOwnershipPolicy.IsOrdinaryCharacter(zdo)) return;
     var previousOwner = zdo.GetOwner();
     zdo.SetOwner(0L);
     zdo.DataRevision += 100;

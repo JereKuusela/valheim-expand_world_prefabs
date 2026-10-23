@@ -1,0 +1,195 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Runtime.Serialization;
+using BepInEx.Configuration;
+using Data;
+using ExpandWorld.Prefab;
+using NUnit.Framework;
+
+namespace ExpandWorldPrefabs.Tests;
+
+// Managed marker tests. ZDO.Deserialize, the chunk writer and real owner transfer
+// still require dedicated-server/client acceptance tests.
+[TestFixture, NonParallelizable]
+public class ServerOwnedReleaseTests
+{
+  private const BindingFlags StaticFields = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+  private const BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+  private static readonly int Marker = ZdoHelper.Hash("ewp_server_owned");
+  private static readonly int OtherKey = ZdoHelper.Hash("ewp_unrelated_int");
+  private static readonly FieldInfo ConfigField = typeof(Config).GetField("ConfigServerSideData", StaticFields)!;
+  private static readonly FieldInfo IdField = typeof(ZDO).GetField("m_uid", InstanceFields)!;
+  private static readonly MethodInfo Prefix = typeof(ServerOwned).GetMethod("SetOwner", StaticFields)!;
+  private static readonly MethodInfo Serialize = typeof(ServerSideData).GetMethod("Serialize", StaticFields)!;
+  private static readonly MethodInfo Deserialize = typeof(ServerSideData).GetMethod("Deserialize", StaticFields)!;
+  private static readonly int PayloadKey = (int)typeof(ServerSideData).GetField("StorageHash", StaticFields)!.GetValue(null)!;
+  private static readonly Dictionary<ZDOID, Dictionary<int, int>> Ints =
+    (Dictionary<ZDOID, Dictionary<int, int>>)typeof(ServerSideData).GetField("Ints", StaticFields)!.GetValue(null)!;
+
+  private readonly List<ZDOID> ids = [];
+  private uint serial;
+  private object? previousConfig;
+
+  [SetUp]
+  public void SetUp()
+  {
+    previousConfig = ConfigField.GetValue(null);
+    var path = Path.Combine(Path.GetTempPath(), "ewp-o05-" + Guid.NewGuid().ToString("N") + ".cfg");
+    var setting = new ConfigFile(path, false).Bind("General", "Server side data", true);
+    ConfigField.SetValue(null, setting);
+  }
+
+  [TearDown]
+  public void TearDown()
+  {
+    ConfigField.SetValue(null, previousConfig);
+    foreach (var id in ids)
+    {
+      Ints.Remove(id);
+      ZDOExtraData.s_ints.Remove(id);
+      ZDOExtraData.s_byteArrays.Remove(id);
+    }
+    ids.Clear();
+  }
+
+  // Set up synchronized values as pre-existing/incoming extra data. Calling
+  // ZDO.Set on an uninitialized test ZDO requires native owner/revision state.
+  private static void WriteSyncedInt(ZDO zdo, int key, int value)
+  {
+    ZDOHelper.Init(ZDOExtraData.s_ints, zdo.m_uid);
+    ZDOExtraData.s_ints[zdo.m_uid].SetValue(key, value);
+  }
+
+  private static void WriteSyncedPayload(ZDO zdo, byte[] payload)
+  {
+    ZDOHelper.Init(ZDOExtraData.s_byteArrays, zdo.m_uid);
+    ZDOExtraData.s_byteArrays[zdo.m_uid].SetValue(PayloadKey, payload);
+  }
+
+  private ZDO NewZdo()
+  {
+    var id = new ZDOID(-7301001L, ++serial);
+    ids.Add(id);
+#pragma warning disable SYSLIB0050
+    var zdo = (ZDO)FormatterServices.GetUninitializedObject(typeof(ZDO));
+#pragma warning restore SYSLIB0050
+    IdField.SetValue(zdo, id);
+    return zdo;
+  }
+
+  [Test]
+  public void ServerSideOneAndZero_AreDifferentFromMissing()
+  {
+    var zdo = NewZdo();
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out _), Is.False);
+    Ints[zdo.m_uid] = new() { [Marker] = 1 };
+    Assert.That(ServerOwned.IsMarked(zdo), Is.True);
+    Ints[zdo.m_uid][Marker] = 0;
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out var value), Is.True);
+    Assert.That(value, Is.Zero);
+    Assert.That(ServerOwned.IsMarked(zdo), Is.False);
+    Ints[zdo.m_uid][Marker] = 2;
+    Assert.That(ServerOwned.IsMarked(zdo), Is.False);
+  }
+
+  [Test]
+  public void MissingServerSideMarker_PreservesSynchronizedLegacyOne()
+  {
+    var zdo = NewZdo();
+    WriteSyncedInt(zdo, Marker, 1);
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out _), Is.False);
+    Assert.That(ServerOwned.IsMarked(zdo), Is.True);
+  }
+
+  [Test]
+  public void Unmark_StoresZero_RemovesOldSynchronizedMarker_AndPreservesOtherKeys()
+  {
+    var zdo = NewZdo();
+    Ints[zdo.m_uid] = new() { [Marker] = 1, [OtherKey] = 37 };
+    WriteSyncedInt(zdo, Marker, 1);
+    WriteSyncedInt(zdo, OtherKey, 11);
+
+    ServerOwned.Unmark(zdo);
+
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out var value), Is.True);
+    Assert.That(value, Is.Zero);
+    Assert.That(ServerOwned.IsMarked(zdo), Is.False);
+    Assert.That(zdo.GetInt(Marker, 0), Is.Zero);
+    Assert.That(zdo.GetInt(OtherKey, 0), Is.EqualTo(11));
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, OtherKey, out var other), Is.True);
+    Assert.That(other, Is.EqualTo(37));
+  }
+
+  [Test]
+  public void Unmark_MasksRepeatedStaleSynchronizedWrites()
+  {
+    var zdo = NewZdo();
+    Ints[zdo.m_uid] = new() { [Marker] = 1 };
+    ServerOwned.Unmark(zdo);
+    for (var i = 0; i < 1000; ++i)
+    {
+      // Models the stale marker arriving via sync; not a native Deserialize call.
+      WriteSyncedInt(zdo, Marker, 1);
+      Assert.That(ServerOwned.IsMarked(zdo), Is.False);
+    }
+  }
+
+  [Test]
+  public void ReleasedNonPersistentObject_DoesNotBecomeMarked()
+  {
+    var zdo = NewZdo();
+    zdo.Persistent = false;
+    ServerOwned.Unmark(zdo);
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out var value), Is.True);
+    Assert.That(value, Is.Zero);
+    Assert.That(ServerOwned.IsMarked(zdo), Is.False);
+  }
+
+  [Test]
+  public void ReleasedObject_DoesNotRewriteRequestedOwnerInHarmonyPrefix()
+  {
+    var zdo = NewZdo();
+    ServerOwned.Unmark(zdo);
+    object[] arguments = [zdo, 987654321L];
+    Prefix.Invoke(null, arguments);
+    Assert.That(arguments[1], Is.EqualTo(987654321L));
+  }
+
+  [Test]
+  public void ReleasedZero_RemainsInServerSideSerializer()
+  {
+    var zdo = NewZdo();
+    ServerOwned.Unmark(zdo);
+    var payload = (byte[]?)Serialize.Invoke(null, [zdo.m_uid]);
+    Assert.That(payload, Is.Not.Null.And.Not.Empty);
+    var pkg = new ZPackage(payload!);
+    var header = (ushort)pkg.ReadInt();
+    Assert.That(header >> 12, Is.EqualTo(1));
+    Assert.That(header & (1 << 4), Is.Not.Zero);
+    Assert.That(pkg.ReadInt(), Is.EqualTo(1));
+    Assert.That(pkg.ReadInt(), Is.EqualTo(Marker));
+    Assert.That(pkg.ReadInt(), Is.Zero);
+  }
+
+  [Test]
+  public void SerializedZero_RoundTripsAndMasksStaleSyncedOne()
+  {
+    var zdo = NewZdo();
+    ServerOwned.Unmark(zdo);
+    var payload = (byte[]?)Serialize.Invoke(null, [zdo.m_uid]);
+    Assert.That(payload, Is.Not.Null.And.Not.Empty);
+
+    Ints.Remove(zdo.m_uid); // Model a freshly loaded server-side dictionary.
+    WriteSyncedInt(zdo, Marker, 1);
+    WriteSyncedPayload(zdo, payload!);
+    Deserialize.Invoke(null, [zdo]);
+
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out var value), Is.True);
+    Assert.That(value, Is.Zero);
+    Assert.That(ServerOwned.IsMarked(zdo), Is.False);
+    Assert.That(zdo.GetInt(Marker, 0), Is.Zero);
+  }
+
+}
