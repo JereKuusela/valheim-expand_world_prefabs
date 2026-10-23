@@ -382,6 +382,13 @@ public class HandleRPC
   static readonly ParameterInfo[] OnResetClothPars = AccessTools.Method(typeof(Character), nameof(Character.RPC_ResetCloth)).GetParameters();
   private static bool OnResetCloth(ZDO zdo, ZRoutedRpc.RoutedRPCData data)
   {
+    // RPC_ResetCloth is sent when the client finishes its teleport transition.
+    // The client-owned Player ZDO position can arrive at the server just after
+    // this RPC. Running EWP rules against the stale source-position snapshot can
+    // raise its data revision and make that stale snapshot authoritative again.
+    // Defer only EWP's rule callback; always allow the vanilla RPC to continue.
+    if (TeleportManager.TryDeferResetCloth(zdo))
+      return false;
     return Manager.Handle(ActionType.State, ["resetcloth"], zdo);
   }
 

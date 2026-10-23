@@ -107,8 +107,15 @@ public static class PokeTimers
   // Batch mutations per target; ServerSideData writes the combined payload during ZDO.Save.
   public static void Flush()
   {
+    HashSet<ZDOID>? quarantined = null;
     foreach (var id in Dirty)
     {
+      if (TeleportManager.IsPlayerWriteQuarantined(id))
+      {
+        quarantined ??= [];
+        quarantined.Add(id);
+        continue;
+      }
       var target = ZDOMan.instance.GetZDO(id);
       if (target != null && target.m_uid == id && target.Persistent)
       {
@@ -118,6 +125,8 @@ public static class PokeTimers
       }
     }
     Dirty.Clear();
+    if (quarantined != null)
+      Dirty.UnionWith(quarantined);
   }
 
   private static byte[] Encode(List<Entry>? entries)

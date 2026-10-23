@@ -71,6 +71,7 @@ public class EWP : BaseUnityPlugin
   {
     ConfigManager.Flush();
     if (ZNet.instance == null) return;
+    TeleportManager.Execute();
     HandleCreated.Execute();
     HandleChanged.Execute();
     DelayedSpawn.Execute();
@@ -102,6 +103,7 @@ public class CleanupOnShutdown
     DelayedExec.Clear();
     DelayedRpc.Clear();
     DelayedTerrain.Clear();
+    TeleportManager.Clear();
     DelayedOwner.Clear();
   }
 }
