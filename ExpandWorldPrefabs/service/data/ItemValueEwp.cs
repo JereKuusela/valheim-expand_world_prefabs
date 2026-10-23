@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Service;
+using ExpandWorld.Prefab;
 using UnityEngine;
 
 namespace Data;
@@ -57,6 +58,11 @@ public partial class ItemValue
       ZdoEntry entry = new(zdo);
       entry.Load(data, f, zdo);
       entry.Write(zdo);
+      RestoreScale.UpdateWrittenScale(zdo, entry.Floats, entry.Vecs);
+      // This is a newly spawned object, not an update to an active Character.
+      // Stage authored scale before the client finishes its first initialization.
+      if (CustomScaling.TryResolveWrittenScale(entry.Floats, entry.Vecs, out var authored))
+        CustomScaling.TryBegin(zdo, null, authored, false);
     }
   }
   public void AddTo(Functions f, List<ItemRecord> records, Vector2i size)

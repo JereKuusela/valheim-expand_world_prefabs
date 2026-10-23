@@ -20,6 +20,22 @@ public class ZdoEntry : ResolvedDataEntry
 
   public int Prefab;
   public long Owner;
+  public bool ExplicitOwner;
+  private float? ExplicitScalar;
+  private Vector3? ExplicitVector;
+
+  // A regeneration copies old ZDO runtime data into its merged DataEntry.
+  // Keep the *new rule's* scale intent separately to avoid promoting a copied
+  // client-synchronized vector to authored scale.
+  public void RecordExplicitScale(DataEntry? authored, Functions f)
+  {
+    if (authored?.Floats != null &&
+        authored.Floats.TryGetValue(ZDOVars.s_scaleScalarHash, out var scalar))
+      ExplicitScalar = scalar.Get(f);
+    if (authored?.Vecs != null &&
+        authored.Vecs.TryGetValue(ZDOVars.s_scaleHash, out var vector))
+      ExplicitVector = vector.Get(f);
+  }
   public Dictionary<int, string>? ServerStrings;
   public Dictionary<int, float>? ServerFloats;
   public Dictionary<int, int>? ServerInts;
@@ -59,8 +75,9 @@ public class ZdoEntry : ResolvedDataEntry
     var zdo = SpawnZDO(Prefab, Position ?? Vector3.zero, Rotation ?? Vector3.zero);
     if (zdo == null) return null;
     Write(zdo);
-    RestoreScale.Check(zdo);
-    DelayedOwner.Check(zdo, Owner);
+    RestoreScale.Check(zdo, ExplicitScalar, ExplicitVector);
+    if (!CustomScaling.TryBegin(zdo, ExplicitScalar, ExplicitVector, ExplicitOwner))
+      DelayedOwner.Check(zdo, Owner);
     return zdo;
   }
 

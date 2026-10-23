@@ -147,6 +147,8 @@ public class Manager
           if (info.TriggerRules)
             HandleChanged.QueueData(zdo, entry);
           entry.Write(zdo);
+          RestoreScale.UpdateWrittenScale(zdo, entry.Floats, entry.Vecs);
+          CustomScaling.UpdateWrittenScale(zdo, entry.Floats, entry.Vecs, info.OwnerServer || info.Owner != null);
         }
         else
           entry.WriteServer(zdo);
@@ -154,6 +156,8 @@ public class Manager
       removeItems?.RemoveItems(f, zdo);
       addItems?.AddItems(f, zdo);
       var owner = info.Owner?.Get(f);
+      if (info.OwnerServer || owner.HasValue)
+        CustomScaling.SuspendForExplicitOwner(zdo);
       if (info.OwnerServer)
         ServerOwned.Mark(zdo);
       else if (owner.HasValue)
@@ -166,6 +170,10 @@ public class Manager
       var connect = info.Connect?.Get(f);
       if (connect.HasValue)
         SupportAttach.Connect(zdo, connect.Value);
+      // Attachments may be established both by the rule and by Write's
+      // HandleConnection in EWP 1.65. Re-evaluate after all mutations.
+      if (!info.OwnerServer && !owner.HasValue && (data != null || attach.HasValue || connect.HasValue))
+        CustomScaling.RecheckEligibility(zdo);
 
       if (hasSyncedDataChanges || removeItems != null || addItems != null || attach.HasValue || connect.HasValue || owner.HasValue || info.OwnerServer)
         zdo.DataRevision += 100;
@@ -199,10 +207,10 @@ public class Manager
 
     var weightedSpawn = info.GetWeightedSpawn(f);
     if (weightedSpawn != null)
-      DelayedSpawn.Add(weightedSpawn, zdo, customData, f);
+      DelayedSpawn.Add(weightedSpawn, zdo, customData, f, customData);
     if (info.Spawns != null)
       foreach (var p in info.Spawns)
-        DelayedSpawn.Add(p, zdo, customData, f);
+        DelayedSpawn.Add(p, zdo, customData, f, customData);
 
     var weightedSwap = info.GetWeightedSwap(f);
     if (info.Swaps == null && info.WeightedSwaps == null && !regenerateOriginal) return;
@@ -210,17 +218,19 @@ public class Manager
     current.LoadServerData(zdo);
     var data = DataHelper.Merge(current, customData);
     if (weightedSwap != null)
-      DelayedSpawn.Add(weightedSwap, zdo, data, f);
+      DelayedSpawn.Add(weightedSwap, zdo, data, f, customData);
     if (info.Swaps != null)
       foreach (var p in info.Swaps)
-        DelayedSpawn.Add(p, zdo, data, f);
+        DelayedSpawn.Add(p, zdo, data, f, customData);
     if (regenerateOriginal)
     {
       var removeItems = info.RemoveItems;
       var addItems = info.AddItems;
       ZdoEntry entry = new(zdo);
+      entry.ExplicitOwner = info.OwnerServer || info.Owner != null;
       if (data != null)
         entry.Load(data, f, zdo);
+      entry.RecordExplicitScale(customData, f);
       var attach = info.Attach?.Get(f);
       if (attach.HasValue)
         SupportAttach.Attach(entry, attach.Value);

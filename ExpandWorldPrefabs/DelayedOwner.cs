@@ -62,16 +62,24 @@ public class DelayedOwner(double due, ZDOID zdo, long owner)
   public static void Check(ZDO zdo, long owner)
   {
     bool shouldNotBeOwned = SupportAttach.IsAttached(zdo) || PersistPlayers.IsPlayer(zdo);
+    bool markedServerOwner = ServerOwned.IsMarked(zdo);
     if (shouldNotBeOwned)
       owner = SupportAttach.HackOwner;
+    else if (markedServerOwner)
+      owner = ZDOMan.instance.m_sessionID;
     if (owner == 0)
       owner = FindNearestOwner(zdo);
     var prefab = ZNetScene.instance.GetPrefab(zdo.m_prefab);
-
     bool isItem = prefab.GetComponent<ItemDrop>();
     bool isShip = prefab.GetComponent<Ship>();
-    bool shouldBackupScale = RestoreScale.ShouldRestoreScale(zdo);
-    bool delay = NeedsDelay(shouldNotBeOwned, isItem, isShip, shouldBackupScale);
+    bool shouldBackupScale = RestoreScale.NeedsLegacyScaleHack(zdo);
+    bool delay = !markedServerOwner && NeedsDelay(shouldNotBeOwned, isItem, isShip, shouldBackupScale);
+    // A real client must initialize normal Characters without an artificial
+    // ownerless interval. Preserve the original delay for physics objects.
+    if (!isItem && !isShip && shouldBackupScale &&
+        ScaleOwnershipPolicy.IsOrdinaryCharacter(zdo) &&
+        ScaleOwnershipPolicy.IsConnectedClient(owner))
+      delay = false;
     // This is normally set on Awake which won't trigger for server spawned.
     // Without this, "remove old loot" is instantly triggered.
     if (isItem)
@@ -123,7 +131,6 @@ public class DelayedOwner(double due, ZDOID zdo, long owner)
       action.ExecuteAction();
     }
   }
-
   private readonly ZDOID Zdo = zdo;
   private readonly double Due = due;
   private readonly long Owner = owner;

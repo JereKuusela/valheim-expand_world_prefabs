@@ -17,7 +17,7 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
     HandleCreated.Skip = false;
     return zdo;
   }
-  public static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Functions f)
+  public static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Functions f, DataEntry? authoredData = null)
   {
     if (spawn.Condition != null && !spawn.Condition.Evaluate(f))
       return;
@@ -35,12 +35,12 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
     if (delays != null)
     {
       foreach (var d in delays)
-        Add(spawn, originalZdo, data, f, d, removeDelay);
+        Add(spawn, originalZdo, data, f, d, removeDelay, authoredData);
     }
     else
-      Add(spawn, originalZdo, data, f, delay, removeDelay);
+      Add(spawn, originalZdo, data, f, delay, removeDelay, authoredData);
   }
-  private static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Functions f, float delay, float? removeDelay)
+  private static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Functions f, float delay, float? removeDelay, DataEntry? authoredData)
   {
     var pos = originalZdo.m_position;
     var rotQuat = originalZdo.GetRotation();
@@ -50,7 +50,8 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
     var rot = rotQuat.eulerAngles;
     if (spawn.Snap?.GetBool(f) == true)
       pos.y = WorldGenerator.instance.GetHeight(pos.x, pos.z) + offset.y;
-    data = DataHelper.Merge(data, DataHelper.Get(spawn.Data, f));
+    var spawnData = DataHelper.Get(spawn.Data, f);
+    data = DataHelper.Merge(data, spawnData);
     var prefab = spawn.GetPrefab(f);
     if (prefab == 0) return;
     ZdoEntry zdoEntry = new(prefab, pos, rot, originalZdo.GetOwner());
@@ -59,12 +60,21 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
       zdoEntry.Load(data, f, originalZdo);
       zdoEntry.LoadItem(data, f);
       zdoEntry.LoadInventory(data, f);
+      // A copied source ZDO is not authored data. Resolve only actual rule inputs.
+      zdoEntry.RecordExplicitScale(authoredData, f);
+      zdoEntry.RecordExplicitScale(spawnData, f);
     }
     var owner = spawn.Owner?.Get(f);
     if (owner.HasValue)
+    {
       zdoEntry.Owner = owner.Value;
+      zdoEntry.ExplicitOwner = true;
+    }
     if (spawn.OwnerServer)
+    {
+      zdoEntry.ExplicitOwner = true;
       ServerOwned.Mark(zdoEntry);
+    }
     var attach = spawn.Attach?.Get(f);
     if (attach.HasValue && attach.Value != ZDOID.None)
       SupportAttach.Attach(zdoEntry, attach.Value);

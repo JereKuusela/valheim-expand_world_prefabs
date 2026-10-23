@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using BepInEx;
@@ -18,6 +18,7 @@ public class EWP : BaseUnityPlugin
   public void Awake()
   {
     Prefab.Config.Init(Config);
+    CustomScaling.Initialize();
     PokeTimers.Initialize();
     Harmony = new(GUID);
     Harmony.PatchAll();
@@ -80,12 +81,15 @@ public class EWP : BaseUnityPlugin
     DelayedRpc.Execute();
     DelayedTerrain.Execute();
     DelayedOwner.Execute();
+    CustomScaling.Execute();
     DataStorage.SaveSavedData();
   }
   public void OnDestroy()
   {
     ConfigManager.Flush(true);
     RuleLog.Close();
+    CustomScaling.Clear();
+    RestoreScale.Clear();
   }
 }
 
@@ -103,5 +107,7 @@ public class CleanupOnShutdown
     DelayedRpc.Clear();
     DelayedTerrain.Clear();
     DelayedOwner.Clear();
+    CustomScaling.Clear();
+    RestoreScale.Clear();
   }
 }

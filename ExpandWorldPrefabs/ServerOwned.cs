@@ -39,7 +39,7 @@ public class ServerOwned
 
   private static void SetOwner(ZDO __instance, ref long uid)
   {
-    if (!IsMarked(__instance)) return;
+    if (!IsMarked(__instance) && !CustomScaling.IsHeld(__instance)) return;
     // Real players must stay in control of themselves.
     //if (PersistPlayers.IsRealPlayer(__instance)) return;
     uid = ZDOMan.instance.m_sessionID;
@@ -54,7 +54,9 @@ public class ServerOwned
 
   public static void Mark(ZdoEntry zdoEntry)
   {
-    // Keep new server-owned spawns out of synchronized ZDO data.
+    // During delayed spawn, write the marker through the server-only path.
+    // Writing directly to Ints would synchronize it to clients, where a stale
+    // value can later re-enter the server in ZDO.Deserialize.
     if (ServerSideData.ShouldUse(EWPServerOwnedHash))
     {
       zdoEntry.Ints?.Remove(EWPServerOwnedHash);
@@ -70,17 +72,23 @@ public class ServerOwned
   }
 
   // Used when a later rule assigns a normal numeric owner, to stop forcing the server owner back.
+  // A missing entry is NOT equivalent to an explicit release: TryGetInt falls back to
+  // the synced ZDO data. A client may send an older ewp_server_owned=1 during
+  // ZDO.Deserialize and accidentally reactivate the server-ownership lock.
+  // Persist an authoritative zero in the server-only store instead of deleting
+  // the key, so even a stale synced value cannot override the release.
   public static void Unmark(ZDO zdo)
   {
     if (ServerSideData.ShouldUse(EWPServerOwnedHash))
     {
-      // An explicit zero must mask an older synchronized one after Deserialize.
       ServerSideData.SetInt(zdo, EWPServerOwnedHash, 0);
+      // Also discard any legacy synchronized copy on this server ZDO.
       zdo.RemoveInt(EWPServerOwnedHash);
     }
     else
     {
-      // Legacy mode also needs an explicit release rather than a missing key.
+      // Without server-only storage this is a synchronized field. Keep an
+      // explicit zero rather than removing it altogether.
       zdo.Set(EWPServerOwnedHash, 0);
     }
   }
