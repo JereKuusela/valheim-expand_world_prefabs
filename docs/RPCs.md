@@ -30,7 +30,7 @@ Options:
 - backstab: Backstab multiplier (float)
 - stagger: Stagger multiplier (float)
 - dodge: Can be dodged? (bool)
-. block: Can be blocked? (bool)
+- block: Can be blocked? (bool)
 - dir: Direction of the hit (vec)
 - ranged: Is ranged attack? (bool)
 - attacker: Attacker ZDO id (zdo)
@@ -47,7 +47,7 @@ Options:
 
 ## Object RPCs
 
-This list all RPC calls related to some object.
+This lists RPC calls registered on an object with `ZNetView.Register` and global calls registered with `ZRoutedRpc.Register`. Peer-transport calls registered with `ZRpc.Register` are not callable through `objectRpc` or `clientRpc`.
 
 By default, the RPC is sent to the owner of the object.
 
@@ -55,6 +55,23 @@ By default, the RPC is sent to the owner of the object.
 - Calls with `all` can be used just with `owner` too, but this might not show all visual effects to the clients.
 - Calls with `all` can be replaced with a player poke that uses `owner` to only target the nearby clients.
 - Calls with `<zdo>` require custom handling to get proper ZDO id. The RPC is sent to owner of this ZDO.
+
+### ArcheryTarget
+
+```yaml
+# Records a projectile hit on the target.
+  objectRpc:
+  - name: RPC_ProjectileHit
+    1: int, "score"
+    2: int, "ammo index"
+    3: vec, "hit position"
+```
+
+```yaml
+# Drops stored arrows and clears the target score.
+  objectRpc:
+  - name: RPC_DropArrows
+```
 
 ### ArmorStand
 
@@ -138,6 +155,31 @@ By default, the RPC is sent to the owner of the object.
     2: name, "owner name"
 ```
 
+### Catapult
+
+```yaml
+# Starts the catapult firing animation.
+  objectRpc:
+  - name: RPC_Shoot
+    target: all
+```
+
+```yaml
+# Updates whether the catapult legs are locked.
+  objectRpc:
+  - name: RPC_OnLegUse
+    target: all
+    1: bool, "are the legs locked?"
+```
+
+```yaml
+# Sets the loaded item's visual.
+  objectRpc:
+  - name: RPC_SetLoadedVisual
+    target: all
+    1: string, "item prefab name"
+```
+
 ### Beehive
 
 ```yaml
@@ -213,6 +255,15 @@ By default, the RPC is sent to the owner of the object.
     1: vec, "location to teleport to"
     2: quat, "rotation to teleport to"
     3: bool, "whether is distant teleport"
+```
+
+### CinematicsManager
+
+```yaml
+# Sets the next dream cinematic on clients.
+  clientRpc:
+  - name: RPC_SetDreamCinematic
+    1: string, "cinematic name"
 ```
 
 ### Container
@@ -520,6 +571,15 @@ By default, the RPC is sent to the owner of the object.
     4: int, "orientation of the item (0 = none, 1 = vertical, 2 = horizontal, 3 = all)"
 ```
 
+### Leviathan
+
+```yaml
+# Records the leviathan leaving for nearby players.
+  objectRpc:
+  - name: RPC_Left
+    target: all
+```
+
 ### MapTable
 
 ```yaml
@@ -528,6 +588,16 @@ By default, the RPC is sent to the owner of the object.
   - name: MapData
     packaged: true
     1: bytes, "unusable"
+```
+
+### MaterialVariation
+
+```yaml
+# Updates the selected material variation.
+  objectRpc:
+  - name: RPC_UpdateMaterial
+    target: all
+    1: int, "variation index"
 ```
 
 ### MineRock
@@ -622,6 +692,15 @@ By default, the RPC is sent to the owner of the object.
     source: <zdo>
     1: vec, "spawn position"
     2: bool, "remove spawn items?"
+```
+
+### ObjectSwitcher
+
+```yaml
+# Updates the active object in a synchronized switcher.
+  objectRpc:
+  - name: RPC_StateChanged
+    1: int, "active state index"
 ```
 
 ### Pickable
@@ -1201,13 +1280,6 @@ This list all RPC calls that are not related to any object.
 ```
 
 ```yaml
-# Sends global keys. Only implemented for the client.
-  clientRpc:
-  - name: GlobalKeys
-    1: string list, "unusable"
-```
-
-```yaml
 # Sends location icons. Only implemented for the client.
   clientRpc:
   - name: LocationIcons
@@ -1330,4 +1402,31 @@ This list all RPC calls that are not related to any object.
     1: vec, "location to teleport to"
     2: quat, "rotation to teleport to"
     3: bool, "is distant teleport"
+```
+
+```yaml
+# Sends the active persistent-event data to clients as JSON.
+  clientRpc:
+  - name: UpdateClientEventsList
+    1: string, "active event data JSON"
+```
+
+```yaml
+# Requests the current active-event list from the server.
+  clientRpc:
+  - name: RequestActiveEventsList
+```
+
+```yaml
+# Requests starting a persistent event by its source event index.
+  clientRpc:
+  - name: RequestStartEvent
+    1: int, "source event index"
+```
+
+```yaml
+# Requests stopping a persistent event by its active event id.
+  clientRpc:
+  - name: RequestStopEvent
+    1: int, "active event id"
 ```

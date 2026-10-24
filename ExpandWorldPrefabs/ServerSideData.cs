@@ -214,6 +214,7 @@ public static class ServerSideData
     }
   }
 
+  // Server side data is now always enabled, so have to extract legacy keys so that they work correctly with the new system.
   private static void ExtractServerSideInts(ZDO zdo)
   {
     ExtractServerSideInt(zdo, SupportAttach.EWPAttachedHash);
