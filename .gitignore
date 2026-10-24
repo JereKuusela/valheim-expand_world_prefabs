@@ -3,3 +3,5 @@ Libs
 bin
 obj
 /.vs
+
+Directory.Build.props.user

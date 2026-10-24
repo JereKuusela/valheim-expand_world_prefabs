@@ -24,25 +24,25 @@
 
   <ItemGroup>
     <Reference Include="BepInEx">
-      <HintPath>..\..\Libs\BepInEx.dll</HintPath>
+      <HintPath>$(BepInExDir)BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\..\Libs\UnityEngine.dll</HintPath>
+      <HintPath>$(ManagedDir)UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\Libs\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(ManagedDir)UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="assembly_utils">
-      <HintPath>..\..\Libs\assembly_utils.dll</HintPath>
+      <HintPath>$(ManagedDir)assembly_utils.dll</HintPath>
     </Reference>
     <Reference Include="assembly_valheim" Publicize="true">
-      <HintPath>..\..\Libs\assembly_valheim.dll</HintPath>
+      <HintPath>$(ManagedDir)assembly_valheim.dll</HintPath>
     </Reference>
     <Reference Include="YamlDotNet">
-      <HintPath>..\..\Libs\YamlDotNet.dll</HintPath>
+      <HintPath>$(LibsDir)YamlDotNet.dll</HintPath>
     </Reference>
     <Reference Include="0Harmony">
-      <HintPath>..\..\Libs\0Harmony.dll</HintPath>
+      <HintPath>$(BepInExDir)0Harmony.dll</HintPath>
     </Reference>
   </ItemGroup>
 
