@@ -22,56 +22,67 @@ public class DelayedOwnerTests
   public void TearDown() => DelayedOwner.Clear();
 
   [Test]
-  public void OnlyConnectedCurrentClientIsReused()
+  public void OnlyReadyClientIsSelected()
   {
-    var candidates = new[] { (Uid: FirstClient, Distance: 8f) };
-    Assert.That(DelayedOwner.SelectOwner(FirstClient, Server, candidates), Is.EqualTo(FirstClient));
+    var candidates = new[] { (Uid: FirstClient, Distance: 8f, Ready: true) };
+    Assert.That(DelayedOwner.SelectOwner(Server, candidates), Is.EqualTo(FirstClient));
   }
 
   [Test]
-  public void DifferentClientIsPreferredEvenWhenCurrentIsCloser()
+  public void NearestReadyClientIsChosenAmongMultiplePeers()
   {
     var candidates = new[]
     {
-      (Uid: FirstClient, Distance: 1f),
-      (Uid: SecondClient, Distance: 9f),
-      (Uid: 303L, Distance: 15f)
+      (Uid: FirstClient, Distance: 1f, Ready: true),
+      (Uid: SecondClient, Distance: 9f, Ready: true),
+      (Uid: 303L, Distance: 15f, Ready: true)
     };
-    Assert.That(DelayedOwner.SelectOwner(FirstClient, Server, candidates), Is.EqualTo(SecondClient));
+    Assert.That(DelayedOwner.SelectOwner(Server, candidates), Is.EqualTo(FirstClient));
   }
 
   [Test]
-  public void NearestClientIsChosenWhenNoCurrentOwner()
+  public void NearestReadyClientCanAppearLaterInPeerList()
   {
     var candidates = new[]
     {
-      (Uid: FirstClient, Distance: 15f),
-      (Uid: SecondClient, Distance: 2f)
+      (Uid: FirstClient, Distance: 15f, Ready: true),
+      (Uid: SecondClient, Distance: 2f, Ready: true)
     };
-    Assert.That(DelayedOwner.SelectOwner(0, Server, candidates), Is.EqualTo(SecondClient));
+    Assert.That(DelayedOwner.SelectOwner(Server, candidates), Is.EqualTo(SecondClient));
   }
 
   [Test]
-  public void DisconnectedCurrentOwnerIsNotReused()
-  {
-    Assert.That(DelayedOwner.SelectOwner(FirstClient, Server,
-      Array.Empty<(long Uid, float Distance)>()), Is.Zero);
-    Assert.That(DelayedOwner.SelectOwner(FirstClient, Server,
-      new[] { (Uid: SecondClient, Distance: 4f) }), Is.EqualTo(SecondClient));
-  }
-
-  [Test]
-  public void ServerUidAndZeroAreNeverRemoteFallbacks()
+  public void UnreadyCloserClientIsSkipped()
   {
     var candidates = new[]
     {
-      (Uid: Server, Distance: 0f),
-      (Uid: 0L, Distance: 0f)
+      (Uid: FirstClient, Distance: 1f, Ready: false),
+      (Uid: SecondClient, Distance: 9f, Ready: true)
     };
-    Assert.That(DelayedOwner.SelectOwner(Server, Server, candidates), Is.Zero);
-    Assert.That(DelayedOwner.SelectOwner(0, Server, candidates), Is.Zero);
-    Assert.That(DelayedOwner.SelectOwner(Server, Server,
-      new[] { (Uid: FirstClient, Distance: 5f) }), Is.EqualTo(FirstClient));
+    Assert.That(DelayedOwner.SelectOwner(Server, candidates), Is.EqualTo(SecondClient));
+  }
+
+  [Test]
+  public void NoReadyClientReturnsZero()
+  {
+    Assert.That(DelayedOwner.SelectOwner(Server,
+      Array.Empty<(long Uid, float Distance, bool Ready)>()), Is.Zero);
+    Assert.That(DelayedOwner.SelectOwner(Server,
+      new[] { (Uid: FirstClient, Distance: 4f, Ready: false) }), Is.Zero);
+  }
+
+  [Test]
+  public void ServerUidAndZeroAreNeverClientOwners()
+  {
+    var candidates = new[]
+    {
+      (Uid: Server, Distance: 0f, Ready: true),
+      (Uid: 0L, Distance: 0f, Ready: true)
+    };
+    Assert.That(DelayedOwner.SelectOwner(Server, candidates), Is.Zero);
+    Assert.That(DelayedOwner.SelectOwner(Server,
+      new[] { (Uid: Server, Distance: 0f, Ready: true), (Uid: FirstClient, Distance: 5f, Ready: true) }),
+      Is.EqualTo(FirstClient));
   }
 
   [Test]
