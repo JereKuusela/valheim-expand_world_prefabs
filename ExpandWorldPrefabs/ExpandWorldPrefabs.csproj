@@ -10,6 +10,7 @@
     <Message Text="Copied to Libs folder." Importance="High" />
   </Target>
   <ItemGroup>
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
     <Reference Include="BepInExll">
       <HintPath>..\..\Libs\BepinEx.dll</HintPath>
     </Reference>
@@ -31,19 +32,19 @@
     <Reference Include="BepInEx.Harmony">
       <HintPath>..\..\Libs\BepInEx.Harmony.dll</HintPath>
     </Reference>
-    <Reference Include="assembly_valheim">
+    <Reference Include="assembly_valheim" Publicize="true">
       <HintPath>..\..\Libs\assembly_valheim.dll</HintPath>
     </Reference>
-    <Reference Include="assembly_utils">
+    <Reference Include="assembly_utils" Publicize="true">
       <HintPath>..\..\Libs\assembly_utils.dll</HintPath>
     </Reference>
-    <Reference Include="assembly_guiutils">
+    <Reference Include="assembly_guiutils" Publicize="true">
       <HintPath>..\..\Libs\assembly_guiutils.dll</HintPath>
     </Reference>
-    <Reference Include="SPlatform">
+    <Reference Include="SPlatform" Publicize="true">
       <HintPath>..\..\Libs\SPlatform.dll</HintPath>
     </Reference>
-    <Reference Include="SoftReferenceableAssets">
+    <Reference Include="SoftReferenceableAssets" Publicize="true">
       <HintPath>..\..\Libs\SoftReferenceableAssets.dll</HintPath>
     </Reference>
     <Reference Include="YamlDotNet">
