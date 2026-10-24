@@ -55,7 +55,7 @@ public class ServerOwned
   public static void Mark(ZdoEntry zdoEntry)
   {
     // Keep new server-owned spawns out of synchronized ZDO data.
-    if (ServerSideData.ShouldUse(EWPServerOwnedHash))
+    if (Config.ServerSideData)
     {
       zdoEntry.Ints?.Remove(EWPServerOwnedHash);
       zdoEntry.ServerInts ??= [];
@@ -72,7 +72,7 @@ public class ServerOwned
   // Used when a later rule assigns a normal numeric owner, to stop forcing the server owner back.
   public static void Unmark(ZDO zdo)
   {
-    if (ServerSideData.ShouldUse(EWPServerOwnedHash))
+    if (Config.ServerSideData)
     {
       // An explicit zero must mask an older synchronized one after Deserialize.
       ServerSideData.SetInt(zdo, EWPServerOwnedHash, 0);
