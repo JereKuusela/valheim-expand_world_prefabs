@@ -128,16 +128,25 @@ public class ServerOwnedReleaseTests
   }
 
   [Test]
-  public void MissingServerSideMarker_PreservesSynchronizedLegacyOne()
+  public void SynchronizedLegacyMarker_IsIgnoredUntilLoadMigratesIt()
   {
     var zdo = NewZdo();
     WriteSyncedInt(zdo, Marker, 1);
+
+    // Synchronized client data is not authoritative during gameplay.
     Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out _), Is.False);
+    Assert.That(ServerOwned.IsMarked(zdo), Is.False);
+
+    // Migration applies to old world saves, not network synchronization.
+    Deserialize.Invoke(null, [zdo]);
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out var value), Is.True);
+    Assert.That(value, Is.EqualTo(1));
     Assert.That(ServerOwned.IsMarked(zdo), Is.True);
+    Assert.That(ZDOExtraData.s_ints.TryGetValue(zdo.m_uid, out var synced) && synced.ContainsKey(Marker), Is.False);
   }
 
   [Test]
-  public void Unmark_StoresZero_RemovesOldSynchronizedMarker_AndPreservesOtherKeys()
+  public void Unmark_RemovesMarkerFromBothStores_AndPreservesOtherKeys()
   {
     var zdo = NewZdo();
     Ints[zdo.m_uid] = new() { [Marker] = 1, [OtherKey] = 37 };
@@ -146,10 +155,9 @@ public class ServerOwnedReleaseTests
 
     ServerOwned.Unmark(zdo);
 
-    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out var value), Is.True);
-    Assert.That(value, Is.Zero);
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out _), Is.False);
     Assert.That(ServerOwned.IsMarked(zdo), Is.False);
-    Assert.That(zdo.GetInt(Marker, 0), Is.Zero);
+    Assert.That(ZDOExtraData.s_ints[zdo.m_uid].ContainsKey(Marker), Is.False);
     Assert.That(zdo.GetInt(OtherKey, 0), Is.EqualTo(11));
     Assert.That(ServerSideData.TryGetInt(zdo.m_uid, OtherKey, out var other), Is.True);
     Assert.That(other, Is.EqualTo(37));
@@ -170,13 +178,16 @@ public class ServerOwnedReleaseTests
   }
 
   [Test]
-  public void ReleasedNonPersistentObject_DoesNotBecomeMarked()
+  public void Unmark_NonPersistentObject_RemovesExistingMarker()
   {
     var zdo = NewZdo();
     zdo.Persistent = false;
+    Ints[zdo.m_uid] = new() { [Marker] = 1 };
+    Assert.That(ServerOwned.IsMarked(zdo), Is.True);
+
     ServerOwned.Unmark(zdo);
-    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out var value), Is.True);
-    Assert.That(value, Is.Zero);
+
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out _), Is.False);
     Assert.That(ServerOwned.IsMarked(zdo), Is.False);
   }
 
@@ -191,10 +202,12 @@ public class ServerOwnedReleaseTests
   }
 
   [Test]
-  public void ReleasedZero_RemainsInServerSideSerializer()
+  public void Unmark_ExcludesRemovedMarkerFromSerializer()
   {
     var zdo = NewZdo();
+    Ints[zdo.m_uid] = new() { [Marker] = 1, [OtherKey] = 37 };
     ServerOwned.Unmark(zdo);
+
     var payload = (byte[]?)Serialize.Invoke(null, [zdo.m_uid]);
     Assert.That(payload, Is.Not.Null.And.Not.Empty);
     var pkg = new ZPackage(payload!);
@@ -202,27 +215,33 @@ public class ServerOwnedReleaseTests
     Assert.That(header >> 12, Is.EqualTo(1));
     Assert.That(header & (1 << 4), Is.Not.Zero);
     Assert.That(pkg.ReadInt(), Is.EqualTo(1));
-    Assert.That(pkg.ReadInt(), Is.EqualTo(Marker));
-    Assert.That(pkg.ReadInt(), Is.Zero);
+    Assert.That(pkg.ReadInt(), Is.EqualTo(OtherKey));
+    Assert.That(pkg.ReadInt(), Is.EqualTo(37));
+
+    // With no other server-side keys, removing ownership leaves no payload.
+    Ints[zdo.m_uid].Remove(OtherKey);
+    Assert.That(Serialize.Invoke(null, [zdo.m_uid]), Is.Null);
   }
 
   [Test]
-  public void SerializedZero_RoundTripsAndMasksStaleSyncedOne()
+  public void Unmark_RoundTrip_KeepsOwnershipReleasedAndOtherData()
   {
     var zdo = NewZdo();
+    Ints[zdo.m_uid] = new() { [Marker] = 1, [OtherKey] = 37 };
+    WriteSyncedInt(zdo, Marker, 1);
     ServerOwned.Unmark(zdo);
     var payload = (byte[]?)Serialize.Invoke(null, [zdo.m_uid]);
     Assert.That(payload, Is.Not.Null.And.Not.Empty);
 
     Ints.Remove(zdo.m_uid); // Model a freshly loaded server-side dictionary.
-    WriteSyncedInt(zdo, Marker, 1);
     WriteSyncedPayload(zdo, payload!);
     Deserialize.Invoke(null, [zdo]);
 
-    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out var value), Is.True);
-    Assert.That(value, Is.Zero);
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, Marker, out _), Is.False);
     Assert.That(ServerOwned.IsMarked(zdo), Is.False);
-    Assert.That(zdo.GetInt(Marker, 0), Is.Zero);
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, OtherKey, out var value), Is.True);
+    Assert.That(value, Is.EqualTo(37));
+    Assert.That(ZDOExtraData.s_ints.TryGetValue(zdo.m_uid, out var synced) && synced.ContainsKey(Marker), Is.False);
   }
 
 }
