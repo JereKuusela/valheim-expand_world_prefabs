@@ -11,6 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
+    <!-- Required by BepInEx.Paths during NUnit fixture initialization. -->
+    <PackageReference Include="MonoMod.Utils" Version="22.1.29.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="NUnit" Version="3.14.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0">
@@ -32,7 +35,7 @@
     <Reference Include="assembly_utils">
       <HintPath>..\..\Libs\assembly_utils.dll</HintPath>
     </Reference>
-    <Reference Include="assembly_valheim">
+    <Reference Include="assembly_valheim" Publicize="true">
       <HintPath>..\..\Libs\assembly_valheim.dll</HintPath>
     </Reference>
     <Reference Include="YamlDotNet">
