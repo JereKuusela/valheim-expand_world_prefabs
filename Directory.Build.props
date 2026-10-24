@@ -15,8 +15,8 @@
     <ItemGroup>
       <_UserFileLine Include="&lt;Project&gt;" />
       <_UserFileLine Include="  &lt;PropertyGroup&gt;" />
-      <_UserFileLine Include="    &lt;ValheimDir&gt;C:\&lt;path&gt;\steamapps\common\Valheim&lt;/ValheimDir&gt;" />
-      <_UserFileLine Include="    &lt;LibsDir&gt;C:\&lt;path&gt;\Libs\&lt;/LibsDir&gt;" />
+      <_UserFileLine Include="    &lt;ValheimDir&gt;C:\YOUR_PATH\steamapps\common\Valheim&lt;/ValheimDir&gt;" />
+      <_UserFileLine Include="    &lt;LibsDir&gt;C:\YOUR_PATH\Libs\&lt;/LibsDir&gt;" />
       <_UserFileLine Include="    &lt;AlwaysUseLibsDir&gt;false&lt;/AlwaysUseLibsDir&gt;" />
       <_UserFileLine Include="  &lt;/PropertyGroup&gt;" />
       <_UserFileLine Include="&lt;/Project&gt;" />
@@ -25,8 +25,8 @@
       <_MissingDirs Condition="'$(LibsDir)' == '' Or ('$(AlwaysUseLibsDir)' != 'true' And '$(ValheimDir)' == '')">true</_MissingDirs>
     </PropertyGroup>
     <WriteLinesToFile Condition="'$(_MissingDirs)' == 'true' And !Exists('$(MSBuildThisFileDirectory)Directory.Build.props.user')" File="$(MSBuildThisFileDirectory)Directory.Build.props.user" Lines="@(_UserFileLine)" />
-    <Error Condition="'$(_MissingDirs)' == 'true'" Text="LibsDir (YamlDotNet.dll, build output copy) must be set, and ValheimDir (game root with BepInEx) unless AlwaysUseLibsDir is true. Edit $(MSBuildThisFileDirectory)Directory.Build.props.user (created from a template if missing) or pass -p:LibsDir=... -p:ValheimDir=..." />
-    <Error Condition="'$(_MissingDirs)' != 'true' And !Exists('$(ManagedDir)assembly_valheim.dll')" Text="assembly_valheim.dll not found in '$(ManagedDir)'. Fix ValheimDir/LibsDir/AlwaysUseLibsDir in Directory.Build.props.user, then restart editor." />
-    <Error Condition="'$(_MissingDirs)' != 'true' And !Exists('$(BepInExDir)BepInEx.dll')" Text="BepInEx.dll not found in '$(BepInExDir)'. Install BepInEx or fix ValheimDir/LibsDir/AlwaysUseLibsDir, then restart editor." />
+    <Error Condition="'$(_MissingDirs)' == 'true'" Text="Failed to read Directory.Build.props.user. Remove the existing file and build to regenerate it." />
+    <Error Condition="'$(_MissingDirs)' != 'true' And !Exists('$(ManagedDir)assembly_valheim.dll')" Text="assembly_valheim.dll not found in '$(ManagedDir)'. Update file paths in Directory.Build.props.user." />
+    <Error Condition="'$(_MissingDirs)' != 'true' And !Exists('$(BepInExDir)BepInEx.dll')" Text="BepInEx.dll not found in '$(BepInExDir)'. Install BepInEx or update file paths in Directory.Build.props.user." />
   </Target>
 </Project>
