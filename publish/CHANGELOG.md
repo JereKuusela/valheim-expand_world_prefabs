@@ -1,6 +1,7 @@
 - v1.66
   - Changes server side data feature to be always enabled (simplifies code).
   - Fixes server owned feature not working correctly. Thanks Maxime!
+  - Fixes server side data not being saved correctly. Thanks Maxime!
 
 - v1.65
   - Adds wildcard support to `locations` and `bannedLocations` fields. Thanks Zeall!

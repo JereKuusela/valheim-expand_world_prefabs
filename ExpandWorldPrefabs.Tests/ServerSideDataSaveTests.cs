@@ -222,9 +222,9 @@ public class ServerSideDataSaveTests
     var missing = NewId();
     Strings[id] = new() { [25] = "hello" };
     var snapshot = ServerSideData.BuildSaveSnapshot(_ => true);
-    List<KeyValuePair<int, byte[]>>? saveBytes = null;
+    List<KeyValuePair<int, byte[]>> saveBytes = [];
     ServerSideData.AddSavePayload(snapshot, missing, ref saveBytes);
-    Assert.That(saveBytes, Is.Null);
+    Assert.That(saveBytes, Is.Empty);
     ServerSideData.AddSavePayload(snapshot, id, ref saveBytes);
     Assert.That(saveBytes, Has.Count.EqualTo(1));
     Assert.That(saveBytes![0].Key, Is.EqualTo(StorageHash));

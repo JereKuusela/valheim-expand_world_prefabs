@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using Data;
 using HarmonyLib;
 using Service;
@@ -21,7 +20,7 @@ public static class ServerSideData
   private static readonly Dictionary<ZDOID, Dictionary<int, byte[]>> Bytes = [];
 
   private static readonly int StorageHash = ZdoHelper.Hash("_ewp_serverdata");
-  // Built on the save producer thread and only read by the chunk writer.
+  // Built on the main thread before the save thread starts; the save thread only reads it.
   private static Dictionary<ZDOID, byte[]>? SavePayloads;
 
   private const int CurrentVersion = 1;
@@ -68,6 +67,10 @@ public static class ServerSideData
     var saveDataPostfix = AccessTools.Method(typeof(ServerSideData), nameof(AfterGetSaveData));
     harmony.Patch(getSaveDataMethod, postfix: new HarmonyMethod(saveDataPostfix));
 
+    var cleanupMethod = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.SaveCleanup));
+    var cleanupPostfix = AccessTools.Method(typeof(ServerSideData), nameof(AfterSaveCleanup));
+    harmony.Patch(cleanupMethod, postfix: new HarmonyMethod(cleanupPostfix));
+
     var destroyMethod = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.HandleDestroyedZDO), [typeof(ZDOID)]);
     var destroyPostfix = AccessTools.Method(typeof(ServerSideData), nameof(AfterDestroyed));
     harmony.Patch(destroyMethod, postfix: new HarmonyMethod(destroyPostfix));
@@ -75,6 +78,10 @@ public static class ServerSideData
 
   private static void DoUnpatch(Harmony harmony)
   {
+    // Unpatching mid-save would drop data.
+    // This should never happen but better safe than sorry.
+    if (ZNet.instance != null)
+      ZNet.instance.m_saveThread?.Join();
     IsPatched = false;
     var loadMethod = AccessTools.Method(typeof(ZDO), nameof(ZDO.Load));
     var loadPostfix = AccessTools.Method(typeof(ServerSideData), nameof(AfterLoad));
@@ -82,15 +89,18 @@ public static class ServerSideData
     var preparePrefix = AccessTools.Method(typeof(ServerSideData), nameof(BeforePrepareSave));
     var getSaveDataMethod = AccessTools.Method(typeof(ZDOExtraData), nameof(ZDOExtraData.GetSaveData));
     var saveDataPostfix = AccessTools.Method(typeof(ServerSideData), nameof(AfterGetSaveData));
+    var cleanupMethod = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.SaveCleanup));
+    var cleanupPostfix = AccessTools.Method(typeof(ServerSideData), nameof(AfterSaveCleanup));
     var destroyMethod = AccessTools.Method(typeof(ZDOMan), nameof(ZDOMan.HandleDestroyedZDO), [typeof(ZDOID)]);
     var destroyPostfix = AccessTools.Method(typeof(ServerSideData), nameof(AfterDestroyed));
 
     harmony.Unpatch(loadMethod, loadPostfix);
     harmony.Unpatch(prepareMethod, preparePrefix);
     harmony.Unpatch(getSaveDataMethod, saveDataPostfix);
+    harmony.Unpatch(cleanupMethod, cleanupPostfix);
     harmony.Unpatch(destroyMethod, destroyPostfix);
 
-    Volatile.Write(ref SavePayloads, null);
+    SavePayloads = null;
     ClearAll();
   }
 
@@ -99,38 +109,30 @@ public static class ServerSideData
     Deserialize(__instance);
   }
 
+  // Valheim uses snapshot too, so match that logic.
   private static void BeforePrepareSave(ZDOMan __instance)
   {
-    if (ZNet.instance == null || !ZNet.instance.IsServer())
-    {
-      Volatile.Write(ref SavePayloads, null);
-      return;
-    }
-
-    // The chunk writer may run on another thread. Serialize while the
-    // server-side dictionaries are still accessed by the save producer.
-    var snapshot = BuildSaveSnapshot(id =>
+    var dirtyChunks = __instance.m_dirtyChunks[0];
+    var dirtyPortals = __instance.DirtyPortalObjects;
+    var portalHashes = Game.instance.PortalPrefabHash;
+    SavePayloads = BuildSaveSnapshot(id =>
     {
       var zdo = __instance.GetZDO(id);
-      return zdo != null && zdo.Persistent;
+      return zdo != null && zdo.Persistent && WillBeSaved(zdo, dirtyChunks, dirtyPortals, portalHashes);
     });
-    Volatile.Write(ref SavePayloads, snapshot);
   }
 
-  internal static Dictionary<ZDOID, byte[]> BuildSaveSnapshot(Func<ZDOID, bool> isPersistent)
+  internal static Dictionary<ZDOID, byte[]> BuildSaveSnapshot(Func<ZDOID, bool> include)
   {
-    HashSet<ZDOID> ids = new(Strings.Keys);
-    ids.UnionWith(Floats.Keys);
-    ids.UnionWith(Ints.Keys);
-    ids.UnionWith(Longs.Keys);
-    ids.UnionWith(Vecs.Keys);
-    ids.UnionWith(Quats.Keys);
-    ids.UnionWith(Bytes.Keys);
+    HashSet<ZDOID> ids = [
+      .. Strings.Keys, .. Floats.Keys, .. Ints.Keys, .. Longs.Keys,
+      .. Vecs.Keys, .. Quats.Keys, .. Bytes.Keys
+    ];
 
-    var snapshot = new Dictionary<ZDOID, byte[]>();
+    Dictionary<ZDOID, byte[]> snapshot = [];
     foreach (var id in ids)
     {
-      if (!isPersistent(id))
+      if (!include(id))
         continue;
       var payload = Serialize(id);
       if (payload != null && payload.Length > 0)
@@ -139,16 +141,37 @@ public static class ServerSideData
     return snapshot;
   }
 
-  // GetSaveData parameter 0 is the ZDOID; parameter 7 is the ref byte-array list.
-  private static void AfterGetSaveData(ZDOID __0, ref List<KeyValuePair<int, byte[]>>? __7)
+  // Mirrors ZDOMan.GetSaveClonePerChunk which only writes dirty chunks (at any merged chunk size).
+  private static bool WillBeSaved(ZDO zdo, HashSet<ZoneSystem.ChunkIndex> dirtyChunks, bool dirtyPortals, List<int> portalHashes)
   {
-    var snapshot = Volatile.Read(ref SavePayloads);
+    if (portalHashes.Contains(zdo.GetPrefab()))
+      return dirtyPortals;
+    var chunk = ZoneSystem.GetZonesChunk(zdo.GetSectorIndex());
+    if (dirtyChunks.Contains(chunk))
+      return true;
+    for (byte size = 1; size <= 3; size++)
+    {
+      chunk = ZoneSystem.ChunkIndexFromIndexAndSize(chunk, size);
+      if (dirtyChunks.Contains(chunk))
+        return true;
+    }
+    return false;
+  }
+
+  private static void AfterSaveCleanup()
+  {
+    SavePayloads = null;
+  }
+
+  private static void AfterGetSaveData(ZDOID zid, ref List<KeyValuePair<int, byte[]>> byteArray)
+  {
+    var snapshot = SavePayloads;
     if (snapshot != null)
-      AddSavePayload(snapshot, __0, ref __7);
+      AddSavePayload(snapshot, zid, ref byteArray);
   }
 
   internal static void AddSavePayload(Dictionary<ZDOID, byte[]> snapshot, ZDOID id,
-    ref List<KeyValuePair<int, byte[]>>? byteArrays)
+    ref List<KeyValuePair<int, byte[]>> byteArrays)
   {
     if (!snapshot.TryGetValue(id, out var payload))
       return;
