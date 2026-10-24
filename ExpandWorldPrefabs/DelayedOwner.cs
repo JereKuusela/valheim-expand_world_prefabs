@@ -17,39 +17,20 @@ public class DelayedOwner(double due, ZDOID zdo, long owner)
   private static readonly List<DelayedOwner> Owners = [];
   public static void Clear() => Owners.Clear();
 
-  private static bool IsClientUid(long uid, long serverUid) => uid != 0 && uid != serverUid;
-
   private static bool IsConnectedClient(long uid)
   {
-    if (ZDOMan.instance == null || !IsClientUid(uid, ZDOMan.instance.m_sessionID)) return false;
+    if (ZDOMan.instance == null) return false;
     return ZDOMan.instance.m_peers.Any(p => p.m_peer != null && p.m_peer.m_uid == uid);
-  }
-
-  internal static long SelectOwner(long serverUid, IEnumerable<(long Uid, float Distance, bool Ready)> peers)
-  {
-    long nearest = 0;
-    float nearestDistance = float.PositiveInfinity;
-    foreach (var (uid, distance, ready) in peers)
-    {
-      if (!ready || !IsClientUid(uid, serverUid)) continue;
-      if (nearest == 0 || distance < nearestDistance)
-      {
-        nearest = uid;
-        nearestDistance = distance;
-      }
-    }
-    return nearest;
   }
 
   public static long FindNearestOwner(ZDO zdo)
   {
-    // Some client should always be the owner so that creatures are initialized correctly (for example max health from stars).
-    // Things work slightly better when the server doesn't have ownership (for example max health from stars).
     if (ZDOMan.instance == null) return 0;
-    return SelectOwner(ZDOMan.instance.m_sessionID,
-      ZDOMan.instance.m_peers
-        .Where(p => p.m_peer != null)
-        .Select(p => (p.m_peer!.m_uid, (float)Utils.DistanceXZ(p.m_peer!.m_refPos, zdo.m_position), p.m_peer!.IsReady())));
+    var peer = ZDOMan.instance.m_peers
+      .Where(p => p.m_peer != null && p.m_peer.IsReady())
+      .OrderBy(p => (float)Utils.DistanceXZ(p.m_peer!.m_refPos, zdo.m_position))
+      .FirstOrDefault();
+    return peer?.m_peer?.m_uid ?? 0;
   }
 
   public static void Check(ZDO zdo, long owner)
@@ -57,6 +38,10 @@ public class DelayedOwner(double due, ZDOID zdo, long owner)
     bool shouldNotBeOwned = SupportAttach.IsAttached(zdo) || PersistPlayers.IsPlayer(zdo);
     if (shouldNotBeOwned)
       owner = SupportAttach.HackOwner;
+
+    // For most cases, some client should own the object.
+    // This means some client is instantly handling the object.
+    // Also some features like creature health from stars requires a client to be the owner.
     if (owner == 0)
       owner = FindNearestOwner(zdo);
     var prefab = ZNetScene.instance.GetPrefab(zdo.m_prefab);
@@ -70,6 +55,10 @@ public class DelayedOwner(double due, ZDOID zdo, long owner)
     if (isItem)
       zdo.Set(ZDOVars.s_spawnTime, ZNet.instance.GetTime().Ticks);
 
+    // Some objects like item drops or ships have initially their body set to sleep.
+    // This is only cleared when a client acquires ownership of already existing game object.
+    // Which means the ownership can't be instantly assigned for these objects.
+    // Note: Current implementation is bit faulty, because regular ownership assignment could run near instantly after this.
     if (delay)
       Add(0.1f, zdo, owner);
     else

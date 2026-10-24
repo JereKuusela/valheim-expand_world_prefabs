@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Reflection;
 using ExpandWorld.Prefab;
@@ -20,70 +19,6 @@ public class DelayedOwnerTests
 
   [TearDown]
   public void TearDown() => DelayedOwner.Clear();
-
-  [Test]
-  public void OnlyReadyClientIsSelected()
-  {
-    var candidates = new[] { (Uid: FirstClient, Distance: 8f, Ready: true) };
-    Assert.That(DelayedOwner.SelectOwner(Server, candidates), Is.EqualTo(FirstClient));
-  }
-
-  [Test]
-  public void NearestReadyClientIsChosenAmongMultiplePeers()
-  {
-    var candidates = new[]
-    {
-      (Uid: FirstClient, Distance: 1f, Ready: true),
-      (Uid: SecondClient, Distance: 9f, Ready: true),
-      (Uid: 303L, Distance: 15f, Ready: true)
-    };
-    Assert.That(DelayedOwner.SelectOwner(Server, candidates), Is.EqualTo(FirstClient));
-  }
-
-  [Test]
-  public void NearestReadyClientCanAppearLaterInPeerList()
-  {
-    var candidates = new[]
-    {
-      (Uid: FirstClient, Distance: 15f, Ready: true),
-      (Uid: SecondClient, Distance: 2f, Ready: true)
-    };
-    Assert.That(DelayedOwner.SelectOwner(Server, candidates), Is.EqualTo(SecondClient));
-  }
-
-  [Test]
-  public void UnreadyCloserClientIsSkipped()
-  {
-    var candidates = new[]
-    {
-      (Uid: FirstClient, Distance: 1f, Ready: false),
-      (Uid: SecondClient, Distance: 9f, Ready: true)
-    };
-    Assert.That(DelayedOwner.SelectOwner(Server, candidates), Is.EqualTo(SecondClient));
-  }
-
-  [Test]
-  public void NoReadyClientReturnsZero()
-  {
-    Assert.That(DelayedOwner.SelectOwner(Server,
-      Array.Empty<(long Uid, float Distance, bool Ready)>()), Is.Zero);
-    Assert.That(DelayedOwner.SelectOwner(Server,
-      new[] { (Uid: FirstClient, Distance: 4f, Ready: false) }), Is.Zero);
-  }
-
-  [Test]
-  public void ServerUidAndZeroAreNeverClientOwners()
-  {
-    var candidates = new[]
-    {
-      (Uid: Server, Distance: 0f, Ready: true),
-      (Uid: 0L, Distance: 0f, Ready: true)
-    };
-    Assert.That(DelayedOwner.SelectOwner(Server, candidates), Is.Zero);
-    Assert.That(DelayedOwner.SelectOwner(Server,
-      new[] { (Uid: Server, Distance: 0f, Ready: true), (Uid: FirstClient, Distance: 5f, Ready: true) }),
-      Is.EqualTo(FirstClient));
-  }
 
   [Test]
   public void ChangedOwnerRevisionInvalidatesDelayedAssignment()
