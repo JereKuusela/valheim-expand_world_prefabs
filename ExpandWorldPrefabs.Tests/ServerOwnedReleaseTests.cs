@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
-using BepInEx.Configuration;
 using Data;
 using ExpandWorld.Prefab;
 using NUnit.Framework;
@@ -19,7 +16,6 @@ public class ServerOwnedReleaseTests
   private const BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
   private static readonly int Marker = ZdoHelper.Hash("ewp_server_owned");
   private static readonly int OtherKey = ZdoHelper.Hash("ewp_unrelated_int");
-  private static readonly FieldInfo ConfigField = typeof(Config).GetField("ConfigServerSideData", StaticFields)!;
   private static readonly FieldInfo IdField = typeof(ZDO).GetField("m_uid", InstanceFields)!;
   private static readonly MethodInfo Prefix = typeof(ServerOwned).GetMethod("SetOwner", StaticFields)!;
   private static readonly MethodInfo Serialize = typeof(ServerSideData).GetMethod("Serialize", StaticFields)!;
@@ -30,21 +26,10 @@ public class ServerOwnedReleaseTests
 
   private readonly List<ZDOID> ids = [];
   private uint serial;
-  private object? previousConfig;
-
-  [SetUp]
-  public void SetUp()
-  {
-    previousConfig = ConfigField.GetValue(null);
-    var path = Path.Combine(Path.GetTempPath(), "ewp-o05-" + Guid.NewGuid().ToString("N") + ".cfg");
-    var setting = new ConfigFile(path, false).Bind("General", "Server side data", true);
-    ConfigField.SetValue(null, setting);
-  }
 
   [TearDown]
   public void TearDown()
   {
-    ConfigField.SetValue(null, previousConfig);
     foreach (var id in ids)
     {
       Ints.Remove(id);
@@ -92,6 +77,54 @@ public class ServerOwnedReleaseTests
     Assert.That(ServerOwned.IsMarked(zdo), Is.False);
     Ints[zdo.m_uid][Marker] = 2;
     Assert.That(ServerOwned.IsMarked(zdo), Is.False);
+  }
+
+  [TestCase("ewp_attached", false)]
+  [TestCase("ewp_attached", true)]
+  [TestCase("ewp_server_owned", false)]
+  [TestCase("ewp_server_owned", true)]
+  public void Deserialize_ExtractsLegacyMarker_AndPreservesOtherInts(string markerName, bool withPayload)
+  {
+    var zdo = NewZdo();
+    var marker = ZdoHelper.Hash(markerName);
+    if (withPayload)
+    {
+      Ints[zdo.m_uid] = new() { [OtherKey] = 37 };
+      WriteSyncedPayload(zdo, (byte[])Serialize.Invoke(null, [zdo.m_uid])!);
+      Ints.Remove(zdo.m_uid);
+    }
+    WriteSyncedInt(zdo, marker, 1);
+    WriteSyncedInt(zdo, OtherKey, 11);
+
+    Deserialize.Invoke(null, [zdo]);
+
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, marker, out var value), Is.True);
+    Assert.That(value, Is.EqualTo(1));
+    Assert.That(zdo.GetInt(marker, 0), Is.Zero);
+    Assert.That(zdo.GetInt(OtherKey, 0), Is.EqualTo(withPayload ? 0 : 11));
+    if (withPayload)
+    {
+      Assert.That(ServerSideData.TryGetInt(zdo.m_uid, OtherKey, out var other), Is.True);
+      Assert.That(other, Is.EqualTo(37));
+    }
+  }
+
+  [TestCase("ewp_attached")]
+  [TestCase("ewp_server_owned")]
+  public void Deserialize_PreservesServerSideMarker_OverLegacyMarker(string markerName)
+  {
+    var zdo = NewZdo();
+    var marker = ZdoHelper.Hash(markerName);
+    Ints[zdo.m_uid] = new() { [marker] = 0 };
+    WriteSyncedPayload(zdo, (byte[])Serialize.Invoke(null, [zdo.m_uid])!);
+    Ints.Remove(zdo.m_uid);
+    WriteSyncedInt(zdo, marker, 1);
+
+    Deserialize.Invoke(null, [zdo]);
+
+    Assert.That(ServerSideData.TryGetInt(zdo.m_uid, marker, out var value), Is.True);
+    Assert.That(value, Is.Zero);
+    Assert.That(zdo.GetInt(marker, 0), Is.Zero);
   }
 
   [Test]

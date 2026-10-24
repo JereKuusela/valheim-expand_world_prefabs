@@ -4,6 +4,7 @@ using HarmonyLib;
 using UnityEngine;
 using Data;
 using System.Linq;
+using Service;
 
 namespace ExpandWorld.Prefab;
 
@@ -44,7 +45,7 @@ public class SupportAttach
 
   // Vanilla uses attaching when players on beds/ships/etc and also some effects like magic shield bubble (all are non-persistent).
   // Using custom data is most reliable but persistent check is used as backward compatibility.
-  public static bool IsAttached(ZDO zdo) => zdo.GetConnectionType() == ZDOExtraData.ConnectionType.SyncTransform && (zdo.Persistent || ServerSideData.TryGetInt(zdo, EWPAttachedHash, out var attached) && attached == 1);
+  public static bool IsAttached(ZDO zdo) => zdo.GetConnectionType() == ZDOExtraData.ConnectionType.SyncTransform && (zdo.Persistent || ServerSideData.TryGetInt(zdo.m_uid, EWPAttachedHash, out var attached) && attached == 1);
 
   public static readonly long HackOwner = 1;
 
@@ -90,15 +91,16 @@ public class SupportAttach
   private static readonly int HasFields = ZdoHelper.Hash("HasFields");
   private static readonly int HasFieldsZSyncTransform = ZdoHelper.Hash("HasFieldsZSyncTransform");
   private static readonly int ZSyncTransformCharacterParentSync = ZdoHelper.Hash("ZSyncTransform.m_characterParentSync");
-  private static readonly int EWPAttachedHash = ZdoHelper.Hash("ewp_attached");
+  internal static readonly int EWPAttachedHash = ZdoHelper.Hash("ewp_attached");
   public static void Attach(ZdoEntry zdoEntry, ZDOID target)
   {
     zdoEntry.ConnectionType = ZDOExtraData.ConnectionType.SyncTransform;
     zdoEntry.TargetConnectionId = target;
-    zdoEntry.Ints ??= [];
-    zdoEntry.Ints[EWPAttachedHash] = 1;
+    zdoEntry.ServerInts ??= [];
+    zdoEntry.ServerInts[EWPAttachedHash] = 1;
     if (PrefabHelper.HasCharacterParentSync(zdoEntry.Prefab))
       return;
+    zdoEntry.Ints ??= [];
     zdoEntry.Ints[HasFields] = 1;
     zdoEntry.Ints[HasFieldsZSyncTransform] = 1;
     zdoEntry.Ints[ZSyncTransformCharacterParentSync] = 1;
@@ -114,9 +116,6 @@ public class SupportAttach
   }
   public static void Attach(ZDO zdo, ZDOID target)
   {
-    // Actual players can't be attached or they lose control.
-    //if (PersistPlayers.IsRealPlayer(zdo))
-    //  return;
     if (target == ZDOID.None)
     {
       Unattach(zdo);

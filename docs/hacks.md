@@ -168,7 +168,7 @@ However object itself doesn't react to anything because there is no client proce
 
 ## Server side data
 
-This can be disabled by setting "Server side data" to false in the settings.
+Server side data is always enabled.
 
 Data keys that start with `ewp_` are stored as server-only instead of normal ZDO fields. This reduces network traffic and can even completely skip server force sending data to clients (which can briefly freeze creatures).
 

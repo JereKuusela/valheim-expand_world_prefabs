@@ -113,8 +113,7 @@ public static class PokeTimers
       if (target != null && target.m_uid == id && target.Persistent)
       {
         ByTarget.TryGetValue(id, out var entries);
-        if (Config.ServerSideData)
-          ServerSideData.SetBytes(target, StorageHash, Encode(entries));
+        ServerSideData.SetBytes(target, StorageHash, Encode(entries));
       }
     }
     Dirty.Clear();

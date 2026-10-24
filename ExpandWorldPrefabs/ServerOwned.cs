@@ -33,55 +33,32 @@ public class ServerOwned
     harmony.Unpatch(original, prefix);
   }
 
-  private static readonly int EWPServerOwnedHash = ZdoHelper.Hash("ewp_server_owned");
+  internal static readonly int EWPServerOwnedHash = ZdoHelper.Hash("ewp_server_owned");
 
-  public static bool IsMarked(ZDO zdo) => ServerSideData.TryGetInt(zdo, EWPServerOwnedHash, out var value) && value == 1;
+  public static bool IsMarked(ZDO zdo) => ServerSideData.TryGetInt(zdo.m_uid, EWPServerOwnedHash, out var value) && value == 1;
 
   private static void SetOwner(ZDO __instance, ref long uid)
   {
     if (!IsMarked(__instance)) return;
-    // Real players must stay in control of themselves.
-    //if (PersistPlayers.IsRealPlayer(__instance)) return;
     uid = ZDOMan.instance.m_sessionID;
   }
 
   public static void Mark(ZDO zdo)
   {
-    //if (PersistPlayers.IsRealPlayer(zdo)) return;
     ServerSideData.SetInt(zdo, EWPServerOwnedHash, 1);
     zdo.SetOwner(ZDOMan.instance.m_sessionID);
   }
 
   public static void Mark(ZdoEntry zdoEntry)
   {
-    // Keep new server-owned spawns out of synchronized ZDO data.
-    if (Config.ServerSideData)
-    {
-      zdoEntry.Ints?.Remove(EWPServerOwnedHash);
-      zdoEntry.ServerInts ??= [];
-      zdoEntry.ServerInts[EWPServerOwnedHash] = 1;
-    }
-    else
-    {
-      zdoEntry.Ints ??= [];
-      zdoEntry.Ints[EWPServerOwnedHash] = 1;
-    }
+    zdoEntry.ServerInts ??= [];
+    zdoEntry.ServerInts[EWPServerOwnedHash] = 1;
     zdoEntry.Owner = ZDOMan.instance.m_sessionID;
   }
 
   // Used when a later rule assigns a normal numeric owner, to stop forcing the server owner back.
   public static void Unmark(ZDO zdo)
   {
-    if (Config.ServerSideData)
-    {
-      // An explicit zero must mask an older synchronized one after Deserialize.
-      ServerSideData.SetInt(zdo, EWPServerOwnedHash, 0);
-      zdo.RemoveInt(EWPServerOwnedHash);
-    }
-    else
-    {
-      // Legacy mode also needs an explicit release rather than a missing key.
-      zdo.Set(EWPServerOwnedHash, 0);
-    }
+    ServerSideData.RemoveInt(zdo, EWPServerOwnedHash);
   }
 }

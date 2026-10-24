@@ -11,7 +11,6 @@ public class Config
   private static ConfigEntry<bool> ConfigRestoreScale;
   private static ConfigEntry<bool> ConfigPersistPlayers;
   private static ConfigEntry<bool> ConfigSupportAttach;
-  private static ConfigEntry<bool> ConfigServerSideData;
   private static ConfigEntry<bool> ConfigServerOwned;
   private static ConfigEntry<bool> ConfigRuleLogging;
   private static ConfigEntry<int> ConfigLogGlobalRate, ConfigLogRuleRate, ConfigLogFlushMs, ConfigLogFileMiB, ConfigLogSegments;
@@ -25,7 +24,6 @@ public class Config
   public static bool RestoreScale => ConfigRestoreScale.Value;
   public static bool PersistPlayers => ConfigPersistPlayers.Value;
   public static bool SupportAttach => ConfigSupportAttach.Value;
-  public static bool ServerSideData => ConfigServerSideData.Value;
   public static bool ServerOwned => ConfigServerOwned.Value;
   public static bool RuleLogging => ConfigRuleLogging.Value;
   internal static int RuleLogSegments => ConfigLogSegments.Value;
@@ -46,7 +44,6 @@ public class Config
     ConfigAutomaticReload = config.Bind("General", "Automatic file reload", true, "Settings are automatically reloaded on file changes. Requires restart to take effect.");
     ConfigRestoreScale = config.Bind("General", "Restore scale", true, "When enabled, EWP automatically restores custom scale for objects with ZSyncTransform.m_syncScale.");
     ConfigSupportAttach = config.Bind("General", "Object attaching", true, "When enabled, EWP keeps ownership of attached objects to prevent clients from separating them.");
-    ConfigServerSideData = config.Bind("General", "Server side data", true, "When enabled, data keys starting with ewp_ are stored in server-only payload to reduce network traffic.");
     ConfigServerOwned = config.Bind("General", "Server owned objects", true, "When enabled, EWP keeps ownership of objects marked with owner: server, so the server receives owner-only RPCs.");
     ConfigRuleLogging = config.Bind("General", "Rule logging", true, "Enable rule log output in expand_world/logs. Existing records are preserved. Can be changed while running.");
     ConfigPersistPlayers = config.Bind("General", "Persist spawned players", true, "When enabled, EWP spawned players will be saved to the save file.");
@@ -72,7 +69,6 @@ public class Config
     ConfigRestoreScale.SettingChanged += (_, _) => RefreshPatches();
     ConfigPersistPlayers.SettingChanged += (_, _) => RefreshPatches();
     ConfigSupportAttach.SettingChanged += (_, _) => RefreshPatches();
-    ConfigServerSideData.SettingChanged += (_, _) => RefreshPatches();
     ConfigServerOwned.SettingChanged += (_, _) => RefreshPatches();
     ConfigNpcPlayerListRange.SettingChanged += (_, _) => RefreshPatches();
     ConfigCustomPrefabNames.SettingChanged += (_, _) => RefreshPatches();

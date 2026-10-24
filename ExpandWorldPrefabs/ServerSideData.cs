@@ -38,7 +38,7 @@ public static class ServerSideData
   public static event Action<ZDO>? Loaded;
   public static event Action<ZDOID>? Destroyed;
 
-  public static bool ShouldUse(int hash) => Config.ServerSideData && ZdoHelper.IsServerSideHash(hash);
+  public static bool ShouldUse(int hash) => ZdoHelper.IsServerSideHash(hash);
 
   public static void Patch(Harmony harmony, bool shouldPatch)
   {
@@ -87,15 +87,11 @@ public static class ServerSideData
 
   private static void AfterLoad(ZDO __instance)
   {
-    if (!Config.ServerSideData)
-      return;
     Deserialize(__instance);
   }
 
   private static void BeforeSave(ZDO __instance)
   {
-    if (!Config.ServerSideData)
-      return;
     var payload = Serialize(__instance.m_uid);
     if (payload == null || payload.Length == 0)
     {
@@ -107,8 +103,6 @@ public static class ServerSideData
 
   private static void AfterSave(ZDO __instance)
   {
-    if (!Config.ServerSideData)
-      return;
     RemovePayloadFromZdo(__instance);
   }
 
@@ -170,6 +164,7 @@ public static class ServerSideData
       if (payload == null || payload.Length == 0)
       {
         Remove(zdo.m_uid);
+        ExtractServerSideInts(zdo);
         return;
       }
 
@@ -204,6 +199,7 @@ public static class ServerSideData
         Strings[zdo.m_uid] = ReadStrings(pkg);
       if ((flags & FlagByteArrays) != 0)
         Bytes[zdo.m_uid] = ReadBytes(pkg);
+      ExtractServerSideInts(zdo);
       CleanSyncedData(zdo);
       Loaded?.Invoke(zdo);
     }
@@ -216,6 +212,21 @@ public static class ServerSideData
     {
       RemovePayloadFromZdo(zdo);
     }
+  }
+
+  private static void ExtractServerSideInts(ZDO zdo)
+  {
+    ExtractServerSideInt(zdo, SupportAttach.EWPAttachedHash);
+    ExtractServerSideInt(zdo, ServerOwned.EWPServerOwnedHash);
+  }
+
+  private static void ExtractServerSideInt(ZDO zdo, int key)
+  {
+    if (!ZDOExtraData.s_ints.TryGetValue(zdo.m_uid, out var ints) || !ints.TryGetValue(key, out var value))
+      return;
+    if (!TryGetInt(zdo.m_uid, key, out _))
+      SetInt(zdo, key, value);
+    zdo.RemoveInt(key);
   }
 
   private static void RemovePayloadFromZdo(ZDO zdo)
@@ -234,13 +245,6 @@ public static class ServerSideData
   public static bool TryGetString(ZDOID id, int key, out string value) => TryGet(Strings, id, key, out value);
   public static bool TryGetFloat(ZDOID id, int key, out float value) => TryGet(Floats, id, key, out value);
   public static bool TryGetInt(ZDOID id, int key, out int value) => TryGet(Ints, id, key, out value);
-  public static bool TryGetInt(ZDO zdo, int key, out int value)
-  {
-    if (TryGetInt(zdo.m_uid, key, out value))
-      return true;
-    value = zdo.GetInt(key, 0);
-    return value != 0;
-  }
   public static bool TryGetLong(ZDOID id, int key, out long value) => TryGet(Longs, id, key, out value);
   public static bool TryGetVec(ZDOID id, int key, out Vector3 value) => TryGet(Vecs, id, key, out value);
   public static bool TryGetQuaternion(ZDOID id, int key, out Quaternion value) => TryGet(Quats, id, key, out value);
@@ -248,52 +252,31 @@ public static class ServerSideData
 
   public static void SetString(ZDO zdo, int key, string value)
   {
-    if (Config.ServerSideData)
-      Set(Strings, zdo.m_uid, key, value);
-    else
-      zdo.Set(key, value);
+    Set(Strings, zdo.m_uid, key, value);
   }
   public static void SetFloat(ZDO zdo, int key, float value)
   {
-    if (Config.ServerSideData)
-      Set(Floats, zdo.m_uid, key, value);
-    else
-      zdo.Set(key, value);
+    Set(Floats, zdo.m_uid, key, value);
   }
   public static void SetInt(ZDO zdo, int key, int value)
   {
-    if (Config.ServerSideData)
-      Set(Ints, zdo.m_uid, key, value);
-    else
-      zdo.Set(key, value);
+    Set(Ints, zdo.m_uid, key, value);
   }
   public static void SetLong(ZDO zdo, int key, long value)
   {
-    if (Config.ServerSideData)
-      Set(Longs, zdo.m_uid, key, value);
-    else
-      zdo.Set(key, value);
+    Set(Longs, zdo.m_uid, key, value);
   }
   public static void SetVec(ZDO zdo, int key, Vector3 value)
   {
-    if (Config.ServerSideData)
-      Set(Vecs, zdo.m_uid, key, value);
-    else
-      zdo.Set(key, value);
+    Set(Vecs, zdo.m_uid, key, value);
   }
   public static void SetQuaternion(ZDO zdo, int key, Quaternion value)
   {
-    if (Config.ServerSideData)
-      Set(Quats, zdo.m_uid, key, value);
-    else
-      zdo.Set(key, value);
+    Set(Quats, zdo.m_uid, key, value);
   }
   public static void SetBytes(ZDO zdo, int key, byte[] value)
   {
-    if (Config.ServerSideData)
-      Set(Bytes, zdo.m_uid, key, value);
-    else
-      zdo.Set(key, value);
+    Set(Bytes, zdo.m_uid, key, value);
   }
   public static void RemoveString(ZDO zdo, int key)
   {

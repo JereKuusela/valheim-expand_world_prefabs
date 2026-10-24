@@ -109,7 +109,7 @@ public class InfoManager
     var shouldPersistPlayers = canPatch && Config.PersistPlayers;
     var shouldRestoreScale = canPatch && Config.RestoreScale;
     var shouldSupportAttach = canPatch && Config.SupportAttach;
-    var shouldServerSideData = canPatch && Config.ServerSideData;
+    var shouldServerSideData = canPatch;
     var shouldServerOwned = canPatch && Config.ServerOwned;
     var shouldNpcPlayerList = canPatch && Config.NpcPlayerListRange > 0f;
     PersistPlayers.Patch(EWP.Harmony, shouldPersistPlayers);
