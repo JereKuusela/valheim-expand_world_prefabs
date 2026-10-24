@@ -54,11 +54,34 @@ public class ServerOwned
 
   public static void Mark(ZdoEntry zdoEntry)
   {
-    zdoEntry.Ints ??= [];
-    zdoEntry.Ints[EWPServerOwnedHash] = 1;
+    // Keep new server-owned spawns out of synchronized ZDO data.
+    if (Config.ServerSideData)
+    {
+      zdoEntry.Ints?.Remove(EWPServerOwnedHash);
+      zdoEntry.ServerInts ??= [];
+      zdoEntry.ServerInts[EWPServerOwnedHash] = 1;
+    }
+    else
+    {
+      zdoEntry.Ints ??= [];
+      zdoEntry.Ints[EWPServerOwnedHash] = 1;
+    }
     zdoEntry.Owner = ZDOMan.instance.m_sessionID;
   }
 
   // Used when a later rule assigns a normal numeric owner, to stop forcing the server owner back.
-  public static void Unmark(ZDO zdo) => ServerSideData.RemoveInt(zdo, EWPServerOwnedHash);
+  public static void Unmark(ZDO zdo)
+  {
+    if (Config.ServerSideData)
+    {
+      // An explicit zero must mask an older synchronized one after Deserialize.
+      ServerSideData.SetInt(zdo, EWPServerOwnedHash, 0);
+      zdo.RemoveInt(EWPServerOwnedHash);
+    }
+    else
+    {
+      // Legacy mode also needs an explicit release rather than a missing key.
+      zdo.Set(EWPServerOwnedHash, 0);
+    }
+  }
 }
