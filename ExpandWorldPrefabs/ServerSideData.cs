@@ -22,6 +22,9 @@ public static class ServerSideData
   private static readonly int StorageHash = ZdoHelper.Hash("_ewp_serverdata");
   // Built on the main thread before the save thread starts; the save thread only reads it.
   private static Dictionary<ZDOID, byte[]>? SavePayloads;
+  private static HashSet<ZDOID>? SaveSkipped;
+  // Only touched by the save thread after being reset before it starts.
+  private static int SaveMisses;
 
   private const int CurrentVersion = 1;
   private const ushort VersionShift = 12;
@@ -101,6 +104,7 @@ public static class ServerSideData
     harmony.Unpatch(destroyMethod, destroyPostfix);
 
     SavePayloads = null;
+    SaveSkipped = null;
     ClearAll();
   }
 
@@ -115,14 +119,17 @@ public static class ServerSideData
     var dirtyChunks = __instance.m_dirtyChunks[0];
     var dirtyPortals = __instance.DirtyPortalObjects;
     var portalHashes = Game.instance.PortalPrefabHash;
+    HashSet<ZDOID> skipped = [];
     SavePayloads = BuildSaveSnapshot(id =>
     {
       var zdo = __instance.GetZDO(id);
       return zdo != null && zdo.Persistent && WillBeSaved(zdo, dirtyChunks, dirtyPortals, portalHashes);
-    });
+    }, skipped);
+    SaveSkipped = skipped;
+    SaveMisses = 0;
   }
 
-  internal static Dictionary<ZDOID, byte[]> BuildSaveSnapshot(Func<ZDOID, bool> include)
+  internal static Dictionary<ZDOID, byte[]> BuildSaveSnapshot(Func<ZDOID, bool> include, HashSet<ZDOID> skipped)
   {
     HashSet<ZDOID> ids = [
       .. Strings.Keys, .. Floats.Keys, .. Ints.Keys, .. Longs.Keys,
@@ -133,7 +140,10 @@ public static class ServerSideData
     foreach (var id in ids)
     {
       if (!include(id))
+      {
+        skipped.Add(id);
         continue;
+      }
       var payload = Serialize(id);
       if (payload != null && payload.Length > 0)
         snapshot.Add(id, payload);
@@ -160,13 +170,20 @@ public static class ServerSideData
 
   private static void AfterSaveCleanup()
   {
+    if (SaveMisses > 0)
+      Log.Warning($"ServerSideData: {SaveMisses} saved objects were skipped by the dirty chunk check and lost their server side data. Please report this.");
     SavePayloads = null;
+    SaveSkipped = null;
   }
 
   private static void AfterGetSaveData(ZDOID zid, ref List<KeyValuePair<int, byte[]>> byteArray)
   {
     var snapshot = SavePayloads;
-    if (snapshot != null)
+    if (snapshot == null)
+      return;
+    if (SaveSkipped?.Contains(zid) == true)
+      SaveMisses++;
+    else
       AddSavePayload(snapshot, zid, ref byteArray);
   }
 

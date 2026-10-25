@@ -159,8 +159,10 @@ public class ServerSideDataSaveTests
     Ints[included] = new() { [21] = 7 };
     Ints[ignored] = new() { [22] = 8 };
 
-    var snapshot = ServerSideData.BuildSaveSnapshot(id => id == included);
+    HashSet<ZDOID> skipped = [];
+    var snapshot = ServerSideData.BuildSaveSnapshot(id => id == included, skipped);
     Assert.That(snapshot.Keys, Is.EquivalentTo(new[] { included }));
+    Assert.That(skipped, Does.Contain(ignored).And.Not.Contain(included));
     Assert.That(snapshot[included], Is.EqualTo(Serialize(included)));
     Assert.That(Extra.ContainsKey(included), Is.False);
     Assert.That(Extra.ContainsKey(ignored), Is.False);
@@ -171,7 +173,7 @@ public class ServerSideDataSaveTests
   {
     var id = NewId();
     Ints[id] = new() { [21] = 7 };
-    var snapshot = ServerSideData.BuildSaveSnapshot(_ => true);
+    var snapshot = ServerSideData.BuildSaveSnapshot(_ => true, []);
     List<KeyValuePair<int, byte[]>>? saveBytes = [new(5, [12])];
     ServerSideData.AddSavePayload(snapshot, id, ref saveBytes);
 
@@ -189,7 +191,7 @@ public class ServerSideDataSaveTests
     var original = new byte[] { 7, 8, 9 };
     Bucket(id).SetValue(StorageHash, original);
     Ints[id] = new() { [24] = 101 };
-    var snapshot = ServerSideData.BuildSaveSnapshot(_ => true);
+    var snapshot = ServerSideData.BuildSaveSnapshot(_ => true, []);
     List<KeyValuePair<int, byte[]>>? saveBytes = [new(StorageHash, original), new(9, [5])];
 
     ServerSideData.AddSavePayload(snapshot, id, ref saveBytes);
@@ -205,9 +207,9 @@ public class ServerSideDataSaveTests
   {
     var id = NewId();
     Ints[id] = new() { [21] = 101 };
-    var before = ServerSideData.BuildSaveSnapshot(_ => true);
+    var before = ServerSideData.BuildSaveSnapshot(_ => true, []);
     Ints[id][21] = 202;
-    var after = ServerSideData.BuildSaveSnapshot(_ => true);
+    var after = ServerSideData.BuildSaveSnapshot(_ => true, []);
     Assert.That(before[id], Is.Not.EqualTo(after[id]));
     Assert.That(before[id], Is.Not.EqualTo(Serialize(id)));
     List<KeyValuePair<int, byte[]>>? saveBytes = [];
@@ -221,7 +223,7 @@ public class ServerSideDataSaveTests
     var id = NewId();
     var missing = NewId();
     Strings[id] = new() { [25] = "hello" };
-    var snapshot = ServerSideData.BuildSaveSnapshot(_ => true);
+    var snapshot = ServerSideData.BuildSaveSnapshot(_ => true, []);
     List<KeyValuePair<int, byte[]>> saveBytes = [];
     ServerSideData.AddSavePayload(snapshot, missing, ref saveBytes);
     Assert.That(saveBytes, Is.Empty);
