@@ -274,14 +274,12 @@ public static class FileLoading
       if (prefab) prefabsChanged = true;
       if (change.Entries == null)
       {
-        AppliedHashes.Remove(path);
         DataFileEntries.Remove(path);
         PrefabFileEntries.Remove(path);
         ConfigFileEntries.Remove(path);
       }
       else
       {
-        AppliedHashes[path] = change.Hash!;
         DataFileEntries[path] = change.Entries.DataEntries;
         if (prefab)
         {
@@ -297,15 +295,26 @@ public static class FileLoading
     PruneStaleCache(DataFileEntries, dataFiles);
     EnsureCache(DataFileEntries, dataFiles, file => ReadDataEntries(file));
     Data.DataLoading.LoadFromFiles(dataFiles, DataFileEntries);
-    if (!prefabsChanged) return;
-    var prefabFiles = GetPatternFiles(Yaml.BaseDirectory, PrefabPattern);
-    prefabFiles.Reverse();
-    PruneStaleCache(PrefabFileEntries, prefabFiles);
-    PruneStaleCache(ConfigFileEntries, prefabFiles);
-    foreach (var file in prefabFiles)
-      if (!PrefabFileEntries.ContainsKey(file) || !ConfigFileEntries.ContainsKey(file)) LoadPrefabFile(file);
-    ExpandWorld.Prefab.ConfigManager.LoadFromFiles(prefabFiles, ConfigFileEntries);
-    ExpandWorld.Prefab.Loading.LoadFromFiles(prefabFiles, PrefabFileEntries);
+    if (prefabsChanged)
+    {
+      var prefabFiles = GetPatternFiles(Yaml.BaseDirectory, PrefabPattern);
+      prefabFiles.Reverse();
+      PruneStaleCache(PrefabFileEntries, prefabFiles);
+      PruneStaleCache(ConfigFileEntries, prefabFiles);
+      foreach (var file in prefabFiles)
+        if (!PrefabFileEntries.ContainsKey(file) || !ConfigFileEntries.ContainsKey(file)) LoadPrefabFile(file);
+      ExpandWorld.Prefab.ConfigManager.LoadFromFiles(prefabFiles, ConfigFileEntries);
+      ExpandWorld.Prefab.Loading.LoadFromFiles(prefabFiles, PrefabFileEntries);
+    }
+
+    // Only acknowledge the file snapshots after the rebuild completed.
+    foreach (var change in changes)
+    {
+      if (change.Hash == null)
+        AppliedHashes.Remove(change.Path);
+      else
+        AppliedHashes[change.Path] = change.Hash;
+    }
   }
 
   public static bool IsPrefabPath(string path, string baseDirectory, string prefabPattern)
