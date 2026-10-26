@@ -102,6 +102,81 @@ public class Yaml
     }
   }
 
+  // Unlike ReadMixedFile this reports parse failures instead of treating them as an empty file.
+  // Only automatic reload uses this extra validation; startup and ewp_reload stay unchanged.
+  public static bool TryReadMixedFile(string file, string content, out MixedFileEntries result, out string error)
+  {
+    result = new MixedFileEntries();
+    error = "";
+    try
+    {
+      List<string> lines = [];
+      using (var reader = new StringReader(content))
+      {
+        string? line;
+        while ((line = reader.ReadLine()) != null) lines.Add(line);
+      }
+      var split = SplitMixed([.. lines]);
+      if (split.ScriptLines.Count == 0 && split.DataLines.Count == 0 && split.ConfigLines.Count == 0)
+        return TryDeserialize<ExpandWorld.Prefab.RuleYaml>(content, out _, out error);
+      if (split.ScriptLines.Count > 0)
+      {
+        if (!TryDeserialize(PreParse([.. split.ScriptLines]), out List<ExpandWorld.Prefab.RuleYaml> rules, out error)) return false;
+        result.ScriptEntries = rules;
+        result.DataEntries.AddRange(ExpandWorld.Prefab.DataField.Hoist(rules, file));
+      }
+      if (split.DataLines.Count > 0)
+      {
+        if (!TryDeserialize(string.Join("\n", split.DataLines), out List<Data.DataYaml> data, out error)) return false;
+        result.DataEntries.InsertRange(0, data);
+      }
+      if (split.ConfigLines.Count > 0)
+      {
+        if (!TryDeserialize(string.Join("\n", split.ConfigLines), out List<ExpandWorld.Prefab.ConfigYaml> config, out error)) return false;
+        result.ConfigEntries = config;
+      }
+      return true;
+    }
+    catch (Exception ex)
+    {
+      error = ex.GetType().Name + ": " + ex.Message;
+      return false;
+    }
+  }
+
+  private static bool TryDeserialize<T>(string text, out List<T> result, out string error)
+  {
+    error = "";
+    try
+    {
+      result = Deserializer().Deserialize<List<T>>(text) ?? [];
+      return true;
+    }
+    catch
+    {
+      try
+      {
+        result = DeserializerUnSafe().Deserialize<List<T>>(text) ?? [];
+        return true;
+      }
+      catch (Exception ex)
+      {
+        result = [];
+        error = ex.GetType().Name + ": " + ex.Message;
+        return false;
+      }
+    }
+  }
+
+  public static string DisplayPath(string path)
+  {
+    var root = Path.GetFullPath(Path.Combine(Paths.ConfigPath, ".."))
+      .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+    var full = Path.GetFullPath(path);
+    return (full.StartsWith(root, StringComparison.OrdinalIgnoreCase) ? full.Substring(root.Length) : full)
+      .Replace('\\', '/');
+  }
+
   private class MixedSplit
   {
     public List<string> ScriptLines = [];
@@ -232,23 +307,14 @@ public class Yaml
     BackupFile(file, overwriteBackup);
     action();
   });
-  public static void SetupWatcher(string folder, string pattern, Action<string, string?, FileChangeType> action, bool overwriteBackup) => SetupWatcherSub(folder, pattern, (path, oldPath, type) =>
-  {
-    if (type != FileChangeType.Deleted && path != "")
-      BackupFile(path, overwriteBackup);
-    action(path, oldPath, type);
-  });
+  // FileLoading creates backups only after a stable file has been loaded.
+  public static void SetupWatcher(string folder, string pattern, Action<string, string?, FileChangeType> action, bool overwriteBackup) => SetupWatcherSub(folder, pattern, action);
   public static void SetupWatcher(string pattern, Action action, bool overwriteBackup) => SetupWatcherSub(BaseDirectory, pattern, file =>
   {
     BackupFile(file, overwriteBackup);
     action();
   });
-  public static void SetupWatcher(string pattern, Action<string, string?, FileChangeType> action, bool overwriteBackup) => SetupWatcherSub(BaseDirectory, pattern, (path, oldPath, type) =>
-  {
-    if (type != FileChangeType.Deleted && path != "")
-      BackupFile(path, overwriteBackup);
-    action(path, oldPath, type);
-  });
+  public static void SetupWatcher(string pattern, Action<string, string?, FileChangeType> action, bool overwriteBackup) => SetupWatcherSub(BaseDirectory, pattern, action);
 
 
   private static void SetupWatcherSub(string folder, string pattern, Action<string> action)

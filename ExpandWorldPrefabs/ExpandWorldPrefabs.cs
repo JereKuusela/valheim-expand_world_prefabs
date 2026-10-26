@@ -71,6 +71,7 @@ public class EWP : BaseUnityPlugin
   {
     ConfigManager.Flush();
     if (ZNet.instance == null) return;
+    FileLoading.ExecutePending();
     HandleCreated.Execute();
     HandleChanged.Execute();
     DelayedSpawn.Execute();
@@ -84,6 +85,7 @@ public class EWP : BaseUnityPlugin
   }
   public void OnDestroy()
   {
+    FileLoading.ClearPending();
     ConfigManager.Flush(true);
     RuleLog.Close();
   }
@@ -94,6 +96,7 @@ public class CleanupOnShutdown
 {
   static void Postfix()
   {
+    FileLoading.ClearPending();
     HandleCreated.Clear();
     HandleChanged.Clear();
     DelayedSpawn.Clear();
