@@ -17,8 +17,8 @@ public class DataStorage
 
   public static void LoadSavedData()
   {
-    if (!Directory.Exists(Yaml.BaseDirectory))
-      Directory.CreateDirectory(Yaml.BaseDirectory);
+    if (!Directory.Exists(FileLoading.BaseDirectory))
+      Directory.CreateDirectory(FileLoading.BaseDirectory);
     if (!File.Exists(SavedDataFile)) return;
     var data = File.ReadAllText(SavedDataFile);
     var db = Yaml.DeserializeData(data);
@@ -29,7 +29,7 @@ public class DataStorage
     Log.Info($"Reloaded saved data ({Database.Count} entries).");
   }
   private static readonly Stopwatch LastSaveStopwatch = Stopwatch.StartNew();
-  private static string SavedDataFile => Path.Combine(Yaml.BaseDirectory, "ewp_data.yaml");
+  private static string SavedDataFile => Path.Combine(FileLoading.BaseDirectory, "ewp_data.yaml");
   private static bool UnsavedChanges = false;
   public static void SaveSavedData()
   {
@@ -37,11 +37,11 @@ public class DataStorage
     // Save every 10 seconds at most.
     if (LastSaveStopwatch.Elapsed.TotalSeconds < 10) return;
     LastSaveStopwatch.Restart();
-    if (!Directory.Exists(Yaml.BaseDirectory))
-      Directory.CreateDirectory(Yaml.BaseDirectory);
+    if (!Directory.Exists(FileLoading.BaseDirectory))
+      Directory.CreateDirectory(FileLoading.BaseDirectory);
     var yaml = Yaml.SerializeData(Database);
     // No watcher covers this file, so keep the first pre-write copy of each day.
-    Yaml.BackupFile(SavedDataFile, false);
+    FileLoading.BackupFile(SavedDataFile, false);
     File.WriteAllText(SavedDataFile, yaml);
     // A failed write must remain dirty so the existing save loop retries.
     UnsavedChanges = false;

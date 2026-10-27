@@ -44,7 +44,7 @@ public class Config
     Main = config;
     ConfigAllowModConfigWrite = config.Bind("General", "Allow modifying mod configs", false, "When enabled, scripts can change settings of other mods with <savemodconfig_X>.");
     ConfigAutomaticReload = config.Bind("General", "Automatic file reload", true, "Settings are automatically reloaded on file changes. Requires restart to take effect.");
-    ConfigReloadQuietSeconds = config.Bind("General", "Automatic reload quiet seconds", 10,
+    ConfigReloadQuietSeconds = config.Bind("General", "Automatic reload quiet seconds", 1,
       new ConfigDescription("Wait this many seconds without YAML file change events before automatically reloading. Further events reset the wait.",
         new AcceptableValueRange<int>(1, 300)));
     ConfigRestoreScale = config.Bind("General", "Restore scale", true, "When enabled, EWP automatically restores custom scale for objects with ZSyncTransform.m_syncScale.");

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using BepInEx;
@@ -22,14 +22,13 @@ public class EWP : BaseUnityPlugin
     Harmony = new(GUID);
     Harmony.PatchAll();
     Log.Init(Logger);
-    Yaml.Init();
-    RuleLog.Init(Path.Combine(Yaml.BaseDirectory, "logs"));
+    FileLoading.EnsureBaseDirectory();
+    RuleLog.Init(Path.Combine(FileLoading.BaseDirectory, "logs"));
     try
     {
       if (Prefab.Config.AutomaticReload)
       {
-        Yaml.SetupWatcher(Config);
-        FileLoading.SetupWatchers(true);
+        FileLoading.SetupWatchers(Config, true);
       }
       DataStorage.LoadSavedData();
     }
@@ -71,7 +70,7 @@ public class EWP : BaseUnityPlugin
   {
     ConfigManager.Flush();
     if (ZNet.instance == null) return;
-    FileLoading.ExecutePending();
+    FileLoading.ProcessPendingChanges();
     HandleCreated.Execute();
     HandleChanged.Execute();
     DelayedSpawn.Execute();
@@ -85,7 +84,7 @@ public class EWP : BaseUnityPlugin
   }
   public void OnDestroy()
   {
-    FileLoading.ClearPending();
+    FileLoading.StopWatching();
     ConfigManager.Flush(true);
     RuleLog.Close();
   }
@@ -96,7 +95,6 @@ public class CleanupOnShutdown
 {
   static void Postfix()
   {
-    FileLoading.ClearPending();
     HandleCreated.Clear();
     HandleChanged.Clear();
     DelayedSpawn.Clear();
