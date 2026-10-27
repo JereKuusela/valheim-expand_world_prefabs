@@ -1,25 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using BepInEx;
-using BepInEx.Configuration;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using Common;
 
 namespace Service;
 
 public class Yaml
 {
-  public enum FileChangeType
-  {
-    Created,
-    Changed,
-    Renamed,
-    Deleted
-  }
-
   public class MixedFileEntries
   {
     public List<ExpandWorld.Prefab.RuleYaml> ScriptEntries = [];
@@ -27,78 +15,46 @@ public class Yaml
     public List<ExpandWorld.Prefab.ConfigYaml> ConfigEntries = [];
   }
 
-  public static string BaseDirectory = Path.Combine(Paths.ConfigPath, "expand_world");
-  public static string BackupDirectory = Path.Combine(Paths.ConfigPath, "expand_world_backups");
-
-
-  public static List<T> Read<T>(string pattern, bool migrate)
+  // Parse an already read text snapshot; never reads or modifies files.
+  public static bool ParseMixed(string file, string content, out MixedFileEntries result, out string error)
   {
-    if (!Directory.Exists(BaseDirectory))
-      Directory.CreateDirectory(BaseDirectory);
-    var files = Directory.GetFiles(BaseDirectory, pattern, SearchOption.AllDirectories).Reverse().ToList();
-    return Read<T>(files, migrate);
-  }
-
-  public static List<T> Read<T>(List<string> files, bool migrate)
-  {
-    List<T> result = [];
-    foreach (var file in files)
-    {
-      try
-      {
-        var lines = migrate ? PreParse(File.ReadAllLines(file)) : File.ReadAllText(file);
-        result.AddRange(Deserialize<T>(lines, file));
-      }
-      catch (Exception ex)
-      {
-        Log.Error($"Error reading {Path.GetFileName(file)}: {ex.Message}");
-      }
-    }
-    return result;
-  }
-
-  public static List<T> ReadFile<T>(string file, bool migrate)
-  {
+    result = new MixedFileEntries();
+    error = "";
+    var parsed = new MixedFileEntries();
     try
     {
-      var raw = migrate ? PreParse(File.ReadAllLines(file)) : File.ReadAllText(file);
-      return Deserialize<T>(raw, file);
-    }
-    catch (Exception ex)
-    {
-      Log.Error($"Error reading {Path.GetFileName(file)}: {ex.Message}");
-      return [];
-    }
-  }
-
-  public static MixedFileEntries ReadMixedFile(string file)
-  {
-    try
-    {
-      var split = SplitMixed(File.ReadAllLines(file));
-      var result = new MixedFileEntries();
+      List<string> lines = [];
+      using (var reader = new StringReader(content))
+      {
+        string? line;
+        while ((line = reader.ReadLine()) != null) lines.Add(line);
+      }
+      var split = SplitMixed([.. lines]);
+      if (split.ScriptLines.Count == 0 && split.DataLines.Count == 0 && split.ConfigLines.Count == 0)
+        return Deserialize<ExpandWorld.Prefab.RuleYaml>(file, content, out _, out error);
       if (split.ScriptLines.Count > 0)
       {
-        var raw = PreParse([.. split.ScriptLines]);
-        result.ScriptEntries = Deserialize<ExpandWorld.Prefab.RuleYaml>(raw, file);
-        result.DataEntries.AddRange(ExpandWorld.Prefab.DataField.Hoist(result.ScriptEntries, file));
+        if (!Deserialize(file, PreParse([.. split.ScriptLines]), out List<ExpandWorld.Prefab.RuleYaml> rules, out error)) return false;
+        parsed.ScriptEntries = rules;
+        parsed.DataEntries.AddRange(ExpandWorld.Prefab.DataField.Hoist(rules, file));
       }
       if (split.DataLines.Count > 0)
       {
-        var raw = string.Join("\n", split.DataLines);
-        result.DataEntries.InsertRange(0, Deserialize<Data.DataYaml>(raw, file));
+        if (!Deserialize(file, string.Join("\n", split.DataLines), out List<Data.DataYaml> data, out error)) return false;
+        parsed.DataEntries.InsertRange(0, data);
       }
       if (split.ConfigLines.Count > 0)
       {
-        var raw = string.Join("\n", split.ConfigLines);
-        result.ConfigEntries = Deserialize<ExpandWorld.Prefab.ConfigYaml>(raw, file);
+        if (!Deserialize(file, string.Join("\n", split.ConfigLines), out List<ExpandWorld.Prefab.ConfigYaml> config, out error)) return false;
+        parsed.ConfigEntries = config;
       }
-      return result;
+      result = parsed;
+      return true;
     }
     catch (Exception ex)
     {
-      Log.Error($"Error reading {Path.GetFileName(file)}: {ex.Message}");
-      return new MixedFileEntries();
+      error = ex.GetType().Name + ": " + ex.Message;
+      return false;
     }
   }
 
@@ -201,129 +157,32 @@ public class Yaml
   {
     return FilterShorthand.Normalize(string.Join("\n", lines));
   }
-  public static void SetupWatcher(ConfigFile config)
-  {
-    FileSystemWatcher watcher = new(Path.GetDirectoryName(config.ConfigFilePath), Path.GetFileName(config.ConfigFilePath));
-    watcher.Changed += (s, e) => ReadConfigValues(e.FullPath, config);
-    watcher.Created += (s, e) => ReadConfigValues(e.FullPath, config);
-    watcher.Renamed += (s, e) => ReadConfigValues(e.FullPath, config);
-    watcher.IncludeSubdirectories = true;
-    watcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
-    watcher.EnableRaisingEvents = true;
-  }
-  private static void ReadConfigValues(string path, ConfigFile config)
-  {
-    if (!File.Exists(path)) return;
-    if (ExpandWorld.Prefab.ConfigManager.IsSelfWrite && config == ExpandWorld.Prefab.Config.Main) return;
-    BackupFile(path, true);
-    try
-    {
-      config.Reload();
-    }
-    catch
-    {
-      Log.Error($"There was an issue loading your {config.ConfigFilePath}");
-      Log.Error("Please check your config entries for spelling and format!");
-    }
-  }
-  public static void SetupWatcher(string pattern, Action<string> action) => SetupWatcherSub(Paths.ConfigPath, pattern, action);
-  public static void SetupWatcher(string folder, string pattern, Action action, bool overwriteBackup) => SetupWatcherSub(folder, pattern, file =>
-  {
-    BackupFile(file, overwriteBackup);
-    action();
-  });
-  public static void SetupWatcher(string folder, string pattern, Action<string, string?, FileChangeType> action, bool overwriteBackup) => SetupWatcherSub(folder, pattern, (path, oldPath, type) =>
-  {
-    if (type != FileChangeType.Deleted && path != "")
-      BackupFile(path, overwriteBackup);
-    action(path, oldPath, type);
-  });
-  public static void SetupWatcher(string pattern, Action action, bool overwriteBackup) => SetupWatcherSub(BaseDirectory, pattern, file =>
-  {
-    BackupFile(file, overwriteBackup);
-    action();
-  });
-  public static void SetupWatcher(string pattern, Action<string, string?, FileChangeType> action, bool overwriteBackup) => SetupWatcherSub(BaseDirectory, pattern, (path, oldPath, type) =>
-  {
-    if (type != FileChangeType.Deleted && path != "")
-      BackupFile(path, overwriteBackup);
-    action(path, oldPath, type);
-  });
-
-
-  private static void SetupWatcherSub(string folder, string pattern, Action<string> action)
-  {
-    FileSystemWatcher watcher = new(folder, pattern);
-    watcher.Created += (s, e) => action(e.FullPath);
-    watcher.Changed += (s, e) => action(e.FullPath);
-    watcher.Renamed += (s, e) => action(e.FullPath);
-    watcher.Deleted += (s, e) => action(e.FullPath);
-    watcher.IncludeSubdirectories = true;
-    watcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
-    watcher.EnableRaisingEvents = true;
-  }
-  private static void SetupWatcherSub(string folder, string pattern, Action<string, string?, FileChangeType> action)
-  {
-    FileSystemWatcher watcher = new(folder, pattern);
-    watcher.Created += (s, e) => action(e.FullPath, null, FileChangeType.Created);
-    watcher.Changed += (s, e) => action(e.FullPath, null, FileChangeType.Changed);
-    watcher.Renamed += (s, e) => action(e.FullPath, e.OldFullPath, FileChangeType.Renamed);
-    watcher.Deleted += (s, e) => action(e.FullPath, null, FileChangeType.Deleted);
-    watcher.IncludeSubdirectories = true;
-    watcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
-    watcher.EnableRaisingEvents = true;
-  }
-  private static void SetupWatcherSub(string folder, string pattern, Action action)
-  {
-    FileSystemWatcher watcher = new(folder, pattern);
-    watcher.Created += (s, e) => action();
-    watcher.Changed += (s, e) => action();
-    watcher.Renamed += (s, e) => action();
-    watcher.Deleted += (s, e) => action();
-    watcher.IncludeSubdirectories = true;
-    watcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
-    watcher.EnableRaisingEvents = true;
-  }
-  public static void BackupFile(string path, bool overwrite)
-  {
-    if (!File.Exists(path)) return;
-    if (!Directory.Exists(BackupDirectory))
-      Directory.CreateDirectory(BackupDirectory);
-    var stamp = DateTime.Now.ToString("yyyy-MM-dd");
-    var name = $"{Path.GetFileNameWithoutExtension(path)}_{stamp}{Path.GetExtension(path)}.bak";
-    var backupPath = Path.Combine(BackupDirectory, name);
-    if (overwrite)
-      File.Copy(path, backupPath, true);
-    else if (!File.Exists(backupPath))
-      File.Copy(path, backupPath);
-  }
-
-  public static void Init()
-  {
-    if (!Directory.Exists(BaseDirectory))
-      Directory.CreateDirectory(BaseDirectory);
-  }
-
   private static IDeserializer Deserializer() => new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).WithTypeConverter(new ExpandWorld.Prefab.FlexibleYamlConverter()).Build();
   private static IDeserializer DeserializerUnSafe() => new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).WithTypeConverter(new ExpandWorld.Prefab.FlexibleYamlConverter()).IgnoreUnmatchedProperties().Build();
 
-  private static List<T> Deserialize<T>(string raw, string file)
+  private static bool Deserialize<T>(string file, string text, out List<T> result, out string error)
   {
+    error = "";
     try
     {
-      return Deserializer().Deserialize<List<T>>(raw) ?? [];
+      result = Deserializer().Deserialize<List<T>>(text) ?? [];
+      return true;
     }
-    catch (Exception ex1)
+    catch (Exception strictError)
     {
-      Log.Error($"{Path.GetFileName(file)}: {ex1.Message}");
       try
       {
-        return DeserializerUnSafe().Deserialize<List<T>>(raw) ?? [];
+        result = DeserializerUnSafe().Deserialize<List<T>>(text) ?? [];
       }
-      catch (Exception)
+      catch (Exception ex)
       {
-        return [];
+        result = [];
+        error = ex.GetType().Name + ": " + ex.Message;
+        return false;
       }
+      // Retain the original diagnostic when unknown YAML fields are ignored.
+      Log.Error($"{Path.GetFileName(file)}: {strictError.Message}");
+      return true;
     }
   }
 

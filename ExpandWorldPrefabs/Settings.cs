@@ -8,6 +8,7 @@ public class Config
 {
 #nullable disable
   private static ConfigEntry<bool> ConfigAutomaticReload;
+  private static ConfigEntry<int> ConfigReloadQuietSeconds;
   private static ConfigEntry<bool> ConfigRestoreScale;
   private static ConfigEntry<bool> ConfigPersistPlayers;
   private static ConfigEntry<bool> ConfigSupportAttach;
@@ -21,6 +22,7 @@ public class Config
   internal static ConfigFile? Main;
   public static bool AllowModConfigWrite => ConfigAllowModConfigWrite.Value;
   public static bool AutomaticReload => ConfigAutomaticReload.Value;
+  public static int ReloadQuietSeconds => ConfigReloadQuietSeconds.Value;
   public static bool RestoreScale => ConfigRestoreScale.Value;
   public static bool PersistPlayers => ConfigPersistPlayers.Value;
   public static bool SupportAttach => ConfigSupportAttach.Value;
@@ -42,6 +44,9 @@ public class Config
     Main = config;
     ConfigAllowModConfigWrite = config.Bind("General", "Allow modifying mod configs", false, "When enabled, scripts can change settings of other mods with <savemodconfig_X>.");
     ConfigAutomaticReload = config.Bind("General", "Automatic file reload", true, "Settings are automatically reloaded on file changes. Requires restart to take effect.");
+    ConfigReloadQuietSeconds = config.Bind("General", "Automatic reload quiet seconds", 1,
+      new ConfigDescription("Wait this many seconds without YAML file change events before automatically reloading. Further events reset the wait.",
+        new AcceptableValueRange<int>(1, 300)));
     ConfigRestoreScale = config.Bind("General", "Restore scale", true, "When enabled, EWP automatically restores custom scale for objects with ZSyncTransform.m_syncScale.");
     ConfigSupportAttach = config.Bind("General", "Object attaching", true, "When enabled, EWP keeps ownership of attached objects to prevent clients from separating them.");
     ConfigServerOwned = config.Bind("General", "Server owned objects", true, "When enabled, EWP keeps ownership of objects marked with owner: server, so the server receives owner-only RPCs.");
