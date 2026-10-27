@@ -70,7 +70,7 @@ public class EWP : BaseUnityPlugin
   {
     ConfigManager.Flush();
     if (ZNet.instance == null) return;
-    FileLoading.ProcessPendingChanges();
+    FileLoading.Update();
     HandleCreated.Execute();
     HandleChanged.Execute();
     DelayedSpawn.Execute();

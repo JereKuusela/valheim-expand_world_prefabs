@@ -8,46 +8,22 @@ namespace Service;
 // Invalid YAML must never replace a previously valid entry during automatic reload.
 public sealed class YamlFileCache
 {
-  private readonly Dictionary<string, List<ExpandWorld.Prefab.RuleYaml>> prefabFiles = new(StringComparer.OrdinalIgnoreCase);
-  private readonly Dictionary<string, List<Data.DataYaml>> dataFiles = new(StringComparer.OrdinalIgnoreCase);
-  private readonly Dictionary<string, List<ExpandWorld.Prefab.ConfigYaml>> configFiles = new(StringComparer.OrdinalIgnoreCase);
+  private readonly Dictionary<string, Yaml.MixedFileEntries> files = new(StringComparer.OrdinalIgnoreCase);
 
-  public void Clear()
+  public void Clear() => files.Clear();
+  public void Store(string path, Yaml.MixedFileEntries entries) => files[path] = entries;
+  public bool Remove(string path) => files.Remove(path);
+  public bool Contains(string path) => files.ContainsKey(path);
+
+  // Prefab rules and config declarations are only read from prefabFiles; null leaves them untouched.
+  public void Apply(List<string> dataFiles, List<string>? prefabFiles)
   {
-    prefabFiles.Clear();
-    dataFiles.Clear();
-    configFiles.Clear();
+    Data.DataLoading.LoadFromFiles(dataFiles, Project(dataFiles, entries => entries.DataEntries));
+    if (prefabFiles == null) return;
+    ExpandWorld.Prefab.ConfigManager.LoadFromFiles(prefabFiles, Project(prefabFiles, entries => entries.ConfigEntries));
+    ExpandWorld.Prefab.Loading.LoadFromFiles(prefabFiles, Project(prefabFiles, entries => entries.ScriptEntries));
   }
 
-  public void Store(string path, Yaml.MixedFileEntries entries)
-  {
-    dataFiles[path] = entries.DataEntries;
-    if (!FileLoading.IsPrefabPath(path)) return;
-    prefabFiles[path] = entries.ScriptEntries;
-    configFiles[path] = entries.ConfigEntries;
-  }
-
-  // Every successfully parsed file has a data entry, even when its YAML contains no data rules.
-  public bool Contains(string path) => dataFiles.ContainsKey(path);
-
-  public void ApplyData(List<string> paths)
-  {
-    PruneMissing(dataFiles, paths);
-    Data.DataLoading.LoadFromFiles(paths, dataFiles);
-  }
-
-  public void ApplyPrefabs(List<string> paths)
-  {
-    PruneMissing(prefabFiles, paths);
-    PruneMissing(configFiles, paths);
-    ExpandWorld.Prefab.ConfigManager.LoadFromFiles(paths, configFiles);
-    ExpandWorld.Prefab.Loading.LoadFromFiles(paths, prefabFiles);
-  }
-
-  private static void PruneMissing<T>(Dictionary<string, T> cache, List<string> files)
-  {
-    var existing = files.ToHashSet(StringComparer.OrdinalIgnoreCase);
-    foreach (var path in cache.Keys.ToList())
-      if (!existing.Contains(path)) cache.Remove(path);
-  }
+  private Dictionary<string, List<T>> Project<T>(List<string> paths, Func<Yaml.MixedFileEntries, List<T>> select) =>
+    paths.Where(files.ContainsKey).ToDictionary(path => path, path => select(files[path]), StringComparer.OrdinalIgnoreCase);
 }

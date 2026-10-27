@@ -1,5 +1,6 @@
 - v1.66
   - Changes server side data feature to be always enabled (simplifies code).
+  - Improves performance of file change detection. Thanks Maxime!
   - Fixes server owned feature not working correctly. Thanks Maxime!
   - Fixes server side data not being saved correctly. Thanks Maxime!
 

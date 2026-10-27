@@ -38,7 +38,7 @@ public class FileLoadingPathTests
     var root = Path.Combine(Path.GetTempPath(), "ewp-" + Guid.NewGuid().ToString("N"));
     var inside = Path.Combine(root, "data", "nested", "rule.yaml");
     var sibling = Path.Combine(root, "data-other", "rule.yaml");
-    Assert.That(FileLoading.IsInFolder(inside, Path.Combine(root, "data")), Is.True);
-    Assert.That(FileLoading.IsInFolder(sibling, Path.Combine(root, "data")), Is.False);
+    Assert.That(YamlChangeDetector.IsInFolder(inside, Path.Combine(root, "data")), Is.True);
+    Assert.That(YamlChangeDetector.IsInFolder(sibling, Path.Combine(root, "data")), Is.False);
   }
 }
