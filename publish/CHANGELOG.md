@@ -3,6 +3,7 @@
   - Improves performance of file change detection. Thanks Maxime!
   - Fixes server owned feature not working correctly. Thanks Maxime!
   - Fixes server side data not being saved correctly. Thanks Maxime!
+  - Fixes delayed ownership being non-deterministic (possibly fixes rare edge cases).
 
 - v1.65
   - Adds wildcard support to `locations` and `bannedLocations` fields. Thanks Zeall!

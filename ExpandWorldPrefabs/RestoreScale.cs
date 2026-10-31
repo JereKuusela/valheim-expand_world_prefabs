@@ -174,6 +174,6 @@ public class RestoreScale
     var previousOwner = zdo.GetOwner();
     zdo.SetOwner(0L);
     zdo.DataRevision += 100;
-    DelayedOwner.Add(0.1f, zdo, previousOwner);
+    DelayedOwner.Add(zdo, previousOwner);
   }
 }

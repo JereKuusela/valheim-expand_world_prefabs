@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Reflection;
 using ExpandWorld.Prefab;
 using NUnit.Framework;
 
@@ -7,44 +5,29 @@ namespace ExpandWorldPrefabs.Tests;
 
 public class DelayedOwnerTests
 {
-  private const long Server = 900;
-  private const long FirstClient = 101;
-  private const long SecondClient = 202;
-
-  [Test]
-  public void ExistingPublicConstructorRemainsAvailable()
-  {
-    Assert.That(typeof(DelayedOwner).GetConstructor([typeof(double), typeof(ZDOID), typeof(long)]), Is.Not.Null);
-  }
+  private const long Client = 101;
 
   [TearDown]
   public void TearDown() => DelayedOwner.Clear();
 
   [Test]
-  public void ChangedOwnerRevisionInvalidatesDelayedAssignment()
+  public void NewOwnerReleasesPending()
   {
-    Assert.That(DelayedOwner.CanAssign(0, 12, 11, FirstClient, Server, true), Is.False);
-    Assert.That(DelayedOwner.CanAssign(0, 11, 11, FirstClient, Server, true), Is.True);
+    Assert.That(DelayedOwner.Decide(Client, true, false), Is.EqualTo(DelayedOwner.Outcome.Release));
+    Assert.That(DelayedOwner.Decide(0, true, false), Is.EqualTo(DelayedOwner.Outcome.Assign));
   }
 
   [Test]
-  public void NewOwnerInvalidatesDelayedAssignmentEvenAtSameRevision()
+  public void KeepsWaitingUntilSentOrGivenUp()
   {
-    Assert.That(DelayedOwner.CanAssign(SecondClient, 11, 11, FirstClient, Server, true), Is.False);
+    Assert.That(DelayedOwner.Decide(0, false, false), Is.EqualTo(DelayedOwner.Outcome.Keep));
+    Assert.That(DelayedOwner.Decide(0, false, true), Is.EqualTo(DelayedOwner.Outcome.Release));
   }
 
   [Test]
-  public void DisconnectedPeerCannotBeReinstalled()
+  public void SentWinsOverGiveUp()
   {
-    Assert.That(DelayedOwner.CanAssign(0, 11, 11, FirstClient, Server, false), Is.False);
-    Assert.That(DelayedOwner.CanAssign(0, 11, 11, FirstClient, Server, true), Is.True);
-  }
-
-  [Test]
-  public void ExplicitServerOwnerAndUnownedRequestAreNotRemotePeers()
-  {
-    Assert.That(DelayedOwner.CanAssign(0, 11, 11, Server, Server, false), Is.True);
-    Assert.That(DelayedOwner.CanAssign(0, 11, 11, 0, Server, false), Is.True);
+    Assert.That(DelayedOwner.Decide(0, true, true), Is.EqualTo(DelayedOwner.Outcome.Assign));
   }
 
   [TestCase(false, true, false, false, true)]
@@ -56,32 +39,5 @@ public class DelayedOwnerTests
     bool specialOwner, bool item, bool ship, bool scaleBackup, bool expected)
   {
     Assert.That(DelayedOwner.NeedsDelay(specialOwner, item, ship, scaleBackup), Is.EqualTo(expected));
-  }
-
-  [Test]
-  public void ReplacementKeepsOnlyLatestActionForZdoWithoutTouchingOthers()
-  {
-    var id = new ZDOID(101L, 1U);
-    var other = new ZDOID(101L, 2U);
-    DelayedOwner.ReplaceAction(1.0, id, FirstClient, 7);
-    DelayedOwner.ReplaceAction(1.5, other, SecondClient, 8);
-    DelayedOwner.ReplaceAction(2.0, id, SecondClient, 9);
-
-    var field = typeof(DelayedOwner).GetField("Owners", BindingFlags.NonPublic | BindingFlags.Static)!;
-    var queue = (IList)field.GetValue(null)!;
-    Assert.That(queue.Count, Is.EqualTo(2));
-    int idCount = 0;
-    foreach (var action in queue)
-    {
-      var actionType = action!.GetType();
-      var queuedId = (ZDOID)actionType.GetField("Zdo", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(action)!;
-      if (queuedId != id) continue;
-      idCount++;
-      Assert.That(actionType.GetField("Owner", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(action),
-        Is.EqualTo(SecondClient));
-      Assert.That(actionType.GetField("ExpectedOwnerRevision", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(action),
-        Is.EqualTo(9UL));
-    }
-    Assert.That(idCount, Is.EqualTo(1));
   }
 }
