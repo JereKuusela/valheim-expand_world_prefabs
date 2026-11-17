@@ -13,6 +13,7 @@ internal static class TerrainReference
   private const float ProxyMatchDistance = 1f;
   private const float ZoneHalfDiagonal = 46f;
   private static readonly int LocationProxyHash = "LocationProxy".GetStableHashCode();
+  private static readonly int LocationReferenceHash = "locationreference".GetStableHashCode();
 
   internal static bool TryCreateSurface(Vector3 center, int width, float scale,
     IReadOnlyList<float> baseHeights, Color[] baseMask, out Surface surface,
@@ -150,7 +151,8 @@ internal static class TerrainReference
           var distance = Utils.DistanceXZ(candidate.m_position, locationPosition);
           if (distance > ProxyMatchDistance) continue;
 
-          if (candidate.GetInt(ZDOVars.s_location, 0) == locationHash)
+          if (candidate.GetInt(ZDOVars.s_location, 0) == locationHash ||
+              candidate.GetInt(LocationReferenceHash, 0) == locationHash)
           {
             if (distance >= hashMatchDistance) continue;
             hashMatch = candidate;
