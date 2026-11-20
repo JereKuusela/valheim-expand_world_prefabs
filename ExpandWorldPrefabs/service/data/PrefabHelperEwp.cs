@@ -16,9 +16,17 @@ public static partial class PrefabHelper
       var trimmedPrefab = configuredPrefab.Trim();
       prefabs[trimmedPrefab] = trimmedPrefab.GetStableHashCode();
     }
+    // Real prefabs take priority over blueprints with the same name.
+    foreach (var name in BlueprintCache.GetNames())
+      if (!prefabs.ContainsKey(name))
+        prefabs[name] = name.GetStableHashCode();
   }
 
-  static partial void OnClearCache() => PrefabCharacterParentSync.Clear();
+  static partial void OnClearCache()
+  {
+    PrefabCharacterParentSync.Clear();
+    BlueprintCache.Clear();
+  }
 
   public static bool HasCharacterParentSync(int prefab)
   {

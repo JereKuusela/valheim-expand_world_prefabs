@@ -1,4 +1,5 @@
 - v1.67
+  - Adds support for spawning blueprints (`.blueprint` and `.vbuild` files) by using the file name as a prefab in `spawn` and `swap`. Files are read from the `PlanBuild` config folder (config `Blueprint folder`).
   - Fixes location matching not working for EWD cloned locations. Thanks Maxime!
 
 - v1.66

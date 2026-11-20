@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using BepInEx;
+using Data;
 using HarmonyLib;
 using Service;
 namespace ExpandWorld.Prefab;
@@ -29,6 +30,7 @@ public class EWP : BaseUnityPlugin
       if (Prefab.Config.AutomaticReload)
       {
         FileLoading.SetupWatchers(Config, true);
+        BlueprintWatcher.Start();
       }
       DataStorage.LoadSavedData();
     }
@@ -79,12 +81,14 @@ public class EWP : BaseUnityPlugin
     DelayedExec.Execute();
     DelayedRpc.Execute();
     DelayedTerrain.Execute();
+    TerrainSnapshot.Execute();
     DelayedOwner.Execute();
     DataStorage.SaveSavedData();
   }
   public void OnDestroy()
   {
     FileLoading.StopWatching();
+    BlueprintWatcher.Stop();
     ConfigManager.Flush(true);
     RuleLog.Close();
   }
@@ -103,6 +107,7 @@ public class CleanupOnShutdown
     DelayedExec.Clear();
     DelayedRpc.Clear();
     DelayedTerrain.Clear();
+    TerrainSnapshot.Clear();
     DelayedOwner.Clear();
   }
 }

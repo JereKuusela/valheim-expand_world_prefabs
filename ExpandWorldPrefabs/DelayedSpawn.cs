@@ -1,5 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Data;
+using Service;
 using UnityEngine;
 
 namespace ExpandWorld.Prefab;
@@ -53,6 +54,11 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
     data = DataHelper.Merge(data, DataHelper.Get(spawn.Data, f));
     var prefab = spawn.GetPrefab(f);
     if (prefab == 0) return;
+    if (TryGetBlueprint(prefab, out var blueprint))
+    {
+      AddBlueprint(blueprint, spawn, originalZdo, f, pos, rotQuat, delay, removeDelay);
+      return;
+    }
     ZdoEntry zdoEntry = new(prefab, pos, rot, originalZdo.GetOwner());
     if (data != null)
     {
@@ -73,6 +79,50 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
       SupportAttach.Connect(zdoEntry, connect.Value);
     Add(delay, zdoEntry, spawn.TriggerRules?.GetBool(f) ?? false, removeDelay);
   }
+  // Real prefabs take priority over blueprints with the same name.
+  private static bool TryGetBlueprint(int prefab, out Blueprint blueprint)
+  {
+    blueprint = null!;
+    if (ZNetScene.instance.m_namedPrefabs.ContainsKey(prefab)) return false;
+    return BlueprintCache.TryGet(prefab, out blueprint);
+  }
+
+  private static Blueprint? GetBlueprint(string name) => BlueprintCache.TryGet(name, out var blueprint) ? blueprint : null;
+
+  private static void AddBlueprint(Blueprint blueprint, Spawn spawn, ZDO originalZdo, Functions f, Vector3 pos, Quaternion rot, float delay, float? removeDelay)
+  {
+    var triggerRules = spawn.TriggerRules?.GetBool(f) ?? false;
+    var owner = spawn.Owner?.Get(f);
+    var plan = BlueprintPlan.Create(blueprint, pos, rot, Vector3.one, (data, _) => data, name => name, GetBlueprint);
+    var (height, paint) = plan.GetTerrain(pos, rot);
+    TerrainSnapshot.Add(delay, blueprint.Name, height, paint, pos, rot);
+    foreach (var obj in plan.Objects)
+    {
+      var piecePos = obj.Pos;
+      if (obj.SnapToGround)
+        piecePos.y = WorldGenerator.instance.GetHeight(piecePos.x, piecePos.z);
+      ZdoEntry zdoEntry = new(obj.Prefab.GetStableHashCode(), piecePos, obj.Rot.eulerAngles, originalZdo.GetOwner());
+      if (obj.Data != null)
+      {
+        zdoEntry.Load(obj.Data, f, originalZdo);
+        zdoEntry.LoadItem(obj.Data, f);
+        zdoEntry.LoadInventory(obj.Data, f);
+      }
+      // Copied blueprint data often has a creator, which makes enemies treat the pieces as player built.
+      zdoEntry.Longs?.Remove(ZDOVars.s_creator);
+      if (obj.Scale != Vector3.one)
+      {
+        zdoEntry.Vecs ??= [];
+        zdoEntry.Vecs[ZDOVars.s_scaleHash] = obj.Scale;
+      }
+      if (owner.HasValue)
+        zdoEntry.Owner = owner.Value;
+      if (spawn.OwnerServer)
+        ServerOwned.Mark(zdoEntry);
+      Add(delay, zdoEntry, triggerRules, removeDelay);
+    }
+  }
+
   private static void Add(float delay, ZdoEntry zdoEntry, bool triggerRules, float? removeDelay)
   {
     if (delay <= 0f)

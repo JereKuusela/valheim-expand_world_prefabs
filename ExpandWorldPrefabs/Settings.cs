@@ -17,6 +17,8 @@ public class Config
   private static ConfigEntry<int> ConfigLogGlobalRate, ConfigLogRuleRate, ConfigLogFlushMs, ConfigLogFileMiB, ConfigLogSegments;
   private static ConfigEntry<float> ConfigNpcPlayerListRange;
   private static ConfigEntry<string> ConfigCustomPrefabNames;
+  private static ConfigEntry<string> ConfigBlueprintFolder;
+  private static ConfigEntry<float> ConfigTerrainLevelLimit;
   private static ConfigEntry<bool> ConfigAllowModConfigWrite;
 #nullable enable
   internal static ConfigFile? Main;
@@ -38,6 +40,7 @@ public class Config
   };
   public static float NpcPlayerListRange => ConfigNpcPlayerListRange.Value;
   public static string CustomPrefabNames => ConfigCustomPrefabNames.Value;
+  public static string BlueprintFolder => ConfigBlueprintFolder.Value;
 
   public static void Init(ConfigFile config)
   {
@@ -54,6 +57,9 @@ public class Config
     ConfigPersistPlayers = config.Bind("General", "Persist spawned players", true, "When enabled, EWP spawned players will be saved to the save file.");
     ConfigNpcPlayerListRange = config.Bind("General", "NPC player list range", 0f, "Maximum distance for NPC profiles to appear in the player list. Set to 0 to disable this feature.");
     ConfigCustomPrefabNames = config.Bind("General", "Custom prefab names", "", "Comma separated list of prefab names that are processed even when server doesn't recognize them.");
+    ConfigBlueprintFolder = config.Bind("General", "Blueprint folder", "PlanBuild", "Folder (relative to the config folder) of .blueprint and .vbuild files. File names can be used as prefabs in spawn and swap.");
+    ConfigTerrainLevelLimit = config.Bind("General", "Terrain level limit", 8f, "Maximum height change of terrain level and raise operations. Vanilla is 8. Some mods change this. Use 0 for no limit.");
+    TerrainState.LevelLimit = ConfigTerrainLevelLimit.Value;
 
     ConfigLogFileMiB = config.Bind("Rule logging", "Maximum file MiB", 256,
        new ConfigDescription("Maximum size of each log segment in MiB. A full segment is archived and writing continues in a new file. Requires restart.",
@@ -77,8 +83,14 @@ public class Config
     ConfigServerOwned.SettingChanged += (_, _) => RefreshPatches();
     ConfigNpcPlayerListRange.SettingChanged += (_, _) => RefreshPatches();
     ConfigCustomPrefabNames.SettingChanged += (_, _) => RefreshPatches();
+    ConfigBlueprintFolder.SettingChanged += (_, _) =>
+    {
+      RefreshPatches();
+      if (AutomaticReload) BlueprintWatcher.Start();
+    };
 
     ConfigRuleLogging.SettingChanged += (_, _) => RuleLog.SetEnabled(RuleLogging);
+    ConfigTerrainLevelLimit.SettingChanged += (_, _) => TerrainState.LevelLimit = ConfigTerrainLevelLimit.Value;
   }
 
   private static void RefreshPatches()

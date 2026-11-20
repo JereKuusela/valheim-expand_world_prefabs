@@ -235,7 +235,7 @@ internal static class TerrainManager
 
   private static readonly int TerrainCompilerHash = "_TerrainCompiler".GetStableHashCode();
 
-  private static bool GenerateCompiler(Vector2s zone)
+  internal static bool GenerateCompiler(Vector2s zone)
   {
     if (FindCompiler(zone) != null) return false;
 
@@ -250,7 +250,7 @@ internal static class TerrainManager
     return true;
   }
 
-  private static ZDO? FindCompiler(Vector2s zone)
+  internal static ZDO? FindCompiler(Vector2s zone)
   {
     var zdos = Helper.GetZDOsInSector(zone);
     return zdos?.FirstOrDefault(z => z.m_prefab == TerrainCompilerHash);
