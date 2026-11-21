@@ -26,6 +26,14 @@ public class SpawnYaml
   [DefaultValue(null)]
   public string? removeDelay;
   [DefaultValue(null)]
+  public string? blueprintVerticalDelay;
+  [DefaultValue(null)]
+  public string? blueprintHorizontalDelay;
+  [DefaultValue(null)]
+  public string? blueprintSectorDelay;
+  [DefaultValue(null)]
+  public string? blueprintDelayStep;
+  [DefaultValue(null)]
   public string? repeat;
   [DefaultValue(null)]
   public string? repeatInterval;
@@ -97,6 +105,10 @@ public class Spawn
   public readonly IStringValue? Data;
   public readonly IFloatValue? Delay;
   public readonly IFloatValue? RemoveDelay;
+  public readonly IFloatValue? BlueprintVerticalDelay;
+  public readonly IFloatValue? BlueprintHorizontalDelay;
+  public readonly IFloatValue? BlueprintSectorDelay;
+  public readonly IFloatValue? BlueprintDelayStep;
   public readonly IIntValue? Repeat;
   public readonly IFloatValue? RepeatInterval;
   public readonly IFloatValue? RepeatChance;
@@ -118,6 +130,10 @@ public class Spawn
     Data = data.data?.Name == null ? null : DataValue.String(data.data.Name);
     Delay = data.delay == null ? delay == null ? null : new ConstantFloatValue(delay.Value) : DataValue.Float(data.delay);
     RemoveDelay = data.removeDelay == null ? null : DataValue.Float(data.removeDelay);
+    BlueprintVerticalDelay = data.blueprintVerticalDelay == null ? null : DataValue.Float(data.blueprintVerticalDelay);
+    BlueprintHorizontalDelay = data.blueprintHorizontalDelay == null ? null : DataValue.Float(data.blueprintHorizontalDelay);
+    BlueprintSectorDelay = data.blueprintSectorDelay == null ? null : DataValue.Float(data.blueprintSectorDelay);
+    BlueprintDelayStep = data.blueprintDelayStep == null ? null : DataValue.Float(data.blueprintDelayStep);
     Repeat = data.repeat == null ? null : DataValue.Int(data.repeat);
     RepeatInterval = data.repeatInterval == null ? null : DataValue.Float(data.repeatInterval);
     RepeatChance = data.repeatChance == null ? null : DataValue.Float(data.repeatChance);

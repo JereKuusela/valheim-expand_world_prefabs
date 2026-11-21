@@ -85,9 +85,14 @@ public class ZdoEntry : ResolvedDataEntry
       Log.Error($"Can't spawn missing prefab: {prefab}");
       return null;
     }
+    var view = prefabObj.GetComponent<ZNetView>();
+    if (!view)
+    {
+      Log.Warning($"Can't spawn prefab without a ZNetView: {prefabObj.name}");
+      return null;
+    }
     // Prefab hash is used to check whether to trigger rules.
     var zdo = ZDOMan.instance.CreateNewZDO(position, prefab);
-    var view = prefabObj.GetComponent<ZNetView>();
     zdo.m_prefab = prefab;
     zdo.m_rotation = rotation;
     // Usually players are non persistent but this way NPCs can be spawned without having to manually set persistent in the data.

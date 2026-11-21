@@ -108,12 +108,12 @@ internal class TerrainSnapshot
       {
         Vector2s zone = new(x, y);
         if (onlyZones != null && !onlyZones.Contains(zone)) continue;
+        if (!HasValues(zone, sampleHeight, samplePaint)) continue;
         if (!ZoneSystem.instance.IsZoneGenerated(zone))
         {
           retry.Add(zone);
           continue;
         }
-        if (!HasValues(zone, sampleHeight, samplePaint)) continue;
         var compiler = TerrainManager.FindCompiler(zone);
         if (compiler == null)
         {

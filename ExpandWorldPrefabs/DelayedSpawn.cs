@@ -13,10 +13,16 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
 
   public static ZDO? CreateObject(ZdoEntry entry, bool triggerRules)
   {
+    var previousSkip = HandleCreated.Skip;
     HandleCreated.Skip = !triggerRules;
-    var zdo = entry.Create();
-    HandleCreated.Skip = false;
-    return zdo;
+    try
+    {
+      return entry.Create();
+    }
+    finally
+    {
+      HandleCreated.Skip = previousSkip;
+    }
   }
   public static void Add(Spawn spawn, ZDO originalZdo, DataEntry? data, Functions f)
   {
@@ -51,7 +57,6 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
     var rot = rotQuat.eulerAngles;
     if (spawn.Snap?.GetBool(f) == true)
       pos.y = WorldGenerator.instance.GetHeight(pos.x, pos.z) + offset.y;
-    data = DataHelper.Merge(data, DataHelper.Get(spawn.Data, f));
     var prefab = spawn.GetPrefab(f);
     if (prefab == 0) return;
     if (TryGetBlueprint(prefab, out var blueprint))
@@ -59,6 +64,7 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
       AddBlueprint(blueprint, spawn, originalZdo, f, pos, rotQuat, delay, removeDelay);
       return;
     }
+    data = DataHelper.Merge(data, DataHelper.Get(spawn.Data, f));
     ZdoEntry zdoEntry = new(prefab, pos, rot, originalZdo.GetOwner());
     if (data != null)
     {
@@ -96,12 +102,12 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
     var plan = BlueprintPlan.Create(blueprint, pos, rot, Vector3.one, (data, _) => data, name => name, GetBlueprint);
     var (height, paint) = plan.GetTerrain(pos, rot);
     TerrainSnapshot.Add(delay, blueprint.Name, height, paint, pos, rot);
-    foreach (var obj in plan.Objects)
+    var extraDelays = GetBuildDelays(plan, spawn, f, pos, rot);
+    for (var i = 0; i < plan.Objects.Count; i++)
     {
-      var piecePos = obj.Pos;
-      if (obj.SnapToGround)
-        piecePos.y = WorldGenerator.instance.GetHeight(piecePos.x, piecePos.z);
-      ZdoEntry zdoEntry = new(obj.Prefab.GetStableHashCode(), piecePos, obj.Rot.eulerAngles, originalZdo.GetOwner());
+      var obj = plan.Objects[i];
+      var objDelay = delay + extraDelays[i];
+      ZdoEntry zdoEntry = new(obj.Prefab.GetStableHashCode(), obj.Pos, obj.Rot.eulerAngles, originalZdo.GetOwner());
       if (obj.Data != null)
       {
         zdoEntry.Load(obj.Data, f, originalZdo);
@@ -119,8 +125,50 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
         zdoEntry.Owner = owner.Value;
       if (spawn.OwnerServer)
         ServerOwned.Mark(zdoEntry);
-      Add(delay, zdoEntry, triggerRules, removeDelay);
+      Add(objDelay, zdoEntry, triggerRules, removeDelay);
     }
+  }
+
+  // Extra per-object delay, normalized so the earliest object has no extra delay.
+  private static float[] GetBuildDelays(BlueprintPlan plan, Spawn spawn, Functions f, Vector3 pos, Quaternion rot)
+  {
+    var count = plan.Objects.Count;
+    var result = new float[count];
+    var vertical = spawn.BlueprintVerticalDelay?.Get(f) ?? 0f;
+    var horizontal = spawn.BlueprintHorizontalDelay?.Get(f) ?? 0f;
+    var sector = spawn.BlueprintSectorDelay?.Get(f) ?? 0f;
+    if (count == 0 || (vertical == 0f && horizontal == 0f && sector == 0f)) return result;
+    var step = spawn.BlueprintDelayStep?.Get(f) ?? 0f;
+    var inverse = Quaternion.Inverse(rot);
+    var locals = new Vector3[count];
+    float minY = float.MaxValue, maxY = float.MinValue, maxDistance = 0f;
+    for (var i = 0; i < count; i++)
+    {
+      var local = inverse * (plan.Objects[i].Pos - pos);
+      locals[i] = local;
+      minY = Mathf.Min(minY, local.y);
+      maxY = Mathf.Max(maxY, local.y);
+      maxDistance = Mathf.Max(maxDistance, new Vector2(local.x, local.z).magnitude);
+    }
+    var heightRange = maxY - minY;
+    var min = float.MaxValue;
+    for (var i = 0; i < count; i++)
+    {
+      var local = locals[i];
+      var angle = Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg;
+      if (angle < 0f) angle += 360f;
+      var heightT = heightRange > 0f ? (local.y - minY) / heightRange : 0f;
+      var distanceT = maxDistance > 0f ? new Vector2(local.x, local.z).magnitude / maxDistance : 0f;
+      var value = vertical * heightT + horizontal * distanceT + sector * angle / 360f;
+      result[i] = value;
+      if (value < min) min = value;
+    }
+    for (var i = 0; i < count; i++)
+    {
+      var value = result[i] - min;
+      result[i] = step > 0f ? Mathf.Round(value / step) * step : value;
+    }
+    return result;
   }
 
   private static void Add(float delay, ZdoEntry zdoEntry, bool triggerRules, float? removeDelay)
@@ -140,9 +188,9 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
     {
       var spawn = Spawns[i];
       if (spawn.Due > ZNet.instance.m_netTime) continue;
-      spawn.ExecuteAction();
       Spawns.RemoveAt(i);
       i--;
+      spawn.ExecuteAction();
     }
   }
   private readonly double Due = due;

@@ -26,6 +26,12 @@ Blueprints are loaded when they are first used. If `Automatic file reload` is en
 - Blueprint names work like object ids. For example wildcards (`Stall*`) and value groups can be used to pick a random blueprint.
 - Real objects are preferred if a blueprint has the same name as an object.
 - Every object of the blueprint is spawned separately. `delay`, `removeDelay`, `owner` and `triggerRules` apply to every object.
+- Objects can be spawned gradually (relative to the blueprint rotation, the earliest object has no extra delay):
+  - blueprintVerticalDelay (default: `0`): Total extra delay in seconds from the lowest to the highest object. Negative builds from top to bottom.
+  - blueprintHorizontalDelay (default: `0`): Total extra delay in seconds from the center to the farthest object. Negative builds from outside to inside.
+  - blueprintSectorDelay (default: `0`): Total extra delay in seconds for a full turn around the center, starting from the forward direction.
+  - blueprintDelayStep (default: `0`): Precision of the extra delay. The delay is rounded to the nearest multiple of this value. For example `0.5` spawns the objects at `0`, `0.5`, `1`, etc.
+  - Terrain changes are not delayed.
 - `chance` and `weight` of the spawn apply to the whole blueprint. `repeat` spawns the whole blueprint again with new chances.
 - `data`, `attach` and `connect` of the spawn are not used for the objects. The objects use the data from the blueprint file.
 - Creator data is removed from the objects, so creatures don't consider them to be built by a player.
