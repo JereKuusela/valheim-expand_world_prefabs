@@ -10,6 +10,8 @@ public class BlueprintObject
   public Quaternion Rot;
   public DataEntry? Data;
   public float Chance = 1f;
+  // Objects of the same group are alternatives: one of them is picked, using their chances as probabilities.
+  public string Group = "";
   public Vector3? Scale;
   public bool SnapToGround = false;
   // Raw info and data columns, kept so editors can save the object as it was read.

@@ -28,6 +28,54 @@ public class BlueprintParsingTests
   }
 
   [Test]
+  public void PlanBuild_ReadsGroupFromChance()
+  {
+    var bp = Parse("a;;0;0;0;0;0;0;1;;1;1;1;;0.25_x", "b;;0;0;0;0;0;0;1;;1;1;1;;_x", "c;;0;0;0;0;0;0;1;;1;1;1;;0.5");
+
+    Assert.That(bp.Objects[0].Chance, Is.EqualTo(0.25f));
+    Assert.That(bp.Objects[0].Group, Is.EqualTo("x"));
+    Assert.That(bp.Objects[1].Chance, Is.EqualTo(1f));
+    Assert.That(bp.Objects[1].Group, Is.EqualTo("x"));
+    Assert.That(bp.Objects[2].Chance, Is.EqualTo(0.5f));
+    Assert.That(bp.Objects[2].Group, Is.EqualTo(""));
+  }
+
+  [TestCase(0.0f, "a")]
+  [TestCase(0.49f, "a")]
+  [TestCase(0.51f, "b")]
+  [TestCase(0.99f, "b")]
+  public void Group_PicksOneWithChancesAsProbabilities(float roll, string expected)
+  {
+    var objects = new[] { Object("a", 0.5f, "g"), Object("b", 0.5f, "g") };
+
+    var picked = BlueprintPlan.PickGroups(objects, () => roll);
+
+    Assert.That(picked["g"]!.Prefab, Is.EqualTo(expected));
+  }
+
+  [Test]
+  public void Group_RemainderMeansNone()
+  {
+    var objects = new[] { Object("a", 0.25f, "g"), Object("b", 0.25f, "g") };
+
+    Assert.That(BlueprintPlan.PickGroups(objects, () => 0.2f)["g"]!.Prefab, Is.EqualTo("a"));
+    Assert.That(BlueprintPlan.PickGroups(objects, () => 0.4f)["g"]!.Prefab, Is.EqualTo("b"));
+    Assert.That(BlueprintPlan.PickGroups(objects, () => 0.6f)["g"], Is.Null);
+  }
+
+  [Test]
+  public void Group_ChancesOverOneAreScaledDown()
+  {
+    var objects = new[] { Object("a", 1f, "g"), Object("b", 1f, "g") };
+
+    Assert.That(BlueprintPlan.PickGroups(objects, () => 0.4f)["g"]!.Prefab, Is.EqualTo("a"));
+    Assert.That(BlueprintPlan.PickGroups(objects, () => 0.6f)["g"]!.Prefab, Is.EqualTo("b"));
+  }
+
+  private static BlueprintObject Object(string name, float chance, string group) =>
+    new(name, Vector3.zero, Quaternion.identity, Vector3.one, null, chance) { Group = group };
+
+  [Test]
   public void PlanBuild_KeepsCommasInInfoColumn()
   {
     var bp = Parse("sign;;0;0;0;0;0;0;1;Hello, world;1;1;1;");

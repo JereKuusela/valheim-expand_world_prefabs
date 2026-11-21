@@ -335,7 +335,7 @@ See object filtering [examples](examples_object_filtering.md).
 ### Spawns
 
 - spawn: Spawns another object.
-  - prefab: Object id or value group.
+  - prefab: Object id, value group or name of a [blueprint](blueprints.md) file.
   - condition: Optional condition expression. Must evaluate to true for this spawn attempt.
   - data: Sets initial data.
     - Three possible formats: `name` of existing data entry, full data entry or shorthand `type, key, value`.

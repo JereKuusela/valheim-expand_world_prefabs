@@ -195,13 +195,22 @@ public partial class Blueprints
     var scaleY = InvariantFloat(split, 11, 1f);
     var scaleZ = InvariantFloat(split, 12, 1f);
     var data = split.Length > 13 ? split[13] : "";
-    var chance = InvariantFloat(split, 14, 1f);
-    return CreateObject(name, new(posX, posY, posZ), new(rotX, rotY, rotZ, rotW), new(scaleX, scaleY, scaleZ), info, loadData ? data : "", chance, fileName);
+    var (chance, group) = ParseChance(split, 14);
+    return CreateObject(name, new(posX, posY, posZ), new(rotX, rotY, rotZ, rotW), new(scaleX, scaleY, scaleZ), info, loadData ? data : "", chance, group, fileName);
+  }
+  // Chance can have a group after an underscore, like 0.5_a. The column stays compatible with files that only have a number.
+  private static (float Chance, string Group) ParseChance(string[] row, int index)
+  {
+    if (index >= row.Length) return (1f, "");
+    var value = row[index];
+    var separator = value.IndexOf('_');
+    if (separator < 0) return (InvariantFloat(row, index, 1f), "");
+    return (InvariantFloat([value.Substring(0, separator)], 0, 1f), value.Substring(separator + 1));
   }
   // Old blueprints store simple data (sign text, item stand items...) in the info column.
-  private static BlueprintObject CreateObject(string name, Vector3 pos, Quaternion rot, Vector3 scale, string info, string data, float chance, string fileName)
+  private static BlueprintObject CreateObject(string name, Vector3 pos, Quaternion rot, Vector3 scale, string info, string data, float chance, string group, string fileName)
   {
-    BlueprintObject obj = new(name, pos, rot, scale, ResolveData(data, fileName), chance) { Info = info, RawData = data };
+    BlueprintObject obj = new(name, pos, rot, scale, ResolveData(data, fileName), chance) { Info = info, RawData = data, Group = group };
     if (obj.Data == null && info != "")
       obj.Data = BlueprintInfo.ToData(name, info);
     return obj;
@@ -232,8 +241,8 @@ public partial class Blueprints
     var posY = InvariantFloat(split, 6);
     var posZ = InvariantFloat(split, 7);
     var data = loadData && split.Length > 8 ? split[8] : "";
-    var chance = split.Length > 9 ? InvariantFloat(split, 9, 1f) : 1f;
-    return CreateObject(name, new(posX, posY, posZ), new(rotX, rotY, rotZ, rotW), Vector3.one, "", data, chance, fileName);
+    var (chance, group) = ParseChance(split, 9);
+    return CreateObject(name, new(posX, posY, posZ), new(rotX, rotY, rotZ, rotW), Vector3.one, "", data, chance, group, fileName);
   }
   private static float InvariantFloat(string[] row, int index, float defaultValue = 0f)
   {

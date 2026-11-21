@@ -36,6 +36,9 @@ Config file `expand_world_prefabs.cfg` is created automatically when the game is
 - Custom prefab names: Comma separated list of prefab names that are processed even when server doesn't recognize them.
   - This might be needed if there are modded prefabs that are not registered in ZNetScene.
   - The prefab names must be exact match, including capitalization.
+- Blueprint folder (default: `PlanBuild`): Folder relative to the config folder for blueprint files. See [Blueprints](docs/blueprints.md).
+- Terrain level limit (default: `8`): Maximum height change of terrain `level` and `raise` operations. Use `0` for no limit.
+  - Some mods change the limit of the game.
 
 Script file `expand_world/expand_prefabs.yaml` is created automatically. It starts empty, which means the mod doesn't initially do anything.
 
@@ -74,6 +77,7 @@ Other documentation:
 - [Functions](docs/functions.md): List of available functions.
   - Functions are used for dynamic values.
 - [Logging](docs/logging.md): Write rule events to a text file.
+- [Blueprints](docs/blueprints.md): Spawn PlanBuild and BuildShare blueprints, including their terrain.
 - [Hacks](docs/hacks.md): Advanced explanation of some features and how they work.
 - [Legacy features](docs/legacy.md): Some legacy features explained.
 

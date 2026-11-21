@@ -49,9 +49,14 @@ public class BlueprintPlan
   {
     if (bp.TerrainHeight?.HasValues == true || bp.TerrainPaint?.HasValues == true)
       Terrains.Add(new(bp, pos, rot));
+    var picked = PickGroups(bp.Objects, () => UnityEngine.Random.value);
     foreach (var obj in bp.Objects)
     {
-      if (obj.Chance < 1f && UnityEngine.Random.value > obj.Chance) continue;
+      if (obj.Group != "")
+      {
+        if (picked[obj.Group] != obj) continue;
+      }
+      else if (obj.Chance < 1f && UnityEngine.Random.value > obj.Chance) continue;
       var objPos = pos + rot * obj.Pos;
       var objRot = rot * obj.Rot;
       var objScale = obj.Scale.HasValue ? Vector3.Scale(scale, obj.Scale.Value) : scale;
@@ -69,6 +74,29 @@ public class BlueprintPlan
       }
       Objects.Add(new(prefabName, objPos, objRot, objScale, dataOverride(obj.Data, prefabName), obj.SnapToGround));
     }
+  }
+
+  // One roll per group. Chances are probabilities, so a remainder under 1 means none of the group is picked.
+  // Chances over 1 in total are scaled down.
+  public static Dictionary<string, BlueprintObject?> PickGroups(IEnumerable<BlueprintObject> objects, Func<float> roll)
+  {
+    Dictionary<string, BlueprintObject?> picked = [];
+    foreach (var group in objects.Where(obj => obj.Group != "").GroupBy(obj => obj.Group))
+    {
+      var members = group.ToList();
+      var total = Math.Max(1f, members.Sum(obj => obj.Chance));
+      var value = roll() * total;
+      BlueprintObject? selected = null;
+      foreach (var member in members)
+      {
+        value -= member.Chance;
+        if (value >= 0f) continue;
+        selected = member;
+        break;
+      }
+      picked[group.Key] = selected;
+    }
+    return picked;
   }
 
   // Terrains of nested blueprints are merged to the placement of the main blueprint, so they can be applied at once.
