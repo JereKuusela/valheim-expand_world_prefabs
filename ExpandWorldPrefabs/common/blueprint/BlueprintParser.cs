@@ -11,6 +11,28 @@ namespace Data;
 
 public partial class Blueprints
 {
+  public static Func<bool> RemoveCreatorData { get; set; } = () => true;
+
+  public static DataEntry? FilterObjectData(DataEntry? source, bool removeCreatorData)
+  {
+    if (source == null) return null;
+    DataEntry data = new();
+    data.Load(source);
+    data.Vecs?.Remove(ZDOVars.s_scaleHash);
+    if (data.Vecs?.TryGetValue(ZDOVars.s_velHash, out var value) == true &&
+        value is ConstantVector3Value velocity && velocity.Get(default!)?.Equals(Vector3.zero) == true)
+      data.Vecs.Remove(ZDOVars.s_velHash);
+    data.Floats?.Remove(ZDOVars.s_scaleScalarHash);
+    data.Floats?.Remove(ZDOVars.s_support);
+    if (removeCreatorData)
+    {
+      data.Longs?.Remove(ZDOVars.s_creator);
+      data.Strings?.Remove(ZDOVars.s_author);
+      data.Strings?.Remove(ZDOVars.s_authorDisplayName);
+    }
+    return data;
+  }
+
   // Invalid pieces fail the whole blueprint. Invalid terrain only drops that terrain.
   public static Blueprint? GetPlanBuild(Blueprint bp, string[] rows, bool loadData = true)
   {
@@ -213,6 +235,7 @@ public partial class Blueprints
     BlueprintObject obj = new(name, pos, rot, scale, ResolveData(data, fileName), chance) { Info = info, RawData = data, Group = group };
     if (obj.Data == null && info != "")
       obj.Data = BlueprintInfo.ToData(name, info);
+    obj.Data = FilterObjectData(obj.Data, RemoveCreatorData());
     return obj;
   }
   private static Vector3 GetPlanBuildSnapPoint(string row)

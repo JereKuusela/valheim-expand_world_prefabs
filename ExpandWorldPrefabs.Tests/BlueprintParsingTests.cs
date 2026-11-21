@@ -14,6 +14,53 @@ public class BlueprintParsingTests
   private static Blueprint Parse(params string[] rows) => Blueprints.GetPlanBuild(new("test"), rows)!;
 
   [Test]
+  public void DefaultObjectDataFilter_StripsBuilderAndTemporaryDataFromCopy()
+  {
+    DataEntry source = new()
+    {
+      Longs = new() { [ZDOVars.s_creator] = DataValue.Constant(123L) },
+      Strings = new()
+      {
+        [ZDOVars.s_author] = DataValue.Constant("author"),
+        [ZDOVars.s_authorDisplayName] = DataValue.Constant("display name"),
+        [ZDOVars.s_text] = DataValue.Constant("sign text")
+      },
+      Floats = new()
+      {
+        [ZDOVars.s_support] = DataValue.Constant(1e19f),
+        [ZDOVars.s_scaleScalarHash] = DataValue.Constant(2f)
+      },
+      Vecs = new() { [ZDOVars.s_scaleHash] = DataValue.Constant(new Vector3(2, 3, 4)) }
+    };
+
+    var data = Blueprints.FilterObjectData(source, Blueprints.RemoveCreatorData())!;
+
+    Assert.That(data.Longs, Is.Empty);
+    Assert.That(data.Floats, Is.Empty);
+    Assert.That(data.Vecs, Is.Empty);
+    Assert.That(data.Strings!.Keys, Is.EquivalentTo(new[] { ZDOVars.s_text }));
+    Assert.That(source.Longs, Has.Count.EqualTo(1));
+    Assert.That(source.Strings, Has.Count.EqualTo(3));
+    Assert.That(source.Floats, Has.Count.EqualTo(2));
+    Assert.That(source.Vecs, Has.Count.EqualTo(1));
+  }
+
+  [TestCase(0f, false)]
+  [TestCase(0.0000001f, true)]
+  [TestCase(2f, true)]
+  [TestCase(null, true)]
+  public void ObjectDataFilter_StripsOnlyLiteralZeroVelocity(float? speed, bool expected)
+  {
+    var velocity = speed.HasValue ? DataValue.Constant(new Vector3(speed.Value, 0, 0)) : new Vector3Value(["<speed>,0,0"]);
+    DataEntry source = new() { Vecs = new() { [ZDOVars.s_velHash] = velocity } };
+
+    var data = Blueprints.FilterObjectData(source, false)!;
+
+    Assert.That(data.Vecs!.ContainsKey(ZDOVars.s_velHash), Is.EqualTo(expected));
+    Assert.That(source.Vecs[ZDOVars.s_velHash], Is.SameAs(velocity));
+  }
+
+  [Test]
   public void PlanBuild_ReadsPiecesWithoutPiecesHeader_AfterMetadata()
   {
     var bp = Parse("#Name:My blueprint", "#Creator:me", "#Category:Walls", "#Center:piece_x", "wood_wall;;1;2;3;0;0;0;1;;1;1;1;;0.5");
