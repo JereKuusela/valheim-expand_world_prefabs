@@ -72,7 +72,7 @@ Objects with the same group (like `0.5_a` and `0.5_a`) are alternatives. One of 
 
 Blueprints can contain other blueprints as objects.
 
-- These must added manually to the file.
+- These must be added manually to the file.
 - This can be useful for larger blueprints that have distinct parts.
 - Another use is to make `chance` field to affect multiple objects.
 - Real objects are preferred if a blueprint has the same name as an object.
