@@ -18,7 +18,7 @@ public static class PokeTimers
     internal readonly double Due = due;
     internal readonly string[] Args = args;
   }
-  private static readonly List<Entry> Pending = [];
+  private static readonly DelayedQueue<Entry> Pending = new();
   private static readonly Dictionary<ZDOID, List<Entry>> ByTarget = [];
   private static readonly HashSet<ZDOID> Dirty = [];
 
@@ -37,7 +37,7 @@ public static class PokeTimers
 
   private static void Insert(Entry entry)
   {
-    Pending.Add(entry);
+    Pending.Add(entry.Due, entry);
     Dirty.Add(entry.Id);
     if (!ByTarget.TryGetValue(entry.Id, out var entries))
       ByTarget[entry.Id] = entries = [];
@@ -76,12 +76,8 @@ public static class PokeTimers
 
   private static void Remove(ZDOID id)
   {
-    if (ByTarget.TryGetValue(id, out var entries))
-    {
-      foreach (var entry in entries)
-        Pending.Remove(entry);
-    }
-    ByTarget.Remove(id);
+    if (ByTarget.Remove(id))
+      Pending.RemoveWhere(entry => entry.Id == id);
     Dirty.Remove(id);
   }
 
@@ -89,17 +85,14 @@ public static class PokeTimers
   {
     try
     {
-      for (var i = 0; i < Pending.Count; i++)
+      Pending.Drain(ZNet.instance.m_netTime, static entry =>
       {
-        var entry = Pending[i];
-        if (entry.Due > ZNet.instance.m_netTime) continue;
-        Pending.RemoveAt(i);
-        i--;
         // Consume before dispatch: a throwing recipient must not replay earlier recipients.
         Remove(entry);
         if (ZDOMan.instance.GetZDO(entry.Id) != null)
           Manager.Handle(ActionType.Poke, entry.Args, entry.Id);
-      }
+        return null;
+      });
     }
     finally { Flush(); }
   }

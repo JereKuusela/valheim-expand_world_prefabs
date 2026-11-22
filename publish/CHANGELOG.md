@@ -2,6 +2,7 @@
   - Adds support for spawning blueprints (`.blueprint` and `.vbuild` files) by using the file name as a prefab in `spawn` and `swap`.
   - Adds `blueprintVerticalDelay`, `blueprintHorizontalDelay`, `blueprintSectorDelay` and `blueprintDelayStep` fields to `spawn` for gradually spawning blueprint objects.
   - Fixes location matching not working for EWD cloned locations. Thanks Maxime!
+  - Optimizes performance of queue for delayed operations.
 
 - v1.66
   - Changes server side data feature to be always enabled (simplifies code).

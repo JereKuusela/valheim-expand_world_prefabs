@@ -1,11 +1,10 @@
-using System.Collections.Generic;
 using Data;
 using UnityEngine;
 namespace ExpandWorld.Prefab;
 
 public class DelayedExec(double due, Exec exec, Functions f)
 {
-  private static readonly List<DelayedExec> Execs = [];
+  private static readonly DelayedQueue<DelayedExec> Execs = new();
   public static void Clear() => Execs.Clear();
 
   public static void Add(Rule info, Functions f)
@@ -43,19 +42,16 @@ public class DelayedExec(double due, Exec exec, Functions f)
     if (delay <= 0f)
       exec.Run(f);
     else
-      Execs.Add(new(ZNet.instance.m_netTime + delay, exec, f));
-  }
-  public static void Execute()
-  {
-    for (var i = 0; i < Execs.Count; i++)
     {
-      var delayed = Execs[i];
-      if (delayed.Due > ZNet.instance.m_netTime) continue;
-      Execs.RemoveAt(i);
-      i--;
-      delayed.Exec.Run(delayed.F);
+      var delayed = new DelayedExec(ZNet.instance.m_netTime + delay, exec, f);
+      Execs.Add(delayed.Due, delayed);
     }
   }
+  public static void Execute() => Execs.Drain(ZNet.instance.m_netTime, static delayed =>
+  {
+    delayed.Exec.Run(delayed.F);
+    return null;
+  });
   private readonly double Due = due;
   private readonly Exec Exec = exec;
   private readonly Functions F = f;

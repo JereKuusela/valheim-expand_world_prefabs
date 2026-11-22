@@ -11,7 +11,7 @@ public class DelayedTerrain
   internal const float RetryIntervalSeconds = 1f;
   internal const int MaximumAttempts = 12;
 
-  private static readonly List<DelayedTerrain> Terrains = [];
+  private static readonly DelayedQueue<DelayedTerrain> Terrains = new();
   private double Due;
   private readonly Vector3 Pos;
   private readonly float Size;
@@ -36,20 +36,11 @@ public class DelayedTerrain
     if (TerrainManager.GenerateCompilers(pos, size)) delay = Mathf.Max(delay, 1f);
     var terrain = new DelayedTerrain(ZNet.instance.m_netTime + delay, pos, size, settings, resetRadius);
     if (delay > 0f || !terrain.ExecuteAction())
-      Terrains.Add(terrain);
+      Terrains.Add(terrain.Due, terrain);
   }
 
-  public static void Execute()
-  {
-    for (var i = 0; i < Terrains.Count; i++)
-    {
-      var terrain = Terrains[i];
-      if (terrain.Due > ZNet.instance.m_netTime) continue;
-      if (!terrain.ExecuteAction()) continue;
-      Terrains.RemoveAt(i);
-      i--;
-    }
-  }
+  public static void Execute() => Terrains.Drain(ZNet.instance.m_netTime,
+    static terrain => terrain.ExecuteAction() ? null : terrain.Due);
 
   private bool ExecuteAction()
   {

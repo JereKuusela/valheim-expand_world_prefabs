@@ -1,13 +1,11 @@
-﻿using System.Collections.Generic;
-using Data;
-using Service;
+﻿using Data;
 using UnityEngine;
 
 namespace ExpandWorld.Prefab;
 
 public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, float? removeDelay)
 {
-  private static readonly List<DelayedSpawn> Spawns = [];
+  private static readonly DelayedQueue<DelayedSpawn> Spawns = new();
 
   public static void Clear() => Spawns.Clear();
 
@@ -180,19 +178,15 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
         DelayedRemove.Add(removeDelay.Value, zdo.m_uid, triggerRules);
       return;
     }
-    Spawns.Add(new(ZNet.instance.m_netTime + delay, zdoEntry, triggerRules, removeDelay));
+    var due = ZNet.instance.m_netTime + delay;
+    var spawn = new DelayedSpawn(due, zdoEntry, triggerRules, removeDelay);
+    Spawns.Add(spawn.Due, spawn);
   }
-  public static void Execute()
+  public static void Execute() => Spawns.Drain(ZNet.instance.m_netTime, static spawn =>
   {
-    for (var i = 0; i < Spawns.Count; i++)
-    {
-      var spawn = Spawns[i];
-      if (spawn.Due > ZNet.instance.m_netTime) continue;
-      Spawns.RemoveAt(i);
-      i--;
-      spawn.ExecuteAction();
-    }
-  }
+    spawn.ExecuteAction();
+    return null;
+  });
   private readonly double Due = due;
   private readonly ZdoEntry ZdoEntry = zdoEntry;
   private readonly bool TriggerRules = triggerRules;

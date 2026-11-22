@@ -13,7 +13,7 @@ namespace ExpandWorld.Prefab;
 internal class TerrainSnapshot
 {
   private const int MaxZones = 64;
-  private static readonly List<TerrainSnapshot> Snapshots = [];
+  private static readonly DelayedQueue<TerrainSnapshot> Snapshots = new();
 
   private readonly string Name;
   private readonly BlueprintTerrain<float>? Height;
@@ -41,20 +41,11 @@ internal class TerrainSnapshot
     if (height?.HasValues != true && paint?.HasValues != true) return;
     var snapshot = new TerrainSnapshot(ZNet.instance.m_netTime + delay, name, height, paint, pos, rot);
     if (delay > 0f || !snapshot.ExecuteAction())
-      Snapshots.Add(snapshot);
+      Snapshots.Add(snapshot.Due, snapshot);
   }
 
-  public static void Execute()
-  {
-    for (var i = 0; i < Snapshots.Count; i++)
-    {
-      var snapshot = Snapshots[i];
-      if (snapshot.Due > ZNet.instance.m_netTime) continue;
-      if (!snapshot.ExecuteAction()) continue;
-      Snapshots.RemoveAt(i);
-      i--;
-    }
-  }
+  public static void Execute() => Snapshots.Drain(ZNet.instance.m_netTime,
+    static snapshot => snapshot.ExecuteAction() ? null : snapshot.Due);
 
   private bool ExecuteAction()
   {
