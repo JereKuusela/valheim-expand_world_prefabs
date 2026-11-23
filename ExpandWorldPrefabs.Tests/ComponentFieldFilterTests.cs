@@ -199,6 +199,34 @@ public class ComponentFieldFilterTests
   }
 
   [Test]
+  public void ExplicitComponentPresenceChecks_RestorePreviousShorthandRestriction()
+  {
+    var zdo = NewZdo();
+    var f = CreateFunctions();
+    StoreInt(zdo, ZdoHelper.Hash(FireplaceField), 0);
+    StoreInt(zdo, HasFields, 1);
+    StoreInt(zdo, HasFireplace, 1);
+
+    const string hasFieldsFilter = "int, HasFields, 1";
+    const string hasFireplaceFilter = "int, HasFieldsFireplace, 1";
+    const string valueFilter = "bool, Fireplace.m_infiniteFuel, false";
+    try
+    {
+      var filters = new Filters([hasFieldsFilter, hasFireplaceFilter, valueFilter], null, null);
+      Assert.That(filters.Match(f, zdo), Is.True);
+
+      StoreInt(zdo, HasFireplace, 0);
+      Assert.That(filters.Match(f, zdo), Is.False);
+    }
+    finally
+    {
+      DataLoading.Data.Remove(hasFieldsFilter.GetStableHashCode());
+      DataLoading.Data.Remove(hasFireplaceFilter.GetStableHashCode());
+      DataLoading.Data.Remove(valueFilter.GetStableHashCode());
+    }
+  }
+
+  [Test]
   public void ComponentField_ApplicationStillWritesAutomaticMarkers()
   {
     var f = CreateFunctions();
