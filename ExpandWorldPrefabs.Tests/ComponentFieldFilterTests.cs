@@ -6,6 +6,7 @@ using Data;
 using ExpandWorld.Prefab;
 using NUnit.Framework;
 using Service;
+using UnityEngine;
 
 namespace ExpandWorldPrefabs.Tests;
 
@@ -128,7 +129,8 @@ public class ComponentFieldFilterTests
   [TestCase("string", "alpha", "beta")]
   [TestCase("vec", "1,2,3", "4,5,6")]
   [TestCase("vec3", "1,2,3", "4,5,6")]
-  [TestCase("quat", "0,90,0", "0,180,0")]
+  // Identity avoids native Quaternion.Euler in the managed test host.
+  [TestCase("quat", "", "")]
   [TestCase("bytes", "AQID", "BAUG")]
   public void ComponentField_AllShorthandTypes_MatchLikeNamedData(string type, string value, string otherValue)
   {
@@ -153,7 +155,10 @@ public class ComponentFieldFilterTests
     Assert.That(shorthand.Match(f, zdo), Is.True);
     Assert.That(named.Match(f, zdo), Is.True);
 
-    StoreValue(zdo, new DataEntry([type, Field, otherValue]), type, key, f);
+    if (type == "quat")
+      ZDOExtraData.s_quats[zdo.m_uid].SetValue(key, new Quaternion(1f, 0f, 0f, 0f));
+    else
+      StoreValue(zdo, new DataEntry([type, Field, otherValue]), type, key, f);
     Assert.That(shorthand.Match(f, zdo), Is.False);
     Assert.That(named.Match(f, zdo), Is.False);
   }
