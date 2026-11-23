@@ -121,6 +121,30 @@ public class ComponentFieldFilterTests
     ZDOExtraData.s_ints[zdo.m_uid].SetValue(key, value);
   }
 
+  private static Dictionary<int, DataEntry?> IsolateCache(params string[] keys)
+  {
+    Dictionary<int, DataEntry?> previous = [];
+    foreach (var key in keys)
+    {
+      var hash = key.GetStableHashCode();
+      DataLoading.Data.TryGetValue(hash, out var entry);
+      previous[hash] = entry;
+      DataLoading.Data.Remove(hash);
+    }
+    return previous;
+  }
+
+  private static void RestoreCache(Dictionary<int, DataEntry?> previous)
+  {
+    foreach (var pair in previous)
+    {
+      if (pair.Value == null)
+        DataLoading.Data.Remove(pair.Key);
+      else
+        DataLoading.Data[pair.Key] = pair.Value;
+    }
+  }
+
   [TestCase("float", "2.5", "3.25")]
   [TestCase("int", "7", "8")]
   [TestCase("bool", "false", "true")]
@@ -174,12 +198,10 @@ public class ComponentFieldFilterTests
     const string namedFilter = "component_field_filter_regression_named";
     const string markerFilter = "int, HasFields, 0";
     const string shorthandFilter = "bool, Fireplace.m_infiniteFuel, false";
-    var nameHash = namedFilter.GetStableHashCode();
-    var markerHash = markerFilter.GetStableHashCode();
-    var shorthandHash = shorthandFilter.GetStableHashCode();
-    DataLoading.Add(nameHash, new DataEntry(Named("bool", FireplaceField, "false")));
+    var previous = IsolateCache(namedFilter, markerFilter, shorthandFilter);
     try
     {
+      DataLoading.Add(namedFilter.GetStableHashCode(), new DataEntry(Named("bool", FireplaceField, "false")));
       var shortFilters = new Filters([markerFilter, shorthandFilter], null, null);
       var namedFilters = new Filters([markerFilter, namedFilter], null, null);
 
@@ -192,9 +214,7 @@ public class ComponentFieldFilterTests
     }
     finally
     {
-      DataLoading.Data.Remove(nameHash);
-      DataLoading.Data.Remove(markerHash);
-      DataLoading.Data.Remove(shorthandHash);
+      RestoreCache(previous);
     }
   }
 
@@ -210,6 +230,7 @@ public class ComponentFieldFilterTests
     const string hasFieldsFilter = "int, HasFields, 1";
     const string hasFireplaceFilter = "int, HasFieldsFireplace, 1";
     const string valueFilter = "bool, Fireplace.m_infiniteFuel, false";
+    var previous = IsolateCache(hasFieldsFilter, hasFireplaceFilter, valueFilter);
     try
     {
       var filters = new Filters([hasFieldsFilter, hasFireplaceFilter, valueFilter], null, null);
@@ -220,9 +241,7 @@ public class ComponentFieldFilterTests
     }
     finally
     {
-      DataLoading.Data.Remove(hasFieldsFilter.GetStableHashCode());
-      DataLoading.Data.Remove(hasFireplaceFilter.GetStableHashCode());
-      DataLoading.Data.Remove(valueFilter.GetStableHashCode());
+      RestoreCache(previous);
     }
   }
 
