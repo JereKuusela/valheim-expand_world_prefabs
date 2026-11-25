@@ -12,43 +12,43 @@
   <ItemGroup>
     <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
     <Reference Include="BepInExll">
-      <HintPath>$(BepInExDir)BepinEx.dll</HintPath>
+      <HintPath>$(BepInExDir)\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>$(ManagedDir)UnityEngine.dll</HintPath>
+      <HintPath>$(ManagedDir)\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(ManagedDir)UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(ManagedDir)\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>$(ManagedDir)UnityEngine.UI.dll</HintPath>
+      <HintPath>$(ManagedDir)\UnityEngine.UI.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule">
-      <HintPath>$(ManagedDir)UnityEngine.PhysicsModule.dll</HintPath>
+      <HintPath>$(ManagedDir)\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
     <Reference Include="0Harmony">
-      <HintPath>$(BepInExDir)0Harmony.dll</HintPath>
+      <HintPath>$(BepInExDir)\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="BepInEx.Harmony">
-      <HintPath>$(BepInExDir)BepInEx.Harmony.dll</HintPath>
+      <HintPath>$(BepInExDir)\BepInEx.Harmony.dll</HintPath>
     </Reference>
     <Reference Include="assembly_valheim" Publicize="true">
-      <HintPath>$(ManagedDir)assembly_valheim.dll</HintPath>
+      <HintPath>$(ManagedDir)\assembly_valheim.dll</HintPath>
     </Reference>
     <Reference Include="assembly_utils" Publicize="true">
-      <HintPath>$(ManagedDir)assembly_utils.dll</HintPath>
+      <HintPath>$(ManagedDir)\assembly_utils.dll</HintPath>
     </Reference>
     <Reference Include="assembly_guiutils" Publicize="true">
-      <HintPath>$(ManagedDir)assembly_guiutils.dll</HintPath>
+      <HintPath>$(ManagedDir)\assembly_guiutils.dll</HintPath>
     </Reference>
     <Reference Include="SPlatform" Publicize="true">
-      <HintPath>$(ManagedDir)SPlatform.dll</HintPath>
+      <HintPath>$(ManagedDir)\SPlatform.dll</HintPath>
     </Reference>
     <Reference Include="SoftReferenceableAssets" Publicize="true">
-      <HintPath>$(ManagedDir)SoftReferenceableAssets.dll</HintPath>
+      <HintPath>$(ManagedDir)\SoftReferenceableAssets.dll</HintPath>
     </Reference>
     <Reference Include="YamlDotNet">
-      <HintPath>$(LibsDir)YamlDotNet.dll</HintPath>
+      <HintPath>$(LibsDir)\YamlDotNet.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
