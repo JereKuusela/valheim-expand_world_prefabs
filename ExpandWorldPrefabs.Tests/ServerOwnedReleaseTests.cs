@@ -44,13 +44,13 @@ public class ServerOwnedReleaseTests
   private static void WriteSyncedInt(ZDO zdo, int key, int value)
   {
     ZDOHelper.Init(ZDOExtraData.s_ints, zdo.m_uid);
-    ZDOExtraData.s_ints[zdo.m_uid].SetValue(key, value);
+    ZDOExtraData.s_ints[zdo.m_uid][key] = value;
   }
 
   private static void WriteSyncedPayload(ZDO zdo, byte[] payload)
   {
     ZDOHelper.Init(ZDOExtraData.s_byteArrays, zdo.m_uid);
-    ZDOExtraData.s_byteArrays[zdo.m_uid].SetValue(PayloadKey, payload);
+    ZDOExtraData.s_byteArrays[zdo.m_uid][PayloadKey] = payload;
   }
 
   private ZDO NewZdo()
