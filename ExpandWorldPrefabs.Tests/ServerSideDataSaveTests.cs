@@ -128,7 +128,7 @@ public class ServerSideDataSaveTests
     Ints[source] = new() { [52] = 0 };
     Bytes[source] = new() { [53] = new byte[] { 1, 4 } };
     var oldPayload = Serialize(source)!;
-    Bucket(restored).SetValue(StorageHash, oldPayload);
+    Bucket(restored)[StorageHash] = oldPayload;
 
     DeserializeMethod.Invoke(null, [Zdo(restored)]);
     Assert.That(ServerSideData.TryGetString(restored, 51, out var str), Is.True);
@@ -189,7 +189,7 @@ public class ServerSideDataSaveTests
   {
     var id = NewId();
     var original = new byte[] { 7, 8, 9 };
-    Bucket(id).SetValue(StorageHash, original);
+    Bucket(id)[StorageHash] = original;
     Ints[id] = new() { [24] = 101 };
     var snapshot = ServerSideData.BuildSaveSnapshot(_ => true, []);
     List<KeyValuePair<int, byte[]>>? saveBytes = [new(StorageHash, original), new(9, [5])];

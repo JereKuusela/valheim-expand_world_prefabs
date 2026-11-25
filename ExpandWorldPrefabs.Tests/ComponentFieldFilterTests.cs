@@ -79,7 +79,7 @@ public class ComponentFieldFilterTests
     {
       case "float":
         ZDOHelper.Init(ZDOExtraData.s_floats, id);
-        ZDOExtraData.s_floats[id].SetValue(key, entry.Floats![key].Get(f)!.Value);
+        ZDOExtraData.s_floats[id][key] = entry.Floats![key].Get(f)!.Value;
         break;
       case "int":
         StoreInt(zdo, key, entry.Ints![key].Get(f)!.Value);
@@ -92,24 +92,24 @@ public class ComponentFieldFilterTests
         break;
       case "long":
         ZDOHelper.Init(ZDOExtraData.s_longs, id);
-        ZDOExtraData.s_longs[id].SetValue(key, entry.Longs![key].Get(f)!.Value);
+        ZDOExtraData.s_longs[id][key] = entry.Longs![key].Get(f)!.Value;
         break;
       case "string":
         ZDOHelper.Init(ZDOExtraData.s_strings, id);
-        ZDOExtraData.s_strings[id].SetValue(key, entry.Strings![key].Get(f)!);
+        ZDOExtraData.s_strings[id][key] = entry.Strings![key].Get(f)!;
         break;
       case "vec":
       case "vec3":
         ZDOHelper.Init(ZDOExtraData.s_vec3, id);
-        ZDOExtraData.s_vec3[id].SetValue(key, entry.Vecs![key].Get(f)!.Value);
+        ZDOExtraData.s_vec3[id][key] = entry.Vecs![key].Get(f)!.Value;
         break;
       case "quat":
         ZDOHelper.Init(ZDOExtraData.s_quats, id);
-        ZDOExtraData.s_quats[id].SetValue(key, entry.Quats![key].Get(f)!.Value);
+        ZDOExtraData.s_quats[id][key] = entry.Quats![key].Get(f)!.Value;
         break;
       case "bytes":
         ZDOHelper.Init(ZDOExtraData.s_byteArrays, id);
-        ZDOExtraData.s_byteArrays[id].SetValue(key, entry.ByteArrays![key].Get(f)!);
+        ZDOExtraData.s_byteArrays[id][key] = entry.ByteArrays![key].Get(f)!;
         break;
       default: throw new ArgumentOutOfRangeException(nameof(type));
     }
@@ -118,7 +118,7 @@ public class ComponentFieldFilterTests
   private static void StoreInt(ZDO zdo, int key, int value)
   {
     ZDOHelper.Init(ZDOExtraData.s_ints, zdo.m_uid);
-    ZDOExtraData.s_ints[zdo.m_uid].SetValue(key, value);
+    ZDOExtraData.s_ints[zdo.m_uid][key] = value;
   }
 
   private static Dictionary<int, DataEntry?> IsolateCache(params string[] keys)
@@ -180,7 +180,7 @@ public class ComponentFieldFilterTests
     Assert.That(named.Match(f, zdo), Is.True);
 
     if (type == "quat")
-      ZDOExtraData.s_quats[zdo.m_uid].SetValue(key, new Quaternion(1f, 0f, 0f, 0f));
+      ZDOExtraData.s_quats[zdo.m_uid][key] = new Quaternion(1f, 0f, 0f, 0f);
     else
       StoreValue(zdo, new DataEntry([type, Field, otherValue]), type, key, f);
     Assert.That(shorthand.Match(f, zdo), Is.False);
