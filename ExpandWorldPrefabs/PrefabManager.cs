@@ -112,14 +112,15 @@ public class Manager
 
     var remove = info.Remove?.GetBool(f) == true;
     var data = DataHelper.Get(info.Data, f);
+    var prefabOverride = remove ? null : data?.GetPrefabOverride(f, zdo.GetPrefab());
     var inject = info.InjectData ?? data?.CanBeInjected ?? false;
-    var regenerate = info.Regenerate && !inject;
+    var regenerate = prefabOverride.HasValue || (info.Regenerate && !inject);
     var attach = info.Attach?.Get(f);
     if (attach.HasValue && !SupportAttach.CanSync(zdo))
       regenerate = true;
     if (PersistPlayers.IsRealPlayer(zdo))
       regenerate = false;
-    HandleSpawns(info, zdo, f, remove, regenerate, data);
+    HandleSpawns(info, zdo, f, remove, regenerate, data, prefabOverride);
     Poke(info, zdo, f);
     Terrain(info, zdo, f);
     var drops = info.Drops?.Get(f);
@@ -192,7 +193,7 @@ public class Manager
       return infos.Any(i => i.Cancel?.GetBool(f) == true);
     return false;
   }
-  private static void HandleSpawns(Rule info, ZDO zdo, Functions f, bool remove, bool regenerate, DataEntry? customData)
+  private static void HandleSpawns(Rule info, ZDO zdo, Functions f, bool remove, bool regenerate, DataEntry? customData, int? prefabOverride)
   {
     // Original object must be regenerated to apply data.
     var regenerateOriginal = !remove && regenerate;
@@ -219,6 +220,8 @@ public class Manager
       var removeItems = info.RemoveItems;
       var addItems = info.AddItems;
       ZdoEntry entry = new(zdo);
+      if (prefabOverride.HasValue)
+        entry.Prefab = prefabOverride.Value;
       if (data != null)
         entry.Load(data, f, zdo);
       var attach = info.Attach?.Get(f);

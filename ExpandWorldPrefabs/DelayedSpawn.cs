@@ -63,6 +63,7 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
       return;
     }
     data = DataHelper.Merge(data, DataHelper.Get(spawn.Data, f));
+    prefab = data?.GetPrefabOverride(f, prefab) ?? prefab;
     ZdoEntry zdoEntry = new(prefab, pos, rot, originalZdo.GetOwner());
     if (data != null)
     {
@@ -105,7 +106,9 @@ public class DelayedSpawn(double due, ZdoEntry zdoEntry, bool triggerRules, floa
     {
       var obj = plan.Objects[i];
       var objDelay = delay + extraDelays[i];
-      ZdoEntry zdoEntry = new(obj.Prefab.GetStableHashCode(), obj.Pos, obj.Rot.eulerAngles, originalZdo.GetOwner());
+      var prefab = obj.Prefab.GetStableHashCode();
+      prefab = obj.Data?.GetPrefabOverride(f, prefab) ?? prefab;
+      ZdoEntry zdoEntry = new(prefab, obj.Pos, obj.Rot.eulerAngles, originalZdo.GetOwner());
       if (obj.Data != null)
       {
         zdoEntry.Load(obj.Data, f, originalZdo);

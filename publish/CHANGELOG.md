@@ -1,3 +1,6 @@
+- v1.68
+  - Fixed for the new update. Thanks Maxime!
+
 - v1.67
   - Adds support for spawning blueprints (`.blueprint` and `.vbuild` files) by using the file name as a prefab in `spawn` and `swap`.
   - Adds `blueprintVerticalDelay`, `blueprintHorizontalDelay`, `blueprintSectorDelay` and `blueprintDelayStep` fields to `spawn` for gradually spawning blueprint objects.
@@ -28,17 +31,3 @@
   - Fixes data changes by EWP not triggering `change` even when `triggerRules` was set. Thanks Zeall!
   - Fixes `<pokecount>` not working like `<objectcount>`. Thanks Zeall!
   - Fixes items data to use inventory size of the created object (instead of the original object). Thanks Zeall!
-
-- v1.63
-  - Adds support for inline data definitions in field `data`.
-  - Adds support for loading decoded `item` field from data.
-  - Adds field `excludePrefab` to pokes and objects. Thanks Zeall!
-  - Adds trigger type `config` to react to EWP config changes.
-  - Adds support adding custom config entries.
-  - Adds functions `<config_SECTION_NAME>`, `<saveconfig_SECTION_NAME_Y>`, `<modconfig_GUID_SECTION_KEY>` and `<savemodconfig_GUID_SECTION_KEY_Y>` for interacting with EWP config entries.
-  - Adds support for multiple log files and rolling logs to field `log`. Thanks JPValheim!
-  - Adds support for multiple execs to field `exec`. Thanks Zeall!
-  - Changes value group `material_*` to be based on resource cost rather than support system type. Thanks Zeall!
-  - Changes field `exec` to also support running console commands. Thanks Zeall!
-  - Fixes value group `itemtype_*` containing other objects like enemy attacks. Thanks Zeall!
-  - Fixes unnecessary warnings about missing RPC methods (vanilla issue). Thanks Zeall!
