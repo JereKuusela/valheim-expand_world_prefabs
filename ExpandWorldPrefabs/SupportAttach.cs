@@ -157,8 +157,9 @@ public class SupportAttach
     if (!TryGetWorldTransform(zdo, [], out var worldPos, out var worldRot))
       return false;
 
+    var oldSector = zdo.GetSectorIndex();
     zdo.m_position = worldPos;
-    zdo.SetSector(ZoneSystem.GetSectorIndex(worldPos));
+    zdo.SetSector(ZoneSystem.GetSectorIndex(worldPos), oldSector);
     zdo.m_rotation = worldRot.eulerAngles;
     return true;
   }
